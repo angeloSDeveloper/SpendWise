@@ -1,0 +1,11 @@
+.dart_tool/
+.packages
+build/
+.flutter-plugins*
+*.g.dart
+*.freezed.dart
+workers/node_modules/
+workers/.wrangler/
+workers/.dev.vars
+.env
+coverage/

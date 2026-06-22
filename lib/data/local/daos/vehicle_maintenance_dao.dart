@@ -1,0 +1,1 @@
+import 'package:spendwise/data/local/daos/base_dao.dart';import 'package:spendwise/data/local/database.dart';class VehicleMaintenanceDao extends BaseDao{VehicleMaintenanceDao(AppDatabase db):super(db,'vehicle_maintenance',syncColumn:true);Future<List<Map<String,Object?>>> byDate(DateTime from,DateTime to)=>between('date',from,to);}
