@@ -23,6 +23,7 @@ abstract class VehicleMaintenance with _$VehicleMaintenance {
     DateTime? nextServiceDate,
     int? warrantyMonths,
     String? receiptUrl,
+    String? itemsJson,
     String? note,
     required DateTime createdAt,
     @Default(false) bool synced,

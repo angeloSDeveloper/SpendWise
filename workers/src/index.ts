@@ -84,7 +84,7 @@ for (const [path, config] of Object.entries(resources)) {
 
 const childResource = (kind: 'fuel' | 'maintenance') => kind === 'fuel'
   ? { table: 'fuel_entries', fields: ['date','liters','price_per_liter','total_cost','station_name','km_odometer','is_full_tank','note'] }
-  : { table: 'vehicle_maintenance', fields: ['date','item_name','part_code','category','price','quantity','total_cost','shop_name','shop_url','km_at_service','next_service_km','next_service_date','warranty_months','receipt_url','note'] };
+  : { table: 'vehicle_maintenance', fields: ['date','item_name','part_code','category','price','quantity','total_cost','shop_name','shop_url','km_at_service','next_service_km','next_service_date','warranty_months','receipt_url','items_json','note'] };
 for (const kind of ['fuel','maintenance'] as const) {
   const config = childResource(kind);
   app.get(`/api/vehicles/:id/${kind}`, async (c) => {

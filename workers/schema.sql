@@ -159,6 +159,7 @@ CREATE TABLE IF NOT EXISTS vehicle_maintenance (
   next_service_date INTEGER,
   warranty_months INTEGER,
   receipt_url TEXT,
+  items_json TEXT,
   note TEXT,
   created_at INTEGER NOT NULL,
   synced INTEGER DEFAULT 0,

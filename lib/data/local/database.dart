@@ -166,6 +166,7 @@ class VehicleMaintenanceTable extends Table {
   DateTimeColumn get nextServiceDate => dateTime().nullable()();
   IntColumn get warrantyMonths => integer().nullable()();
   TextColumn get receiptUrl => text().nullable()();
+  TextColumn get itemsJson => text().nullable()();
   TextColumn get note => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   BoolColumn get synced => boolean().withDefault(const Constant(false))();
@@ -206,7 +207,19 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase._() : super(openDatabase());
   static final AppDatabase instance = AppDatabase._();
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (migrator) => migrator.createAll(),
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) {
+        await migrator.addColumn(
+          vehicleMaintenanceTable,
+          vehicleMaintenanceTable.itemsJson,
+        );
+      }
+    },
+  );
   Future<List<dynamic>> expensesBetween(DateTime from, DateTime to) =>
       (select(dailyExpensesTable)
             ..where((row) => row.date.isBetweenValues(from, to))
