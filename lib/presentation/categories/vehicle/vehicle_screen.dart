@@ -1,7 +1,12 @@
+import 'dart:convert';
+
+import 'package:dio/dio.dart' show Dio, Options;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
 import 'package:spendwise/data/remote/api_client.dart';
 import 'package:spendwise/domain/models/enums.dart';
@@ -377,7 +382,9 @@ class _FuelTab extends ConsumerWidget {
                     child: ListTile(
                       leading: const Icon(Icons.local_gas_station),
                       title: Text(
-                        '${item.liters.toStringAsFixed(2)} L · ${_money(item.totalCost)}',
+                        item.liters > 0
+                            ? '${item.liters.toStringAsFixed(2)} L · ${_money(item.totalCost)}'
+                            : 'Rifornimento · ${_money(item.totalCost)}',
                       ),
                       subtitle: Text(
                         [
@@ -387,9 +394,9 @@ class _FuelTab extends ConsumerWidget {
                           if (item.kmOdometer != null) '${item.kmOdometer} km',
                         ].join(' · '),
                       ),
-                      trailing: Text(
-                        '${item.pricePerLiter.toStringAsFixed(3)} €/L',
-                      ),
+                      trailing: item.pricePerLiter > 0
+                          ? Text('${item.pricePerLiter.toStringAsFixed(3)} €/L')
+                          : const Text('Semplificato'),
                     ),
                   ),
               ],
@@ -438,7 +445,7 @@ class _MaintenanceTab extends ConsumerWidget {
               for (final item in items)
                 Card(
                   child: ListTile(
-                    leading: const Icon(Icons.build_circle_outlined),
+                    leading: _maintenanceImage(item.receiptUrl),
                     title: Text(item.itemName),
                     subtitle: Text(
                       [
@@ -463,12 +470,111 @@ class _MaintenanceTab extends ConsumerWidget {
                           ),
                       ],
                     ),
+                    onTap: () => _showMaintenanceDetails(context, item),
                   ),
                 ),
             ],
           ),
         ),
       );
+}
+
+Future<void> _showMaintenanceDetails(
+  BuildContext context,
+  VehicleMaintenance item,
+) => showModalBottomSheet<void>(
+  context: context,
+  showDragHandle: true,
+  isScrollControlled: true,
+  builder: (context) => SafeArea(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(item.itemName, style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 16),
+          if (item.receiptUrl?.isNotEmpty == true)
+            Center(
+              child: SizedBox(
+                width: 280,
+                height: 200,
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: _maintenanceImage(item.receiptUrl),
+                ),
+              ),
+            ),
+          ListTile(
+            leading: const Icon(Icons.calendar_today),
+            title: const Text('Data'),
+            trailing: Text(_date(item.date)),
+          ),
+          if (item.kmAtService != null)
+            ListTile(
+              leading: const Icon(Icons.speed),
+              title: const Text('Chilometraggio'),
+              trailing: Text('${item.kmAtService} km'),
+            ),
+          ListTile(
+            leading: const Icon(Icons.euro),
+            title: const Text('Costo totale'),
+            trailing: Text(_money(item.totalCost)),
+          ),
+          if (item.partCode?.isNotEmpty == true)
+            ListTile(
+              leading: const Icon(Icons.qr_code),
+              title: const Text('Codice / modello'),
+              subtitle: Text(item.partCode!),
+            ),
+          if (item.shopName?.isNotEmpty == true)
+            ListTile(
+              leading: const Icon(Icons.store),
+              title: const Text('Negozio / officina'),
+              subtitle: Text(item.shopName!),
+            ),
+          if (item.note?.isNotEmpty == true) ...[
+            const Divider(),
+            Text(
+              'Dettagli e note',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            SelectableText(item.note!),
+          ],
+        ],
+      ),
+    ),
+  ),
+);
+
+Widget _maintenanceImage(String? source) {
+  if (source == null || source.isEmpty) {
+    return const Icon(Icons.build_circle_outlined);
+  }
+  if (source.startsWith('data:image')) {
+    try {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.memory(
+          base64Decode(source.split(',').last),
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+        ),
+      );
+    } catch (_) {}
+  }
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(8),
+    child: Image.network(
+      source,
+      width: 48,
+      height: 48,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => const Icon(Icons.build_circle_outlined),
+    ),
+  );
 }
 
 class AddFuelScreen extends ConsumerStatefulWidget {
@@ -482,15 +588,48 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
   final formKey = GlobalKey<FormState>();
   final liters = TextEditingController(),
       price = TextEditingController(),
+      total = TextEditingController(),
       station = TextEditingController(),
       km = TextEditingController(),
       note = TextEditingController();
-  bool fullTank = true, saving = false;
+  bool fullTank = true, saving = false, detailed = false, calculating = false;
+  String calculateField = 'total';
   double number(TextEditingController value) =>
       double.tryParse(value.text.replaceAll(',', '.')) ?? 0;
+
+  @override
+  void initState() {
+    super.initState();
+    for (final controller in [liters, price, total]) {
+      controller.addListener(calculate);
+    }
+  }
+
+  void calculate() {
+    if (calculating || !detailed) return;
+    calculating = true;
+    final l = number(liters), p = number(price), t = number(total);
+    final result = switch (calculateField) {
+      'liters' => p > 0 && t > 0 ? t / p : 0,
+      'price' => l > 0 && t > 0 ? t / l : 0,
+      _ => l > 0 && p > 0 ? l * p : 0,
+    };
+    final target = switch (calculateField) {
+      'liters' => liters,
+      'price' => price,
+      _ => total,
+    };
+    final text = result > 0
+        ? result.toStringAsFixed(calculateField == 'price' ? 3 : 2)
+        : '';
+    if (target.text != text) target.text = text;
+    calculating = false;
+    setState(() {});
+  }
+
   @override
   void dispose() {
-    for (final c in [liters, price, station, km, note]) {
+    for (final c in [liters, price, total, station, km, note]) {
       c.dispose();
     }
     super.dispose();
@@ -498,13 +637,20 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
 
   Future<void> save() async {
     if (!formKey.currentState!.validate()) return;
+    if (number(total) <= 0 ||
+        (detailed && (number(liters) <= 0 || number(price) <= 0))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Completa i valori del rifornimento')),
+      );
+      return;
+    }
     setState(() => saving = true);
     try {
       await ref.read(vehiclesApiProvider).addFuel(widget.vehicleId, {
         'date': DateTime.now().millisecondsSinceEpoch,
-        'liters': number(liters),
-        'pricePerLiter': number(price),
-        'totalCost': number(liters) * number(price),
+        'liters': detailed ? number(liters) : 0.0,
+        'pricePerLiter': detailed ? number(price) : 0.0,
+        'totalCost': number(total),
         'stationName': station.text.trim(),
         'kmOdometer': int.tryParse(km.text),
         'isFullTank': fullTank ? 1 : 0,
@@ -531,17 +677,61 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _numberRequired(liters, 'Litri'),
-          _numberRequired(price, 'Prezzo al litro (€)'),
-          ListenableBuilder(
-            listenable: Listenable.merge([liters, price]),
-            builder: (_, __) => Card(
-              child: ListTile(
-                title: const Text('Totale calcolato'),
-                trailing: Text(_money(number(liters) * number(price))),
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(
+                value: false,
+                icon: Icon(Icons.flash_on),
+                label: Text('Semplificato'),
+              ),
+              ButtonSegment(
+                value: true,
+                icon: Icon(Icons.calculate),
+                label: Text('Dettagliato'),
+              ),
+            ],
+            selected: {detailed},
+            onSelectionChanged: (value) => setState(() {
+              detailed = value.first;
+              calculate();
+            }),
+          ),
+          const SizedBox(height: 16),
+          if (detailed) ...[
+            const Text('Scegli quale valore calcolare automaticamente:'),
+            const SizedBox(height: 8),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'total', label: Text('Totale')),
+                ButtonSegment(value: 'liters', label: Text('Litri')),
+                ButtonSegment(value: 'price', label: Text('€/L')),
+              ],
+              selected: {calculateField},
+              onSelectionChanged: (value) => setState(() {
+                calculateField = value.first;
+                calculate();
+              }),
+            ),
+            const SizedBox(height: 16),
+            _fuelNumber(liters, 'Litri', enabled: calculateField != 'liters'),
+            _fuelNumber(
+              price,
+              'Prezzo al litro (€)',
+              enabled: calculateField != 'price',
+            ),
+          ],
+          _fuelNumber(
+            total,
+            'Importo totale (€)',
+            enabled: !detailed || calculateField != 'total',
+          ),
+          if (!detailed)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Inserisci soltanto quanto hai speso. Usa la modalità dettagliata quando conosci litri e prezzo.',
               ),
             ),
-          ),
           _field(station, 'Distributore'),
           _field(km, 'Chilometraggio', keyboard: TextInputType.number),
           SwitchListTile(
@@ -562,6 +752,23 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
   );
 }
 
+Widget _fuelNumber(
+  TextEditingController controller,
+  String label, {
+  required bool enabled,
+}) => Padding(
+  padding: const EdgeInsets.only(bottom: 12),
+  child: TextFormField(
+    controller: controller,
+    enabled: enabled,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    decoration: InputDecoration(
+      labelText: '$label *',
+      suffixIcon: enabled ? null : const Icon(Icons.auto_awesome),
+    ),
+  ),
+);
+
 Widget _numberRequired(TextEditingController controller, String label) =>
     Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -575,6 +782,16 @@ Widget _numberRequired(TextEditingController controller, String label) =>
             : null,
       ),
     );
+
+String _categoryLabel(MaintenanceCategory category) => switch (category) {
+  MaintenanceCategory.tagliando => 'TAGLIANDO',
+  MaintenanceCategory.pneumatici => 'PNEUMATICI',
+  MaintenanceCategory.freni => 'FRENI',
+  MaintenanceCategory.elettrico => 'ELETTRICO',
+  MaintenanceCategory.batteria => 'BATTERIA',
+  MaintenanceCategory.carrozzeria => 'CARROZZERIA',
+  MaintenanceCategory.altro => 'ALTRO',
+};
 
 class AddMaintenanceScreen extends ConsumerStatefulWidget {
   const AddMaintenanceScreen({required this.vehicleId, super.key});
@@ -597,9 +814,90 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
       warranty = TextEditingController(),
       note = TextEditingController();
   MaintenanceCategory category = MaintenanceCategory.tagliando;
-  bool saving = false;
+  bool saving = false, lookingUp = false;
+  String? imageData;
   double amount() => double.tryParse(price.text.replaceAll(',', '.')) ?? 0;
   int qty() => int.tryParse(quantity.text) ?? 1;
+
+  Future<void> pickImage(ImageSource source) async {
+    final file = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 900,
+      imageQuality: 55,
+    );
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    final mime = file.mimeType ?? 'image/jpeg';
+    setState(() => imageData = 'data:$mime;base64,${base64Encode(bytes)}');
+  }
+
+  Future<void> scanBarcode() async {
+    final barcode = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+    );
+    if (barcode == null || barcode.isEmpty) return;
+    code.text = barcode;
+    await lookupBarcode(barcode);
+  }
+
+  Future<void> lookupBarcode(String barcode) async {
+    setState(() => lookingUp = true);
+    try {
+      final response = await Dio().get<Map<String, dynamic>>(
+        'https://world.openfoodfacts.org/api/v2/product/$barcode.json',
+        options: Options(headers: {'User-Agent': 'SpendWise/1.0'}),
+      );
+      final data = response.data;
+      final product = data?['product'];
+      if (data?['status'] == 1 && product is Map<String, dynamic>) {
+        final productName =
+            product['product_name_it'] ?? product['product_name'];
+        final brand = product['brands'];
+        if (productName is String && productName.isNotEmpty) {
+          item.text = productName;
+        }
+        if (product['image_url'] is String) {
+          imageData = product['image_url'] as String;
+        }
+        final details = [
+          if (brand is String && brand.isNotEmpty) 'Marca: $brand',
+          if (product['quantity'] is String) 'Formato: ${product['quantity']}',
+        ];
+        if (details.isNotEmpty) {
+          note.text =
+              '${details.join(' · ')}${note.text.isEmpty ? '' : '\n${note.text}'}';
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Prodotto trovato: dati compilati automaticamente'),
+            ),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Codice letto, ma prodotto non presente nel catalogo pubblico',
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Codice letto. Catalogo non raggiungibile: completa i dati manualmente',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => lookingUp = false);
+    }
+  }
+
   @override
   void dispose() {
     for (final c in [
@@ -636,6 +934,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
         'kmAtService': int.tryParse(km.text),
         'nextServiceKm': int.tryParse(nextKm.text),
         'warrantyMonths': int.tryParse(warranty.text),
+        'receiptUrl': imageData,
         'note': note.text.trim(),
       });
       ref.invalidate(maintenanceEntriesProvider(widget.vehicleId));
@@ -668,12 +967,55 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
             initialValue: category,
             decoration: const InputDecoration(labelText: 'Categoria'),
             items: MaintenanceCategory.values
-                .map((v) => DropdownMenuItem(value: v, child: Text(v.name)))
+                .map(
+                  (v) => DropdownMenuItem(
+                    value: v,
+                    child: Text(_categoryLabel(v)),
+                  ),
+                )
                 .toList(),
             onChanged: (v) => category = v!,
           ),
           const SizedBox(height: 12),
           _field(code, 'Codice / modello ricambio'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => pickImage(ImageSource.gallery),
+                icon: const Icon(Icons.photo_library),
+                label: const Text('Galleria'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => pickImage(ImageSource.camera),
+                icon: const Icon(Icons.photo_camera),
+                label: const Text('Scatta foto'),
+              ),
+              OutlinedButton.icon(
+                onPressed: lookingUp ? null : scanBarcode,
+                icon: lookingUp
+                    ? const SizedBox.square(
+                        dimension: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.qr_code_scanner),
+                label: const Text('Codice a barre'),
+              ),
+            ],
+          ),
+          if (imageData != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: SizedBox(
+                  width: 140,
+                  height: 100,
+                  child: _maintenanceImage(imageData),
+                ),
+              ),
+            ),
           _numberRequired(price, 'Prezzo unitario (€)'),
           _field(quantity, 'Quantità', keyboard: TextInputType.number),
           ListenableBuilder(
@@ -722,6 +1064,58 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
           ),
         ],
       ),
+    ),
+  );
+}
+
+class BarcodeScannerScreen extends StatefulWidget {
+  const BarcodeScannerScreen({super.key});
+  @override
+  State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
+}
+
+class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
+  bool detected = false;
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Inquadra il codice a barre')),
+    body: Stack(
+      fit: StackFit.expand,
+      children: [
+        MobileScanner(
+          onDetect: (capture) {
+            if (detected) return;
+            final value = capture.barcodes.firstOrNull?.rawValue;
+            if (value == null || value.isEmpty) return;
+            detected = true;
+            Navigator.of(context).pop(value);
+          },
+        ),
+        Center(
+          child: Container(
+            width: 300,
+            height: 150,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white, width: 3),
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
+        const Positioned(
+          left: 24,
+          right: 24,
+          bottom: 36,
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Mantieni il codice dentro il riquadro. Se il prodotto è nel catalogo pubblico, nome, marca e foto verranno compilati.',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      ],
     ),
   );
 }

@@ -9,6 +9,8 @@ import 'package:spendwise/presentation/categories/installments/installments_scre
 import 'package:spendwise/presentation/categories/subscriptions/subscriptions_screen.dart';
 import 'package:spendwise/presentation/categories/vehicle/vehicle_screen.dart';
 import 'package:spendwise/presentation/dashboard/dashboard_screen.dart';
+import 'package:spendwise/presentation/manual/manual_screen.dart';
+import 'package:spendwise/presentation/settings/settings_screen.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 
 final routerProvider = Provider<GoRouter>(
@@ -53,7 +55,7 @@ final routerProvider = Provider<GoRouter>(
             routes: [
               GoRoute(
                 path: 'add',
-                builder: (c, s) => const EntityFormScreen(title: 'Nuova spesa'),
+                builder: (c, s) => const AddDailyExpenseScreen(),
               ),
               GoRoute(
                 path: ':id',
@@ -70,8 +72,7 @@ final routerProvider = Provider<GoRouter>(
             routes: [
               GoRoute(
                 path: 'add',
-                builder: (c, s) =>
-                    const EntityFormScreen(title: 'Nuovo abbonamento'),
+                builder: (c, s) => const AddSubscriptionScreen(),
               ),
               GoRoute(
                 path: ':id',
@@ -129,6 +130,7 @@ final routerProvider = Provider<GoRouter>(
             path: '/analytics',
             builder: (c, s) => const AnalyticsScreen(),
           ),
+          GoRoute(path: '/manual', builder: (c, s) => const ManualScreen()),
           GoRoute(path: '/settings', builder: (c, s) => const SettingsScreen()),
         ],
       ),
@@ -222,23 +224,6 @@ class EntityFormScreen extends StatelessWidget {
         FilledButton(
           onPressed: () => context.pop(),
           child: const Text('Salva'),
-        ),
-      ],
-    ),
-  );
-}
-
-class SettingsScreen extends ConsumerWidget {
-  const SettingsScreen({super.key});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) => Scaffold(
-    appBar: AppBar(title: const Text('Impostazioni')),
-    body: ListView(
-      children: [
-        ListTile(
-          leading: const Icon(Icons.logout),
-          title: const Text('Esci'),
-          onTap: () => ref.read(authStateProvider.notifier).logout(),
         ),
       ],
     ),
