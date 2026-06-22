@@ -1,148 +1,53 @@
-name: Deploy SpendWise
+name: Test and deploy SpendWise
 
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
 
-env:
-  FLUTTER_VERSION: '3.22.0'
-  NODE_VERSION: '20'
+concurrency:
+  group: spendwise-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # ============================================================
-  # Job 1: Test Flutter
-  # ============================================================
-  test-flutter:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: 'stable'
+          flutter-version: '3.44.2'
+          channel: stable
           cache: true
-      
-      - name: Install dependencies
-        run: flutter pub get
-      
-      - name: Run code generation
-        run: flutter pub run build_runner build --delete-conflicting-outputs
-      
-      - name: Analyze
-        run: flutter analyze
-      
-      - name: Test
-        run: flutter test --coverage
-  
-  # ============================================================
-  # Job 2: Build e Deploy Web su Cloudflare Pages
-  # ============================================================
-  deploy-web:
-    needs: test-flutter
+      - run: flutter pub get
+      - run: dart run build_runner build
+      - run: flutter analyze
+      - run: flutter test
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
     steps:
       - uses: actions/checkout@v4
-      
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: 'stable'
+          flutter-version: '3.44.2'
+          channel: stable
           cache: true
-      
-      - name: Install dependencies
-        run: flutter pub get
-      
-      - name: Run code generation
-        run: flutter pub run build_runner build --delete-conflicting-outputs
-      
-      - name: Build web
-        run: |
-          flutter build web \
-            --release \
-            --web-renderer canvaskit \
-            --dart-define=API_URL=${{ secrets.API_URL }}
-      
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          projectName: spendwise
-          directory: build/web
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-  
-  # ============================================================
-  # Job 3: Deploy Worker su Cloudflare
-  # ============================================================
-  deploy-worker:
-    needs: test-flutter
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - uses: actions/checkout@v4
-      
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-      
-      - name: Install Worker dependencies
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: workers/package-lock.json
+      - run: flutter pub get
+      - run: dart run build_runner build
+      - run: flutter build web --release --no-wasm-dry-run
+      - run: npm ci
         working-directory: workers
-        run: npm install
-      
-      - name: Deploy Worker
-        uses: cloudflare/wrangler-action@v3
+      - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           workingDirectory: workers
           command: deploy --env production
-  
-  # ============================================================
-  # Job 4: Build APK Android (solo su tag v*)
-  # ============================================================
-  build-android:
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: 'stable'
-      
-      - name: Install dependencies
-        run: flutter pub get
-      
-      - name: Run code generation
-        run: flutter pub run build_runner build --delete-conflicting-outputs
-      
-      - name: Build APK
-        run: |
-          flutter build apk \
-            --release \
-            --dart-define=API_URL=${{ secrets.API_URL }}
-      
-      - name: Build App Bundle (Play Store)
-        run: |
-          flutter build appbundle \
-            --release \
-            --dart-define=API_URL=${{ secrets.API_URL }}
-      
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: spendwise-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-      
-      - name: Upload AAB artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: spendwise-aab
-          path: build/app/outputs/bundle/release/app-release.aab

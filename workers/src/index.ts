@@ -177,6 +177,8 @@ app.get('/api/sync/pull', async (c) => {
   }
   return c.json({ data: { changes, syncedAt: new Date().toISOString() }, error: null });
 });
-app.notFound((c) => c.json({ data: null, error: 'Endpoint non trovato' }, 404));
+app.notFound((c) => c.req.path.startsWith('/api/')
+  ? c.json({ data: null, error: 'Endpoint non trovato' }, 404)
+  : c.env.ASSETS.fetch(c.req.raw));
 
 export default app;

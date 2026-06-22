@@ -3,6 +3,7 @@ import { SignJWT, jwtVerify } from 'jose';
 
 export interface Env {
   DB: D1Database;
+  ASSETS: Fetcher;
   JWT_SECRET: string;
   JWT_ACCESS_EXPIRY: string;
   JWT_REFRESH_EXPIRY: string;

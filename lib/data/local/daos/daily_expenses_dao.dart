@@ -1,1 +1,9 @@
-import 'package:spendwise/data/local/daos/base_dao.dart';import 'package:spendwise/data/local/database.dart';class DailyExpensesDao extends BaseDao{DailyExpensesDao(AppDatabase db):super(db,'daily_expenses',syncColumn:true);Future<List<Map<String,Object?>>> byDate(DateTime from,DateTime to)=>between('date',from,to);}
+import 'package:spendwise/data/local/daos/base_dao.dart';
+import 'package:spendwise/data/local/database.dart';
+
+class DailyExpensesDao extends BaseDao {
+  DailyExpensesDao(AppDatabase db)
+    : super(db, 'daily_expenses', syncColumn: true);
+  Future<List<Map<String, Object?>>> byDate(DateTime from, DateTime to) =>
+      between('date', from, to);
+}

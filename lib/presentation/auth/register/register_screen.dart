@@ -2,9 +2,155 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
-class RegisterScreen extends ConsumerStatefulWidget { const RegisterScreen({super.key}); @override ConsumerState<RegisterScreen> createState()=>_RegisterState(); }
-class _RegisterState extends ConsumerState<RegisterScreen>{ final key=GlobalKey<FormState>(); final name=TextEditingController(),email=TextEditingController(),password=TextEditingController(),confirm=TextEditingController(); bool accepted=false;
- @override void dispose(){name.dispose();email.dispose();password.dispose();confirm.dispose();super.dispose();}
- Future<void> submit()async{if(!key.currentState!.validate()||!accepted){if(!accepted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Accetta termini e privacy')));return;}await ref.read(authStateProvider.notifier).register(email.text.trim(),password.text,name.text.trim());if(!mounted)return;final state=ref.read(authStateProvider);if(state is Authenticated)context.go('/dashboard');if(state case AuthError(:final message))ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(message)));}
- @override Widget build(BuildContext context){final loading=ref.watch(authStateProvider)is AuthLoading;String? pass(String?v)=>v!=null&&RegExp(r'^(?=.*[A-Z])(?=.*\d).{8,}$').hasMatch(v)?null:'Minimo 8 caratteri, una maiuscola e un numero';return Scaffold(appBar:AppBar(),body:Center(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:440),child:Card(child:Padding(padding:const EdgeInsets.all(28),child:Form(key:key,child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[Text('Crea il tuo account',style:Theme.of(context).textTheme.headlineMedium),const SizedBox(height:24),TextFormField(controller:name,decoration:const InputDecoration(labelText:'Nome completo'),validator:(v)=>(v?.trim().length??0)>1?null:'Nome obbligatorio'),const SizedBox(height:12),TextFormField(controller:email,decoration:const InputDecoration(labelText:'Email'),validator:(v)=>v!=null&&v.contains('@')?null:'Email non valida'),const SizedBox(height:12),TextFormField(controller:password,obscureText:true,decoration:const InputDecoration(labelText:'Password'),validator:pass,onChanged:(_)=>setState((){})),const SizedBox(height:8),LinearProgressIndicator(value:[password.text.length>=8,RegExp('[A-Z]').hasMatch(password.text),RegExp(r'\d').hasMatch(password.text)].where((e)=>e).length/3),const SizedBox(height:12),TextFormField(controller:confirm,obscureText:true,decoration:const InputDecoration(labelText:'Conferma password'),validator:(v)=>v==password.text?null:'Le password non coincidono'),CheckboxListTile(contentPadding:EdgeInsets.zero,value:accepted,onChanged:(v)=>setState(()=>accepted=v??false),title:const Text('Accetto termini e privacy policy'),controlAffinity:ListTileControlAffinity.leading),FilledButton(onPressed:loading?null:submit,child:loading?const CircularProgressIndicator():const Text('Crea account')),TextButton(onPressed:()=>context.go('/login'),child:const Text('Hai già un account? Accedi'))]))))))));}
+
+class RegisterScreen extends ConsumerStatefulWidget {
+  const RegisterScreen({super.key});
+  @override
+  ConsumerState<RegisterScreen> createState() => _RegisterState();
+}
+
+class _RegisterState extends ConsumerState<RegisterScreen> {
+  final key = GlobalKey<FormState>();
+  final name = TextEditingController(),
+      email = TextEditingController(),
+      password = TextEditingController(),
+      confirm = TextEditingController();
+  bool accepted = false;
+  @override
+  void dispose() {
+    name.dispose();
+    email.dispose();
+    password.dispose();
+    confirm.dispose();
+    super.dispose();
+  }
+
+  Future<void> submit() async {
+    if (!key.currentState!.validate() || !accepted) {
+      if (!accepted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Accetta termini e privacy')),
+        );
+      }
+      return;
+    }
+    await ref
+        .read(authStateProvider.notifier)
+        .register(email.text.trim(), password.text, name.text.trim());
+    if (!mounted) {
+      return;
+    }
+    final state = ref.read(authStateProvider);
+    if (state is Authenticated) {
+      context.go('/dashboard');
+    }
+    if (state case AuthError(:final message)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loading = ref.watch(authStateProvider) is AuthLoading;
+    String? pass(String? v) =>
+        v != null && RegExp(r'^(?=.*[A-Z])(?=.*\d).{8,}$').hasMatch(v)
+        ? null
+        : 'Minimo 8 caratteri, una maiuscola e un numero';
+    return Scaffold(
+      appBar: AppBar(),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Form(
+                  key: key,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Crea il tuo account',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: 24),
+                      TextFormField(
+                        controller: name,
+                        decoration: const InputDecoration(
+                          labelText: 'Nome completo',
+                        ),
+                        validator: (v) => (v?.trim().length ?? 0) > 1
+                            ? null
+                            : 'Nome obbligatorio',
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: email,
+                        decoration: const InputDecoration(labelText: 'Email'),
+                        validator: (v) => v != null && v.contains('@')
+                            ? null
+                            : 'Email non valida',
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: password,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Password',
+                        ),
+                        validator: pass,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(
+                        value:
+                            [
+                              password.text.length >= 8,
+                              RegExp('[A-Z]').hasMatch(password.text),
+                              RegExp(r'\d').hasMatch(password.text),
+                            ].where((e) => e).length /
+                            3,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: confirm,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Conferma password',
+                        ),
+                        validator: (v) => v == password.text
+                            ? null
+                            : 'Le password non coincidono',
+                      ),
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        value: accepted,
+                        onChanged: (v) => setState(() => accepted = v ?? false),
+                        title: const Text('Accetto termini e privacy policy'),
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                      FilledButton(
+                        onPressed: loading ? null : submit,
+                        child: loading
+                            ? const CircularProgressIndicator()
+                            : const Text('Crea account'),
+                      ),
+                      TextButton(
+                        onPressed: () => context.go('/login'),
+                        child: const Text('Hai già un account? Accedi'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

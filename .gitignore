@@ -9,3 +9,7 @@ workers/.wrangler/
 workers/.dev.vars
 .env
 coverage/
+.tooling/
+.idea/
+*.iml
+lib/l10n/app_localizations*.dart

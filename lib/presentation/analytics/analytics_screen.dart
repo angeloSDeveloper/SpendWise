@@ -1,2 +1,114 @@
-import 'package:fl_chart/fl_chart.dart';import 'package:flutter/material.dart';import 'package:spendwise/core/constants/app_constants.dart';
-class AnalyticsScreen extends StatefulWidget{const AnalyticsScreen({super.key});@override State<AnalyticsScreen> createState()=>_AnalyticsState();}class _AnalyticsState extends State<AnalyticsScreen>{int period=0;@override Widget build(BuildContext context){final colors=[AppColors.daily,AppColors.subscription,AppColors.installment,AppColors.vehicle];return Scaffold(appBar:AppBar(title:const Text('Analisi')),body:ListView(padding:const EdgeInsets.all(16),children:[SegmentedButton<int>(segments:const [ButtonSegment(value:0,label:Text('1 mese')),ButtonSegment(value:1,label:Text('3 mesi')),ButtonSegment(value:2,label:Text('6 mesi')),ButtonSegment(value:3,label:Text('Anno'))],selected:{period},onSelectionChanged:(v)=>setState(()=>period=v.first)),const SizedBox(height:20),Text('Distribuzione per categoria',style:Theme.of(context).textTheme.titleLarge),SizedBox(height:240,child:PieChart(PieChartData(centerSpaceRadius:55,sections:List.generate(4,(i)=>PieChartSectionData(value:1,color:colors[i],title:'0%')))),const SizedBox(height:24),Text('Andamento mensile',style:Theme.of(context).textTheme.titleLarge),SizedBox(height:220,child:BarChart(BarChartData(barGroups:List.generate(6,(i)=>BarChartGroupData(x:i,barRods:[BarChartRodData(toY:0.1,color:colors[i%4])])))),const SizedBox(height:20),...['Spese quotidiane','Abbonamenti','Rateizzazioni','Veicolo'].asMap().entries.map((e)=>Card(child:ListTile(leading:CircleAvatar(backgroundColor:colors[e.key]),title:Text(e.value),subtitle:const Text('Media mensile € 0,00'),trailing:const Text('€ 0,00')))),const SizedBox(height:20),Text('Top 5 spese singole',style:Theme.of(context).textTheme.titleLarge),const Card(child:ListTile(title:Text('Nessun dato disponibile'))),const SizedBox(height:20),Text('Veicolo',style:Theme.of(context).textTheme.titleLarge),const Card(child:ListTile(leading:Icon(Icons.directions_car),title:Text('Consumo medio'),trailing:Text('— km/L')))]));}}
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:spendwise/core/constants/app_constants.dart';
+
+class AnalyticsScreen extends StatefulWidget {
+  const AnalyticsScreen({super.key});
+  @override
+  State<AnalyticsScreen> createState() => _AnalyticsState();
+}
+
+class _AnalyticsState extends State<AnalyticsScreen> {
+  int period = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = [
+      AppColors.daily,
+      AppColors.subscription,
+      AppColors.installment,
+      AppColors.vehicle,
+    ];
+    return Scaffold(
+      appBar: AppBar(title: const Text('Analisi')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          SegmentedButton<int>(
+            segments: const [
+              ButtonSegment(value: 0, label: Text('1 mese')),
+              ButtonSegment(value: 1, label: Text('3 mesi')),
+              ButtonSegment(value: 2, label: Text('6 mesi')),
+              ButtonSegment(value: 3, label: Text('Anno')),
+            ],
+            selected: {period},
+            onSelectionChanged: (value) => setState(() => period = value.first),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Distribuzione per categoria',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          SizedBox(
+            height: 240,
+            child: PieChart(
+              PieChartData(
+                centerSpaceRadius: 55,
+                sections: List.generate(
+                  4,
+                  (index) => PieChartSectionData(
+                    value: 1,
+                    color: colors[index],
+                    title: '0%',
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Andamento mensile',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          SizedBox(
+            height: 220,
+            child: BarChart(
+              BarChartData(
+                barGroups: List.generate(
+                  6,
+                  (index) => BarChartGroupData(
+                    x: index,
+                    barRods: [
+                      BarChartRodData(toY: .1, color: colors[index % 4]),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          ...[
+            'Spese quotidiane',
+            'Abbonamenti',
+            'Rateizzazioni',
+            'Veicolo',
+          ].asMap().entries.map(
+            (entry) => Card(
+              child: ListTile(
+                leading: CircleAvatar(backgroundColor: colors[entry.key]),
+                title: Text(entry.value),
+                subtitle: const Text('Media mensile € 0,00'),
+                trailing: const Text('€ 0,00'),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Top 5 spese singole',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const Card(child: ListTile(title: Text('Nessun dato disponibile'))),
+          const SizedBox(height: 20),
+          Text('Veicolo', style: Theme.of(context).textTheme.titleLarge),
+          const Card(
+            child: ListTile(
+              leading: Icon(Icons.directions_car),
+              title: Text('Consumo medio'),
+              trailing: Text('— km/L'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

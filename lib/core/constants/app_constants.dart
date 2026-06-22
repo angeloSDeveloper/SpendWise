@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 abstract final class AppConstants {
-  static const apiBaseUrl = String.fromEnvironment('API_URL', defaultValue: 'https://spendwise.lopreteangelo97.workers.dev/api');
+  static const apiBaseUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'https://spendwise.lopreteangelo97.workers.dev/api',
+  );
   static const appName = 'SpendWise';
   static const appVersion = '1.0.0';
   static const syncIntervalSeconds = 30;
@@ -11,7 +14,15 @@ abstract final class AppConstants {
   static const kAccessTokenKey = 'access_token';
   static const kRefreshTokenKey = 'refresh_token';
   static const kFuelTypes = ['gasoline', 'diesel', 'electric', 'hybrid', 'lpg'];
-  static const kMaintenanceCategories = ['tagliando', 'pneumatici', 'freni', 'elettrico', 'batteria', 'carrozzeria', 'altro'];
+  static const kMaintenanceCategories = [
+    'tagliando',
+    'pneumatici',
+    'freni',
+    'elettrico',
+    'batteria',
+    'carrozzeria',
+    'altro',
+  ];
 }
 
 abstract final class AppColors {

@@ -24,3 +24,9 @@ vars = { ENVIRONMENT = "production", JWT_ACCESS_EXPIRY = "900", JWT_REFRESH_EXPI
 binding = "DB"
 database_name = "spendwise-db"
 database_id = "935a809b-2e0c-49d7-9413-3765c1c2d085"
+
+[env.production.assets]
+directory = "../build/web"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = true
