@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart' show Dio, Options;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -33,6 +34,68 @@ final maintenanceEntriesProvider = FutureProvider.autoDispose
 
 String _money(num value) =>
     NumberFormat.currency(locale: 'it_IT', symbol: '€').format(value);
+
+class _DesktopHorizontalScroll extends StatefulWidget {
+  const _DesktopHorizontalScroll({required this.child});
+  final Widget child;
+
+  @override
+  State<_DesktopHorizontalScroll> createState() =>
+      _DesktopHorizontalScrollState();
+}
+
+class _DesktopHorizontalScrollState extends State<_DesktopHorizontalScroll> {
+  final controller = ScrollController();
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  void _wheel(PointerSignalEvent signal) {
+    if (signal is! PointerScrollEvent || !controller.hasClients) return;
+    GestureBinding.instance.pointerSignalResolver.register(signal, (_) {
+      final delta = signal.scrollDelta.dy != 0
+          ? signal.scrollDelta.dy
+          : signal.scrollDelta.dx;
+      controller.jumpTo(
+        (controller.offset + delta).clamp(
+          controller.position.minScrollExtent,
+          controller.position.maxScrollExtent,
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    onPointerSignal: _wheel,
+    child: ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(
+        dragDevices: const {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.stylus,
+          PointerDeviceKind.trackpad,
+        },
+      ),
+      child: Scrollbar(
+        controller: controller,
+        thumbVisibility: true,
+        trackVisibility: true,
+        scrollbarOrientation: ScrollbarOrientation.bottom,
+        child: SingleChildScrollView(
+          controller: controller,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.only(bottom: 12),
+          child: widget.child,
+        ),
+      ),
+    ),
+  );
+}
+
 String _date(DateTime value) =>
     DateFormat('dd/MM/yyyy').format(value.toLocal());
 
@@ -512,8 +575,7 @@ class _MaintenanceRegister extends StatelessWidget {
             ],
           ),
         ),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
+        _DesktopHorizontalScroll(
           child: DataTable(
             showCheckboxColumn: false,
             headingRowColor: WidgetStatePropertyAll(
@@ -805,10 +867,14 @@ class _MaintenanceDetailPanel extends ConsumerWidget {
               children: [
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final width = (constraints.maxWidth - 10) / 2;
+                    final columns = constraints.maxWidth >= 800 ? 4 : 2;
+                    const spacing = 10.0;
+                    final width =
+                        (constraints.maxWidth - spacing * (columns - 1)) /
+                        columns;
                     return Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
+                      spacing: spacing,
+                      runSpacing: spacing,
                       children: [
                         _InfoBox(
                           width: width,
@@ -914,18 +980,21 @@ class _InfoBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     width: width,
+    height: 78,
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
     decoration: BoxDecoration(
       color: Theme.of(context).colorScheme.surfaceContainer,
       borderRadius: BorderRadius.circular(12),
     ),
     child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(icon),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(label, style: Theme.of(context).textTheme.labelSmall),
               const SizedBox(height: 4),
@@ -1305,8 +1374,7 @@ class _MaintenanceItemsTable extends StatelessWidget {
               ],
             ),
           ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          _DesktopHorizontalScroll(
             child: DataTable(
               headingRowHeight: 40,
               dataRowMinHeight: 42,
