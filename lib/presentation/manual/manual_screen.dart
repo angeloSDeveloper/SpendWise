@@ -21,7 +21,7 @@ class ManualScreen extends StatelessWidget {
           title: 'Veicoli',
           icon: Icons.directions_car,
           text:
-              'Aggiungi il veicolo, aprilo e usa le schede Rifornimenti e Manutenzione. Nei ricambi puoi allegare una foto o leggere il codice a barre.',
+              'Aggiungi il veicolo e usa Rifornimenti, Manutenzione e Accessori. Per ricambi e accessori puoi allegare foto, leggere codici a barre e conservare venditore e garanzia.',
         ),
         _Guide(
           title: 'Spese quotidiane',

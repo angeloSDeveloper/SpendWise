@@ -44,6 +44,9 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
   final maintenanceLists = await Future.wait(
     vehicles.map((v) => vehicleApi.maintenance(v.id as String)),
   );
+  final accessoryLists = await Future.wait(
+    vehicles.map((v) => vehicleApi.accessories(v.id as String)),
+  );
   final monthTotals = List<double>.filled(6, 0);
   int monthIndex(DateTime date) =>
       (date.year - from.year) * 12 + date.month - from.month;
@@ -62,6 +65,15 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
     }
   }
   for (final list in maintenanceLists) {
+    for (final entry in list) {
+      final index = monthIndex(entry.date);
+      if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;
+      if (entry.date.year == now.year && entry.date.month == now.month) {
+        vehicleMonth += entry.totalCost;
+      }
+    }
+  }
+  for (final list in accessoryLists) {
     for (final entry in list) {
       final index = monthIndex(entry.date);
       if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;

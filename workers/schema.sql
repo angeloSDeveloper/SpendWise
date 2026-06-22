@@ -167,6 +167,32 @@ CREATE TABLE IF NOT EXISTS vehicle_maintenance (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS vehicle_accessories (
+  id TEXT PRIMARY KEY,
+  vehicle_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  date INTEGER NOT NULL,
+  item_name TEXT NOT NULL,
+  part_code TEXT,
+  category TEXT DEFAULT 'altro',
+  price REAL NOT NULL,
+  quantity INTEGER DEFAULT 1,
+  total_cost REAL NOT NULL,
+  shop_name TEXT,
+  shop_url TEXT,
+  km_at_service INTEGER,
+  next_service_km INTEGER,
+  next_service_date INTEGER,
+  warranty_months INTEGER,
+  receipt_url TEXT,
+  items_json TEXT,
+  note TEXT,
+  created_at INTEGER NOT NULL,
+  synced INTEGER DEFAULT 0,
+  FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS sync_queue (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -186,3 +212,4 @@ CREATE INDEX IF NOT EXISTS idx_installment_plans_user ON installment_plans(user_
 CREATE INDEX IF NOT EXISTS idx_vehicles_user ON vehicles(user_id);
 CREATE INDEX IF NOT EXISTS idx_fuel_entries_vehicle_date ON fuel_entries(vehicle_id, date);
 CREATE INDEX IF NOT EXISTS idx_vehicle_maintenance_vehicle ON vehicle_maintenance(vehicle_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_accessories_vehicle ON vehicle_accessories(vehicle_id);

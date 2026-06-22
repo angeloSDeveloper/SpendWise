@@ -248,6 +248,21 @@ abstract class VehiclesApiClient {
   );
   @DELETE('/vehicles/{id}/maintenance/{entryId}')
   Future<void> deleteMaintenance(@Path() String id, @Path() String entryId);
+  @GET('/vehicles/{id}/accessories')
+  Future<List<VehicleMaintenance>> accessories(@Path() String id);
+  @POST('/vehicles/{id}/accessories')
+  Future<VehicleMaintenance> addAccessory(
+    @Path() String id,
+    @Body() Map<String, dynamic> body,
+  );
+  @PUT('/vehicles/{id}/accessories/{entryId}')
+  Future<dynamic> updateAccessory(
+    @Path() String id,
+    @Path() String entryId,
+    @Body() Map<String, dynamic> body,
+  );
+  @DELETE('/vehicles/{id}/accessories/{entryId}')
+  Future<void> deleteAccessory(@Path() String id, @Path() String entryId);
 }
 
 @RestApi()

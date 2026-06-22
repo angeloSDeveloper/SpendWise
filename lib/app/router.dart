@@ -122,6 +122,11 @@ final routerProvider = Provider<GoRouter>(
                       vehicleId: s.pathParameters['id']!,
                     ),
                   ),
+                  GoRoute(
+                    path: 'accessories/add',
+                    builder: (c, s) =>
+                        AddAccessoryScreen(vehicleId: s.pathParameters['id']!),
+                  ),
                 ],
               ),
             ],

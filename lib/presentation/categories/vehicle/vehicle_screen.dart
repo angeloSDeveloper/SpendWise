@@ -31,6 +31,10 @@ final maintenanceEntriesProvider = FutureProvider.autoDispose
     .family<List<VehicleMaintenance>, String>(
       (ref, id) => ref.watch(vehiclesApiProvider).maintenance(id),
     );
+final accessoryEntriesProvider = FutureProvider.autoDispose
+    .family<List<VehicleMaintenance>, String>(
+      (ref, id) => ref.watch(vehiclesApiProvider).accessories(id),
+    );
 
 String _money(num value) =>
     NumberFormat.currency(locale: 'it_IT', symbol: '€').format(value);
@@ -354,7 +358,7 @@ class VehicleDetailScreen extends ConsumerStatefulWidget {
 
 class _VehicleDetailState extends ConsumerState<VehicleDetailScreen>
     with SingleTickerProviderStateMixin {
-  late final TabController tabs = TabController(length: 2, vsync: this)
+  late final TabController tabs = TabController(length: 3, vsync: this)
     ..addListener(() => setState(() {}));
   @override
   void dispose() {
@@ -377,6 +381,7 @@ class _VehicleDetailState extends ConsumerState<VehicleDetailScreen>
           tabs: const [
             Tab(icon: Icon(Icons.local_gas_station), text: 'Rifornimenti'),
             Tab(icon: Icon(Icons.build), text: 'Manutenzione'),
+            Tab(icon: Icon(Icons.auto_awesome), text: 'Accessori'),
           ],
         ),
       ),
@@ -385,15 +390,26 @@ class _VehicleDetailState extends ConsumerState<VehicleDetailScreen>
         children: [
           _FuelTab(id: widget.vehicleId),
           _MaintenanceTab(id: widget.vehicleId),
+          _AccessoriesTab(id: widget.vehicleId),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          final type = tabs.index == 0 ? 'fuel' : 'maintenance';
+          final type = tabs.index == 0
+              ? 'fuel'
+              : tabs.index == 1
+              ? 'maintenance'
+              : 'accessories';
           await context.push('/vehicle/${widget.vehicleId}/$type/add');
         },
         icon: const Icon(Icons.add),
-        label: Text(tabs.index == 0 ? 'Rifornimento' : 'Manutenzione'),
+        label: Text(
+          tabs.index == 0
+              ? 'Rifornimento'
+              : tabs.index == 1
+              ? 'Manutenzione'
+              : 'Accessorio',
+        ),
       ),
     );
   }
@@ -524,6 +540,239 @@ class _MaintenanceTab extends ConsumerWidget {
           ),
         ),
       );
+}
+
+Map<String, dynamic> _accessoryMeta(VehicleMaintenance item) {
+  try {
+    final decoded = jsonDecode(item.itemsJson ?? '');
+    return decoded is Map<String, dynamic> ? decoded : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+String _accessoryCategoryLabel(String? value) => switch (value) {
+  'estetica' => 'Estetica',
+  'interni' => 'Interni',
+  'elettronica' => 'Elettronica',
+  'ruote' => 'Ruote e cerchi',
+  'sicurezza' => 'Sicurezza',
+  'pulizia' => 'Pulizia e cura',
+  _ => 'Altro',
+};
+
+String _accessoryStatusLabel(String? value) => switch (value) {
+  'installed' => 'Installato',
+  'removed' => 'Rimosso',
+  _ => 'Acquistato',
+};
+
+class _AccessoriesTab extends ConsumerWidget {
+  const _AccessoriesTab({required this.id});
+  final String id;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => ref
+      .watch(accessoryEntriesProvider(id))
+      .when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Text('Errore: $error')),
+        data: (items) => RefreshIndicator(
+          onRefresh: () => ref.refresh(accessoryEntriesProvider(id).future),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _summary(
+                      'Totale accessori',
+                      _money(
+                        items.fold<double>(
+                          0,
+                          (sum, item) => sum + item.totalCost,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: _summary('Accessori registrati', '${items.length}'),
+                  ),
+                ],
+              ),
+              if (items.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(top: 48),
+                  child: Center(child: Text('Nessun accessorio registrato')),
+                ),
+              for (final item in items) _AccessoryCard(item: item),
+            ],
+          ),
+        ),
+      );
+}
+
+class _AccessoryCard extends ConsumerWidget {
+  const _AccessoryCard({required this.item});
+  final VehicleMaintenance item;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final meta = _accessoryMeta(item);
+    return Card(
+      child: ListTile(
+        leading: _maintenanceImage(item.receiptUrl),
+        title: Text(item.itemName),
+        subtitle: Text(
+          [
+            _accessoryCategoryLabel(meta['accessoryCategory'] as String?),
+            _date(item.date),
+            _accessoryStatusLabel(meta['status'] as String?),
+            if (item.shopName?.isNotEmpty == true) item.shopName!,
+          ].join(' · '),
+        ),
+        trailing: Text(
+          _money(item.totalCost),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        onTap: () => _showAccessoryDetails(context, ref, item),
+      ),
+    );
+  }
+}
+
+Future<void> _showAccessoryDetails(
+  BuildContext context,
+  WidgetRef ref,
+  VehicleMaintenance item,
+) async {
+  final meta = _accessoryMeta(item);
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (sheetContext) => SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    item.itemName,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Modifica',
+                  icon: const Icon(Icons.edit),
+                  onPressed: () async {
+                    Navigator.pop(sheetContext);
+                    final changed = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => AddAccessoryScreen(
+                          vehicleId: item.vehicleId,
+                          existing: item,
+                        ),
+                      ),
+                    );
+                    if (changed == true) {
+                      ref.invalidate(accessoryEntriesProvider(item.vehicleId));
+                    }
+                  },
+                ),
+                IconButton(
+                  tooltip: 'Elimina',
+                  color: Theme.of(context).colorScheme.error,
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text('Eliminare questo accessorio?'),
+                        content: Text('“${item.itemName}” verrà eliminato.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.pop(dialogContext, false),
+                            child: const Text('ANNULLA'),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(dialogContext, true),
+                            child: const Text('ELIMINA'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed != true) return;
+                    await ref
+                        .read(vehiclesApiProvider)
+                        .deleteAccessory(item.vehicleId, item.id);
+                    ref.invalidate(accessoryEntriesProvider(item.vehicleId));
+                    if (sheetContext.mounted) Navigator.pop(sheetContext);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (item.receiptUrl?.isNotEmpty == true)
+              SizedBox(
+                height: 220,
+                child: _maintenanceImage(item.receiptUrl, height: 210),
+              ),
+            _AccessoryDetailRow(
+              label: 'Categoria',
+              value: _accessoryCategoryLabel(
+                meta['accessoryCategory'] as String?,
+              ),
+            ),
+            _AccessoryDetailRow(
+              label: 'Stato',
+              value: _accessoryStatusLabel(meta['status'] as String?),
+            ),
+            _AccessoryDetailRow(
+              label: 'Data acquisto',
+              value: _date(item.date),
+            ),
+            if (meta['installationDate'] is String)
+              _AccessoryDetailRow(
+                label: 'Data installazione',
+                value: DateFormat(
+                  'dd/MM/yyyy',
+                ).format(DateTime.parse(meta['installationDate'] as String)),
+              ),
+            _AccessoryDetailRow(
+              label: 'Marca / modello / codice',
+              value: item.partCode ?? 'Non indicato',
+            ),
+            _AccessoryDetailRow(label: 'Quantità', value: '${item.quantity}'),
+            _AccessoryDetailRow(
+              label: 'Prezzo complessivo',
+              value: _money(item.totalCost),
+            ),
+            if (item.shopName?.isNotEmpty == true)
+              _AccessoryDetailRow(label: 'Venditore', value: item.shopName!),
+            if (item.note?.isNotEmpty == true)
+              _AccessoryDetailRow(label: 'Note', value: item.note!),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _AccessoryDetailRow extends StatelessWidget {
+  const _AccessoryDetailRow({required this.label, required this.value});
+  final String label, value;
+  @override
+  Widget build(BuildContext context) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    title: Text(label, style: Theme.of(context).textTheme.labelMedium),
+    subtitle: Text(value, style: Theme.of(context).textTheme.titleMedium),
+  );
 }
 
 class _MaintenanceCard extends StatelessWidget {
@@ -1087,6 +1336,451 @@ Widget _maintenanceImage(
       height: height,
       fit: BoxFit.cover,
       errorBuilder: (_, __, ___) => const Icon(Icons.build_circle_outlined),
+    ),
+  );
+}
+
+class AddAccessoryScreen extends ConsumerStatefulWidget {
+  const AddAccessoryScreen({required this.vehicleId, this.existing, super.key});
+  final String vehicleId;
+  final VehicleMaintenance? existing;
+
+  @override
+  ConsumerState<AddAccessoryScreen> createState() => _AddAccessoryScreenState();
+}
+
+class _AddAccessoryScreenState extends ConsumerState<AddAccessoryScreen> {
+  final formKey = GlobalKey<FormState>();
+  final name = TextEditingController(),
+      model = TextEditingController(),
+      quantity = TextEditingController(text: '1'),
+      price = TextEditingController(),
+      installationCost = TextEditingController(),
+      seller = TextEditingController(),
+      link = TextEditingController(),
+      km = TextEditingController(),
+      warranty = TextEditingController(),
+      note = TextEditingController();
+  DateTime purchaseDate = DateTime.now();
+  DateTime? installationDate;
+  String category = 'estetica';
+  String status = 'purchased';
+  String? imageData;
+  bool saving = false;
+
+  double get total =>
+      (double.tryParse(price.text.replaceAll(',', '.')) ?? 0) *
+          (int.tryParse(quantity.text) ?? 0) +
+      (double.tryParse(installationCost.text.replaceAll(',', '.')) ?? 0);
+
+  @override
+  void initState() {
+    super.initState();
+    final item = widget.existing;
+    if (item != null) {
+      final meta = _accessoryMeta(item);
+      name.text = item.itemName;
+      model.text = item.partCode ?? '';
+      quantity.text = '${item.quantity}';
+      price.text = item.price.toStringAsFixed(2);
+      installationCost.text =
+          ((meta['installationCost'] as num?)?.toDouble() ?? 0) > 0
+          ? (meta['installationCost'] as num).toStringAsFixed(2)
+          : '';
+      seller.text = item.shopName ?? '';
+      link.text = item.shopUrl ?? '';
+      km.text = item.kmAtService?.toString() ?? '';
+      warranty.text = item.warrantyMonths?.toString() ?? '';
+      note.text = item.note ?? '';
+      purchaseDate = item.date.toLocal();
+      category = meta['accessoryCategory'] as String? ?? 'altro';
+      status = meta['status'] as String? ?? 'purchased';
+      installationDate = meta['installationDate'] is String
+          ? DateTime.tryParse(meta['installationDate'] as String)
+          : null;
+      imageData = item.receiptUrl;
+    }
+    for (final controller in [price, quantity, installationCost]) {
+      controller.addListener(_refresh);
+    }
+  }
+
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
+  Future<DateTime?> _pickDate(DateTime initial) => showDatePicker(
+    context: context,
+    locale: const Locale('it', 'IT'),
+    initialDate: initial,
+    firstDate: DateTime(1900),
+    lastDate: DateTime.now().add(const Duration(days: 3650)),
+    helpText: 'SELEZIONA LA DATA',
+    cancelText: 'ANNULLA',
+    confirmText: 'CONFERMA',
+  );
+
+  Future<void> _pickImage(ImageSource source) async {
+    final file = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 900,
+      imageQuality: 55,
+    );
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    final mime = file.mimeType ?? 'image/jpeg';
+    setState(() => imageData = 'data:$mime;base64,${base64Encode(bytes)}');
+  }
+
+  Future<void> _scan() async {
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+    );
+    if (code != null && code.isNotEmpty) model.text = code;
+  }
+
+  Future<void> _save() async {
+    if (!formKey.currentState!.validate()) return;
+    setState(() => saving = true);
+    try {
+      final unitPrice = double.parse(price.text.replaceAll(',', '.'));
+      final body = <String, dynamic>{
+        'date': purchaseDate.millisecondsSinceEpoch,
+        'itemName': name.text.trim(),
+        'partCode': model.text.trim(),
+        'category': 'altro',
+        'price': unitPrice,
+        'quantity': int.parse(quantity.text),
+        'totalCost': total,
+        'shopName': seller.text.trim(),
+        'shopUrl': link.text.trim(),
+        'kmAtService': int.tryParse(km.text),
+        'warrantyMonths': int.tryParse(warranty.text),
+        'receiptUrl': imageData,
+        'itemsJson': jsonEncode({
+          'accessoryCategory': category,
+          'status': status,
+          'installationDate': installationDate?.toIso8601String(),
+          'installationCost':
+              double.tryParse(installationCost.text.replaceAll(',', '.')) ?? 0,
+        }),
+        'note': note.text.trim(),
+      };
+      final api = ref.read(vehiclesApiProvider);
+      if (widget.existing == null) {
+        await api.addAccessory(widget.vehicleId, body);
+      } else {
+        await api.updateAccessory(widget.vehicleId, widget.existing!.id, body);
+      }
+      ref.invalidate(accessoryEntriesProvider(widget.vehicleId));
+      if (mounted) Navigator.pop(context, true);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Salvataggio non riuscito: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in [
+      name,
+      model,
+      quantity,
+      price,
+      installationCost,
+      seller,
+      link,
+      km,
+      warranty,
+      note,
+    ]) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: Text(
+        widget.existing == null ? 'Nuovo accessorio' : 'Modifica accessorio',
+      ),
+    ),
+    body: Form(
+      key: formKey,
+      child: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          TextFormField(
+            controller: name,
+            decoration: const InputDecoration(
+              labelText: 'Nome accessorio *',
+              hintText: 'Es. Alettone, cerchi in lega, dashcam',
+              prefixIcon: Icon(Icons.auto_awesome),
+            ),
+            validator: (value) => value == null || value.trim().isEmpty
+                ? 'Inserisci un nome'
+                : null,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: category,
+                  decoration: const InputDecoration(labelText: 'Categoria'),
+                  items:
+                      const {
+                            'estetica': 'Estetica',
+                            'interni': 'Interni',
+                            'elettronica': 'Elettronica',
+                            'ruote': 'Ruote e cerchi',
+                            'sicurezza': 'Sicurezza',
+                            'pulizia': 'Pulizia e cura',
+                            'altro': 'Altro',
+                          }.entries
+                          .map(
+                            (entry) => DropdownMenuItem(
+                              value: entry.key,
+                              child: Text(entry.value),
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (value) => setState(() => category = value!),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: status,
+                  decoration: const InputDecoration(labelText: 'Stato'),
+                  items:
+                      const {
+                            'purchased': 'Acquistato',
+                            'installed': 'Installato',
+                            'removed': 'Rimosso',
+                          }.entries
+                          .map(
+                            (entry) => DropdownMenuItem(
+                              value: entry.key,
+                              child: Text(entry.value),
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (value) => setState(() => status = value!),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: model,
+            decoration: const InputDecoration(
+              labelText: 'Marca / modello / codice',
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _pickImage(ImageSource.gallery),
+                icon: const Icon(Icons.photo_library),
+                label: const Text('Galleria'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _pickImage(ImageSource.camera),
+                icon: const Icon(Icons.photo_camera),
+                label: const Text('Scatta foto'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _scan,
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('Codice a barre'),
+              ),
+            ],
+          ),
+          if (imageData != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(height: 150, child: _maintenanceImage(imageData)),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: quantity,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Quantità *'),
+                  validator: (value) => (int.tryParse(value ?? '') ?? 0) < 1
+                      ? 'Non valida'
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: price,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Prezzo unitario (€) *',
+                  ),
+                  validator: (value) =>
+                      double.tryParse((value ?? '').replaceAll(',', '.')) ==
+                          null
+                      ? 'Non valido'
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: installationCost,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(labelText: 'Montaggio (€)'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              title: const Text('Totale acquisto e montaggio'),
+              trailing: Text(
+                _money(total),
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _AccessoryDateField(
+                  label: 'Data acquisto',
+                  date: purchaseDate,
+                  onTap: () async {
+                    final value = await _pickDate(purchaseDate);
+                    if (value != null) setState(() => purchaseDate = value);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _AccessoryDateField(
+                  label: 'Data installazione',
+                  date: installationDate,
+                  onTap: () async {
+                    final value = await _pickDate(
+                      installationDate ?? purchaseDate,
+                    );
+                    if (value != null) setState(() => installationDate = value);
+                  },
+                  onClear: installationDate == null
+                      ? null
+                      : () => setState(() => installationDate = null),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: seller,
+            decoration: const InputDecoration(labelText: 'Venditore / negozio'),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: link,
+            keyboardType: TextInputType.url,
+            decoration: const InputDecoration(
+              labelText: 'Link del prodotto',
+              hintText: 'https://…',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: km,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Km all’installazione',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: warranty,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Garanzia (mesi)',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: note,
+            minLines: 2,
+            maxLines: 5,
+            decoration: const InputDecoration(labelText: 'Note'),
+          ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: saving ? null : _save,
+            icon: saving
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.save),
+            label: const Text('SALVA ACCESSORIO'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _AccessoryDateField extends StatelessWidget {
+  const _AccessoryDateField({
+    required this.label,
+    required this.date,
+    required this.onTap,
+    this.onClear,
+  });
+  final String label;
+  final DateTime? date;
+  final VoidCallback onTap;
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    child: InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: const Icon(Icons.calendar_month),
+        suffixIcon: onClear == null
+            ? const Icon(Icons.arrow_drop_down)
+            : IconButton(onPressed: onClear, icon: const Icon(Icons.clear)),
+      ),
+      child: Text(
+        date == null ? 'Non indicata' : DateFormat('dd/MM/yyyy').format(date!),
+      ),
     ),
   );
 }

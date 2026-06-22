@@ -82,10 +82,10 @@ for (const [path, config] of Object.entries(resources)) {
   });
 }
 
-const childResource = (kind: 'fuel' | 'maintenance') => kind === 'fuel'
+const childResource = (kind: 'fuel' | 'maintenance' | 'accessories') => kind === 'fuel'
   ? { table: 'fuel_entries', fields: ['date','liters','price_per_liter','total_cost','station_name','km_odometer','is_full_tank','note'] }
-  : { table: 'vehicle_maintenance', fields: ['date','item_name','part_code','category','price','quantity','total_cost','shop_name','shop_url','km_at_service','next_service_km','next_service_date','warranty_months','receipt_url','items_json','note'] };
-for (const kind of ['fuel','maintenance'] as const) {
+  : { table: kind === 'maintenance' ? 'vehicle_maintenance' : 'vehicle_accessories', fields: ['date','item_name','part_code','category','price','quantity','total_cost','shop_name','shop_url','km_at_service','next_service_km','next_service_date','warranty_months','receipt_url','items_json','note'] };
+for (const kind of ['fuel','maintenance','accessories'] as const) {
   const config = childResource(kind);
   app.get(`/api/vehicles/:id/${kind}`, async (c) => {
     const rows = await c.env.DB.prepare(`SELECT * FROM ${config.table} WHERE vehicle_id = ? AND user_id = ? ORDER BY date DESC`)
@@ -139,6 +139,7 @@ app.post('/api/sync/push', async (c) => {
     daily_expenses: resources.expenses, subscriptions: resources.subscriptions,
     installment_plans: resources.installments, vehicles: resources.vehicles,
     fuel_entries: childResource('fuel'), vehicle_maintenance: childResource('maintenance'),
+    vehicle_accessories: childResource('accessories'),
   };
   const statements: D1PreparedStatement[] = [];
   for (const operation of body.operations || []) {
@@ -155,15 +156,15 @@ app.post('/api/sync/push', async (c) => {
     catch { return c.json({ data: null, error: 'Payload di sincronizzazione non valido' }, 400); }
     const fields = config.fields.filter((field) => bodyValue(payload, field) !== null);
     if (operation.operation === 'insert') {
-      const now = Date.now(); const timestampFields = operation.table === 'vehicles' || operation.table === 'fuel_entries' || operation.table === 'vehicle_maintenance' ? ['created_at'] : ['created_at','updated_at'];
+      const now = Date.now(); const timestampFields = operation.table === 'vehicles' || operation.table === 'fuel_entries' || operation.table === 'vehicle_maintenance' || operation.table === 'vehicle_accessories' ? ['created_at'] : ['created_at','updated_at'];
       const columns = ['id','user_id',...fields,...timestampFields];
       statements.push(c.env.DB.prepare(`INSERT OR REPLACE INTO ${operation.table} (${columns.join(',')}) VALUES (${columns.map(() => '?').join(',')})`)
         .bind(operation.recordId, c.get('userId'), ...fields.map((field) => bodyValue(payload, field)), ...timestampFields.map((field) => bodyValue(payload, field) ?? now)));
     } else if (fields.length) {
       const set = fields.map((field) => `${field} = ?`);
-      if (!['vehicles','fuel_entries','vehicle_maintenance'].includes(operation.table!)) set.push('updated_at = ?');
+      if (!['vehicles','fuel_entries','vehicle_maintenance','vehicle_accessories'].includes(operation.table!)) set.push('updated_at = ?');
       statements.push(c.env.DB.prepare(`UPDATE ${operation.table} SET ${set.join(',')} WHERE id = ? AND user_id = ?`)
-        .bind(...fields.map((field) => bodyValue(payload, field)), ...(!['vehicles','fuel_entries','vehicle_maintenance'].includes(operation.table!) ? [Date.now()] : []), operation.recordId, c.get('userId')));
+        .bind(...fields.map((field) => bodyValue(payload, field)), ...(!['vehicles','fuel_entries','vehicle_maintenance','vehicle_accessories'].includes(operation.table!) ? [Date.now()] : []), operation.recordId, c.get('userId')));
     }
   }
   if (statements.length) await c.env.DB.batch(statements);
