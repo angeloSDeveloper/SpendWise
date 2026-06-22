@@ -803,33 +803,42 @@ class _MaintenanceDetailPanel extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _InfoBox(
-                      icon: Icons.calendar_today,
-                      label: 'DATA',
-                      value: _date(item.date),
-                    ),
-                    _InfoBox(
-                      icon: Icons.speed,
-                      label: 'CHILOMETRAGGIO',
-                      value: item.kmAtService == null
-                          ? 'Non indicato'
-                          : '${NumberFormat.decimalPattern('it_IT').format(item.kmAtService)} km',
-                    ),
-                    _InfoBox(
-                      icon: Icons.euro,
-                      label: 'COSTO TOTALE',
-                      value: _money(item.totalCost),
-                    ),
-                    _InfoBox(
-                      icon: Icons.inventory_2,
-                      label: 'QUANTITÀ',
-                      value: '${item.quantity}',
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = (constraints.maxWidth - 10) / 2;
+                    return Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        _InfoBox(
+                          width: width,
+                          icon: Icons.calendar_today,
+                          label: 'DATA',
+                          value: _date(item.date),
+                        ),
+                        _InfoBox(
+                          width: width,
+                          icon: Icons.speed,
+                          label: 'CHILOMETRAGGIO',
+                          value: item.kmAtService == null
+                              ? 'Non indicato'
+                              : '${NumberFormat.decimalPattern('it_IT').format(item.kmAtService)} km',
+                        ),
+                        _InfoBox(
+                          width: width,
+                          icon: Icons.euro,
+                          label: 'COSTO TOTALE',
+                          value: _money(item.totalCost),
+                        ),
+                        _InfoBox(
+                          width: width,
+                          icon: Icons.inventory_2,
+                          label: 'QUANTITÀ',
+                          value: '${item.quantity}',
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 _MaintenanceItemsTable(item: item),
@@ -894,16 +903,18 @@ class _MaintenanceDetailPanel extends ConsumerWidget {
 
 class _InfoBox extends StatelessWidget {
   const _InfoBox({
+    this.width = 245,
     required this.icon,
     required this.label,
     required this.value,
   });
   final IconData icon;
   final String label, value;
+  final double width;
   @override
   Widget build(BuildContext context) => Container(
-    width: 245,
-    padding: const EdgeInsets.all(16),
+    width: width,
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
     decoration: BoxDecoration(
       color: Theme.of(context).colorScheme.surfaceContainer,
       borderRadius: BorderRadius.circular(12),
@@ -1262,11 +1273,36 @@ class _MaintenanceItemsTable extends StatelessWidget {
           Container(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Text(
-              hasOverallPrice
-                  ? 'PEZZI, PRODOTTI E INTERVENTI · PREZZO COMPLESSIVO ${_money(item.totalCost)}'
-                  : 'PEZZI, PRODOTTI E INTERVENTI',
-              style: Theme.of(context).textTheme.titleSmall,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    hasOverallPrice
+                        ? 'PEZZI E INTERVENTI · TOTALE ${_money(item.totalCost)}'
+                        : 'PEZZI, PRODOTTI E INTERVENTI',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.swipe_left_alt,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'SCORRI',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           SingleChildScrollView(
@@ -1576,7 +1612,8 @@ class AddMaintenanceScreen extends ConsumerStatefulWidget {
 
 class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
   final formKey = GlobalKey<FormState>();
-  final shop = TextEditingController(),
+  final title = TextEditingController(),
+      shop = TextEditingController(),
       url = TextEditingController(),
       overallPrice = TextEditingController(),
       km = TextEditingController(),
@@ -1604,6 +1641,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
     category = existing?.category ?? MaintenanceCategory.tagliando;
     selectedDate = existing?.date.toLocal() ?? DateTime.now();
     if (existing != null) {
+      title.text = existing.itemName;
       final payload = _maintenanceItemsPayload(existing);
       pricingMode = payload?['pricingMode'] as String? ?? 'unit';
       if (pricingMode == 'total') {
@@ -1814,7 +1852,16 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
 
   @override
   void dispose() {
-    for (final c in [shop, url, overallPrice, km, nextKm, warranty, note]) {
+    for (final c in [
+      title,
+      shop,
+      url,
+      overallPrice,
+      km,
+      nextKm,
+      warranty,
+      note,
+    ]) {
       if (c == note) {
         c.removeListener(_updateCategorySuggestion);
       }
@@ -1832,10 +1879,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
     try {
       final body = <String, dynamic>{
         'date': selectedDate.millisecondsSinceEpoch,
-        'itemName': lines
-            .map((line) => line.name.text.trim())
-            .where((value) => value.isNotEmpty)
-            .join(', '),
+        'itemName': title.text.trim(),
         'partCode': lines
             .map((line) => line.code.text.trim())
             .where((value) => value.isNotEmpty)
@@ -1986,6 +2030,19 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
       child: ListView(
         padding: const EdgeInsets.all(24),
         children: [
+          TextFormField(
+            controller: title,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              labelText: 'Titolo manutenzione *',
+              hintText: 'Es. Tagliando completo, Freni anteriori',
+              prefixIcon: Icon(Icons.title),
+            ),
+            validator: (value) => value == null || value.trim().isEmpty
+                ? 'Inserisci un titolo'
+                : null,
+          ),
+          const SizedBox(height: 12),
           InkWell(
             onTap: selectDate,
             borderRadius: BorderRadius.circular(12),
@@ -2001,7 +2058,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           _lineItemsEditor(context),
           const SizedBox(height: 12),
           DropdownButtonFormField<MaintenanceCategory>(
