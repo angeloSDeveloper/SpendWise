@@ -1,4 +1,4 @@
-name = "spendwise-api"
+name = "spendwise"
 main = "src/index.ts"
 account_id = "675d91b8b46435c1e42d76b91278c8b2"
 compatibility_date = "2024-01-01"
@@ -17,7 +17,7 @@ database_id = "935a809b-2e0c-49d7-9413-3765c1c2d085"
 # Per produzione, usa: wrangler secret put JWT_SECRET
 
 [env.production]
-name = "spendwise-api-prod"
+name = "spendwise"
 vars = { ENVIRONMENT = "production", JWT_ACCESS_EXPIRY = "900", JWT_REFRESH_EXPIRY = "2592000" }
 
 [[env.production.d1_databases]]

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 abstract final class AppConstants {
-  static const apiBaseUrl = String.fromEnvironment('API_URL', defaultValue: 'https://spendwise-api-prod.lopreteangelo97.workers.dev/api');
+  static const apiBaseUrl = String.fromEnvironment('API_URL', defaultValue: 'https://spendwise.lopreteangelo97.workers.dev/api');
   static const appName = 'SpendWise';
   static const appVersion = '1.0.0';
   static const syncIntervalSeconds = 30;
