@@ -1220,6 +1220,39 @@ String _categoryLabel(MaintenanceCategory category) => switch (category) {
   MaintenanceCategory.altro => 'ALTRO',
 };
 
+MaintenanceCategory? _inferMaintenanceCategory(String value) {
+  final text = value.toLowerCase();
+  if (RegExp(
+    r'ferodo|\bfdb\d*|brembo|pastigl|pattin|disch[io].*fren|fren[io]|pinza',
+  ).hasMatch(text)) {
+    return MaintenanceCategory.freni;
+  }
+  if (RegExp(
+    r'pneumatic|gomm[ae]|cerch|equilibratura|convergenza',
+  ).hasMatch(text)) {
+    return MaintenanceCategory.pneumatici;
+  }
+  if (RegExp(r'batteria|accumulatore|agm|efb').hasMatch(text)) {
+    return MaintenanceCategory.batteria;
+  }
+  if (RegExp(
+    r'motorino|alternatore|elettric|lampad|fusibil|sensore',
+  ).hasMatch(text)) {
+    return MaintenanceCategory.elettrico;
+  }
+  if (RegExp(
+    r'carrozzer|paraurti|vernici|sportello|parafango',
+  ).hasMatch(text)) {
+    return MaintenanceCategory.carrozzeria;
+  }
+  if (RegExp(
+    r'tagliando|olio|filtr|cinghia|distribuzione|liquido',
+  ).hasMatch(text)) {
+    return MaintenanceCategory.tagliando;
+  }
+  return null;
+}
+
 class AddMaintenanceScreen extends ConsumerStatefulWidget {
   const AddMaintenanceScreen({
     required this.vehicleId,
@@ -1247,6 +1280,8 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
       note = TextEditingController();
   late MaintenanceCategory category;
   late DateTime selectedDate;
+  MaintenanceCategory? suggestedCategory;
+  bool categoryChosenManually = false;
   bool saving = false, lookingUp = false;
   String? imageData;
   double amount() => double.tryParse(price.text.replaceAll(',', '.')) ?? 0;
@@ -1270,7 +1305,24 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
       warranty.text = existing.warrantyMonths?.toString() ?? '';
       note.text = existing.note ?? '';
       imageData = existing.receiptUrl;
+      categoryChosenManually = true;
     }
+    suggestedCategory = _detectCategory();
+    for (final controller in [item, code, note]) {
+      controller.addListener(_updateCategorySuggestion);
+    }
+  }
+
+  MaintenanceCategory? _detectCategory() =>
+      _inferMaintenanceCategory('${item.text}\n${code.text}\n${note.text}');
+
+  void _updateCategorySuggestion() {
+    final detected = _detectCategory();
+    if (!mounted) return;
+    setState(() {
+      suggestedCategory = detected;
+      if (!categoryChosenManually && detected != null) category = detected;
+    });
   }
 
   Future<void> selectDate() async {
@@ -1379,6 +1431,9 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
       warranty,
       note,
     ]) {
+      if (c == item || c == code || c == note) {
+        c.removeListener(_updateCategorySuggestion);
+      }
       c.dispose();
     }
     super.dispose();
@@ -1439,7 +1494,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
     body: Form(
       key: formKey,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         children: [
           InkWell(
             onTap: selectDate,
@@ -1456,13 +1511,14 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           _requiredField(
             item,
             'Ricambio, liquido o intervento',
             'Es. Olio motore 5W-30',
           ),
           DropdownButtonFormField<MaintenanceCategory>(
+            key: ValueKey(category),
             initialValue: category,
             decoration: const InputDecoration(labelText: 'Categoria'),
             items: MaintenanceCategory.values
@@ -1473,9 +1529,34 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
                   ),
                 )
                 .toList(),
-            onChanged: (v) => category = v!,
+            onChanged: (v) => setState(() {
+              category = v!;
+              categoryChosenManually = true;
+            }),
           ),
-          const SizedBox(height: 12),
+          if (suggestedCategory != null && suggestedCategory != category) ...[
+            const SizedBox(height: 12),
+            Card(
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              child: ListTile(
+                leading: const Icon(Icons.auto_awesome),
+                title: Text(
+                  'Categoria rilevata: ${_categoryLabel(suggestedCategory!)}',
+                ),
+                subtitle: const Text(
+                  'Riconosciuta da nome, codice ricambio e note.',
+                ),
+                trailing: TextButton(
+                  onPressed: () => setState(() {
+                    category = suggestedCategory!;
+                    categoryChosenManually = true;
+                  }),
+                  child: const Text('APPLICA'),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 20),
           _field(code, 'Codice / modello ricambio'),
           Wrap(
             spacing: 8,
@@ -1503,6 +1584,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 20),
           if (imageData != null)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1526,6 +1608,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
           _field(shop, 'Venditore / negozio (es. eBay)'),
           TextFormField(
             controller: url,
@@ -1542,7 +1625,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
                   : null;
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           _field(
             km,
             'Km al momento dell’intervento',
@@ -1554,8 +1637,17 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
             keyboard: TextInputType.number,
           ),
           _field(warranty, 'Garanzia (mesi)', keyboard: TextInputType.number),
-          _field(note, 'Note'),
-          const SizedBox(height: 16),
+          TextFormField(
+            controller: note,
+            minLines: 3,
+            maxLines: 6,
+            decoration: const InputDecoration(
+              labelText: 'Note',
+              alignLabelWithHint: true,
+              hintText: 'Es. Ferodo FDB1394 €28 (non cambiate)',
+            ),
+          ),
+          const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: saving ? null : save,
             icon: const Icon(Icons.save),
