@@ -446,9 +446,16 @@ class _MaintenanceTab extends ConsumerWidget {
               if (items.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 if (MediaQuery.sizeOf(context).width >= 900)
-                  _MaintenanceRegister(items: items)
+                  _MaintenanceRegister(
+                    items: items,
+                    onOpen: (item) => _showMaintenanceDetails(context, item),
+                  )
                 else
-                  for (final item in items) _MaintenanceCard(item: item),
+                  for (final item in items)
+                    _MaintenanceCard(
+                      item: item,
+                      onOpen: () => _showMaintenanceDetails(context, item),
+                    ),
               ],
             ],
           ),
@@ -457,8 +464,9 @@ class _MaintenanceTab extends ConsumerWidget {
 }
 
 class _MaintenanceCard extends StatelessWidget {
-  const _MaintenanceCard({required this.item});
+  const _MaintenanceCard({required this.item, required this.onOpen});
   final VehicleMaintenance item;
+  final VoidCallback onOpen;
   @override
   Widget build(BuildContext context) => Card(
     child: ListTile(
@@ -473,14 +481,15 @@ class _MaintenanceCard extends StatelessWidget {
         ].join(' · '),
       ),
       trailing: Text(_money(item.totalCost)),
-      onTap: () => _showMaintenanceDetails(context, item),
+      onTap: onOpen,
     ),
   );
 }
 
 class _MaintenanceRegister extends StatelessWidget {
-  const _MaintenanceRegister({required this.items});
+  const _MaintenanceRegister({required this.items, required this.onOpen});
   final List<VehicleMaintenance> items;
+  final ValueChanged<VehicleMaintenance> onOpen;
   @override
   Widget build(BuildContext context) => Card(
     clipBehavior: Clip.antiAlias,
@@ -514,6 +523,7 @@ class _MaintenanceRegister extends StatelessWidget {
               DataColumn(label: Text('DATA')),
               DataColumn(label: Text('KM')),
               DataColumn(label: Text('INTERVENTO')),
+              DataColumn(label: Text('VENDITORE / NEGOZIO')),
               DataColumn(label: Text('MANODOPERA / OFFICINA')),
               DataColumn(label: Text('OLIO')),
               DataColumn(label: Text('FILTRI / RICAMBI')),
@@ -535,11 +545,12 @@ class _MaintenanceRegister extends StatelessWidget {
                 ),
               );
               return DataRow(
-                onSelectChanged: (_) => _showMaintenanceDetails(context, item),
+                onSelectChanged: (_) => onOpen(item),
                 cells: [
                   cell(_date(item.date), width: 82),
                   cell(item.kmAtService?.toString() ?? '', width: 72),
                   cell(item.itemName, width: 190),
+                  cell(details.seller, width: 160),
                   cell(details.labor, width: 180),
                   cell(details.oil, width: 180),
                   cell(details.filters, width: 220),
@@ -560,17 +571,19 @@ class _MaintenanceRegister extends StatelessWidget {
 class _MaintenanceDetails {
   const _MaintenanceDetails({
     required this.labor,
+    required this.seller,
     required this.oil,
     required this.filters,
     required this.distribution,
     required this.brakes,
     required this.other,
   });
-  final String labor, oil, filters, distribution, brakes, other;
+  final String labor, seller, oil, filters, distribution, brakes, other;
 
   factory _MaintenanceDetails.from(VehicleMaintenance item) {
     final groups = <String, List<String>>{
       'labor': [],
+      'seller': [],
       'oil': [],
       'filters': [],
       'distribution': [],
@@ -605,13 +618,14 @@ class _MaintenanceDetails {
       groups[target]!.add(part);
     }
     if (item.shopName?.isNotEmpty == true) {
-      groups['labor']!.insert(0, item.shopName!);
+      groups['seller']!.add(item.shopName!);
     }
     if (item.partCode?.isNotEmpty == true) {
       groups['filters']!.add('Codice: ${item.partCode}');
     }
     return _MaintenanceDetails(
       labor: groups['labor']!.join('\n'),
+      seller: groups['seller']!.join('\n'),
       oil: groups['oil']!.join('\n'),
       filters: groups['filters']!.join('\n'),
       distribution: groups['distribution']!.join('\n'),
@@ -646,13 +660,70 @@ Future<void> _showMaintenanceDetails(
   );
 }
 
-class _MaintenanceDetailPanel extends StatelessWidget {
+class _MaintenanceDetailPanel extends ConsumerWidget {
   const _MaintenanceDetailPanel({required this.item});
   final VehicleMaintenance item;
+
+  Future<void> edit(BuildContext context) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) =>
+            AddMaintenanceScreen(vehicleId: item.vehicleId, existing: item),
+      ),
+    );
+    if (changed == true && context.mounted) Navigator.pop(context);
+  }
+
+  Future<void> delete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.delete_outline),
+        title: const Text('Eliminare questo intervento?'),
+        content: Text(
+          '“${item.itemName}” verrà eliminato definitivamente dal registro.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annulla'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Elimina'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref
+          .read(vehiclesApiProvider)
+          .deleteMaintenance(item.vehicleId, item.id);
+      ref.invalidate(maintenanceEntriesProvider(item.vehicleId));
+      if (context.mounted) Navigator.pop(context);
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Eliminazione non riuscita: $error')),
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final details = _MaintenanceDetails.from(item);
     final sections = <(String, String, Color, IconData)>[
+      (
+        'VENDITORE / NEGOZIO',
+        details.seller,
+        const Color(0xFFBFC8F2),
+        Icons.storefront,
+      ),
       (
         'MANODOPERA / OFFICINA',
         details.labor,
@@ -698,6 +769,19 @@ class _MaintenanceDetailPanel extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Modifica',
+                onPressed: () => edit(context),
+                icon: const Icon(Icons.edit),
+              ),
+              IconButton(
+                tooltip: 'Elimina',
+                onPressed: () => delete(context, ref),
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: Theme.of(context).colorScheme.error,
                 ),
               ),
               IconButton(
@@ -1137,8 +1221,13 @@ String _categoryLabel(MaintenanceCategory category) => switch (category) {
 };
 
 class AddMaintenanceScreen extends ConsumerStatefulWidget {
-  const AddMaintenanceScreen({required this.vehicleId, super.key});
+  const AddMaintenanceScreen({
+    required this.vehicleId,
+    this.existing,
+    super.key,
+  });
   final String vehicleId;
+  final VehicleMaintenance? existing;
   @override
   ConsumerState<AddMaintenanceScreen> createState() =>
       _AddMaintenanceScreenState();
@@ -1156,11 +1245,46 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
       nextKm = TextEditingController(),
       warranty = TextEditingController(),
       note = TextEditingController();
-  MaintenanceCategory category = MaintenanceCategory.tagliando;
+  late MaintenanceCategory category;
+  late DateTime selectedDate;
   bool saving = false, lookingUp = false;
   String? imageData;
   double amount() => double.tryParse(price.text.replaceAll(',', '.')) ?? 0;
   int qty() => int.tryParse(quantity.text) ?? 1;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existing;
+    category = existing?.category ?? MaintenanceCategory.tagliando;
+    selectedDate = existing?.date.toLocal() ?? DateTime.now();
+    if (existing != null) {
+      item.text = existing.itemName;
+      code.text = existing.partCode ?? '';
+      price.text = existing.price.toStringAsFixed(2);
+      quantity.text = existing.quantity.toString();
+      shop.text = existing.shopName ?? '';
+      url.text = existing.shopUrl ?? '';
+      km.text = existing.kmAtService?.toString() ?? '';
+      nextKm.text = existing.nextServiceKm?.toString() ?? '';
+      warranty.text = existing.warrantyMonths?.toString() ?? '';
+      note.text = existing.note ?? '';
+      imageData = existing.receiptUrl;
+    }
+  }
+
+  Future<void> selectDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      helpText: 'SELEZIONA LA DATA DELL’INTERVENTO',
+      cancelText: 'ANNULLA',
+      confirmText: 'CONFERMA',
+    );
+    if (picked != null) setState(() => selectedDate = picked);
+  }
 
   Future<void> pickImage(ImageSource source) async {
     final file = await ImagePicker().pickImage(
@@ -1264,8 +1388,8 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
     if (!formKey.currentState!.validate()) return;
     setState(() => saving = true);
     try {
-      await ref.read(vehiclesApiProvider).addMaintenance(widget.vehicleId, {
-        'date': DateTime.now().millisecondsSinceEpoch,
+      final body = <String, dynamic>{
+        'date': selectedDate.millisecondsSinceEpoch,
         'itemName': item.text.trim(),
         'partCode': code.text.trim(),
         'category': category.name,
@@ -1279,9 +1403,19 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
         'warrantyMonths': int.tryParse(warranty.text),
         'receiptUrl': imageData,
         'note': note.text.trim(),
-      });
+      };
+      final api = ref.read(vehiclesApiProvider);
+      if (widget.existing == null) {
+        await api.addMaintenance(widget.vehicleId, body);
+      } else {
+        await api.updateMaintenance(
+          widget.vehicleId,
+          widget.existing!.id,
+          body,
+        );
+      }
       ref.invalidate(maintenanceEntriesProvider(widget.vehicleId));
-      if (mounted) context.pop();
+      if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1295,12 +1429,34 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Nuova manutenzione')),
+    appBar: AppBar(
+      title: Text(
+        widget.existing == null
+            ? 'Nuova manutenzione'
+            : 'Modifica manutenzione',
+      ),
+    ),
     body: Form(
       key: formKey,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          InkWell(
+            onTap: selectDate,
+            borderRadius: BorderRadius.circular(12),
+            child: InputDecorator(
+              decoration: const InputDecoration(
+                labelText: 'Data intervento *',
+                prefixIcon: Icon(Icons.calendar_month),
+                suffixIcon: Icon(Icons.arrow_drop_down),
+              ),
+              child: Text(
+                DateFormat('EEEE d MMMM yyyy', 'it').format(selectedDate),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           _requiredField(
             item,
             'Ricambio, liquido o intervento',
@@ -1370,7 +1526,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
               ),
             ),
           ),
-          _field(shop, 'Negozio / sito di acquisto'),
+          _field(shop, 'Venditore / negozio (es. eBay)'),
           TextFormField(
             controller: url,
             keyboardType: TextInputType.url,
@@ -1403,7 +1559,11 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
           FilledButton.icon(
             onPressed: saving ? null : save,
             icon: const Icon(Icons.save),
-            label: const Text('Salva manutenzione'),
+            label: Text(
+              widget.existing == null
+                  ? 'Salva manutenzione'
+                  : 'Salva modifiche',
+            ),
           ),
         ],
       ),

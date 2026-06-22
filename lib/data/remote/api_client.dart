@@ -240,6 +240,14 @@ abstract class VehiclesApiClient {
     @Path() String id,
     @Body() Map<String, dynamic> body,
   );
+  @PUT('/vehicles/{id}/maintenance/{entryId}')
+  Future<dynamic> updateMaintenance(
+    @Path() String id,
+    @Path() String entryId,
+    @Body() Map<String, dynamic> body,
+  );
+  @DELETE('/vehicles/{id}/maintenance/{entryId}')
+  Future<void> deleteMaintenance(@Path() String id, @Path() String entryId);
 }
 
 @RestApi()
