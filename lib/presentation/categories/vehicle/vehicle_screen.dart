@@ -693,12 +693,13 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
               labelText: 'Link del prodotto',
               hintText: 'https://...',
             ),
-            validator: (value) =>
-                value != null &&
-                    value.isNotEmpty &&
-                    Uri.tryParse(value)?.hasAbsolutePath != true
-                ? 'Link non valido'
-                : null,
+            validator: (value) {
+              if (value == null || value.isEmpty) return null;
+              final uri = Uri.tryParse(value);
+              return uri == null || !uri.hasScheme || uri.host.isEmpty
+                  ? 'Link non valido'
+                  : null;
+            },
           ),
           const SizedBox(height: 12),
           _field(
