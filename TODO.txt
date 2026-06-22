@@ -1,0 +1,4 @@
+- In Nuovo abbonamento:
+poter selezionare la data di scadenza cosi da poter dare al sistema la possibilità di calcolare in automatico le scadenza in base al settimanale, mensile o annuale
+- Aggiungere una scadenza personalizzata dove posso inserire io il numero di mesi, per esempio scadenza ogni 8 mesi
+- dare la possibilità di modificare, eliminare e cliccando aprire il dettaglio
