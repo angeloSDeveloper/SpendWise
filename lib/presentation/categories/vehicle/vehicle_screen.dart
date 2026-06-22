@@ -1252,6 +1252,8 @@ class _MaintenanceItemsTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rows = _maintenanceItems(item);
+    final payload = _maintenanceItemsPayload(item);
+    final hasOverallPrice = payload?['pricingMode'] == 'total';
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -1261,7 +1263,9 @@ class _MaintenanceItemsTable extends StatelessWidget {
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Text(
-              'PEZZI, PRODOTTI E INTERVENTI',
+              hasOverallPrice
+                  ? 'PEZZI, PRODOTTI E INTERVENTI · PREZZO COMPLESSIVO ${_money(item.totalCost)}'
+                  : 'PEZZI, PRODOTTI E INTERVENTI',
               style: Theme.of(context).textTheme.titleSmall,
             ),
           ),
@@ -1277,6 +1281,7 @@ class _MaintenanceItemsTable extends StatelessWidget {
                 DataColumn(label: Text('QTÀ')),
                 DataColumn(label: Text('PREZZO')),
                 DataColumn(label: Text('TOTALE')),
+                DataColumn(label: Text('VENDITORE')),
               ],
               rows: rows.map((row) {
                 final quantity = (row['quantity'] as num?)?.toInt() ?? 1;
@@ -1296,8 +1301,37 @@ class _MaintenanceItemsTable extends StatelessWidget {
                       ),
                     ),
                     DataCell(Text('$quantity')),
-                    DataCell(Text(_money(price))),
-                    DataCell(Text(_money(price * quantity))),
+                    DataCell(
+                      Text(hasOverallPrice ? 'Nel totale' : _money(price)),
+                    ),
+                    DataCell(
+                      Text(hasOverallPrice ? '—' : _money(price * quantity)),
+                    ),
+                    DataCell(
+                      SizedBox(
+                        width: 150,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                (row['seller'] as String?)?.trim().isNotEmpty ==
+                                        true
+                                    ? row['seller'] as String
+                                    : '—',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if ((row['link'] as String?)?.trim().isNotEmpty ==
+                                true)
+                              const Padding(
+                                padding: EdgeInsets.only(left: 4),
+                                child: Icon(Icons.link, size: 17),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 );
               }).toList(),
@@ -1313,16 +1347,20 @@ class _MaintenanceLineDraft {
   _MaintenanceLineDraft({
     String name = '',
     String code = '',
+    String seller = '',
+    String link = '',
     int quantity = 1,
     double price = 0,
   }) : name = TextEditingController(text: name),
        code = TextEditingController(text: code),
+       seller = TextEditingController(text: seller),
+       link = TextEditingController(text: link),
        quantity = TextEditingController(text: quantity.toString()),
        price = TextEditingController(
          text: price > 0 ? price.toStringAsFixed(2) : '',
        );
 
-  final TextEditingController name, code, quantity, price;
+  final TextEditingController name, code, seller, link, quantity, price;
   int get quantityValue => int.tryParse(quantity.text) ?? 0;
   double get priceValue =>
       double.tryParse(price.text.replaceAll(',', '.')) ?? 0;
@@ -1331,6 +1369,8 @@ class _MaintenanceLineDraft {
   Map<String, dynamic> toJson() => {
     'name': name.text.trim(),
     'code': code.text.trim(),
+    'seller': seller.text.trim(),
+    'link': link.text.trim(),
     'quantity': quantityValue,
     'price': priceValue,
   };
@@ -1338,6 +1378,8 @@ class _MaintenanceLineDraft {
   void dispose() {
     name.dispose();
     code.dispose();
+    seller.dispose();
+    link.dispose();
     quantity.dispose();
     price.dispose();
   }
@@ -1350,11 +1392,13 @@ class _MaintenanceLineEditorRow extends StatelessWidget {
     required this.wide,
     required this.canRemove,
     required this.onRemove,
+    required this.unitPrices,
+    required this.onPurchase,
   });
   final int index;
   final _MaintenanceLineDraft line;
-  final bool wide, canRemove;
-  final VoidCallback onRemove;
+  final bool wide, canRemove, unitPrices;
+  final VoidCallback onRemove, onPurchase;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -1378,25 +1422,36 @@ class _MaintenanceLineEditorRow extends StatelessWidget {
       const SizedBox(width: 8),
       SizedBox(width: 78, child: _numeric(line.quantity, 'Qtà', true)),
       const SizedBox(width: 8),
-      SizedBox(width: 112, child: _numeric(line.price, 'Prezzo €', false)),
+      if (unitPrices)
+        SizedBox(width: 112, child: _numeric(line.price, 'Prezzo €', false))
+      else
+        const SizedBox(width: 112, child: Center(child: Text('Nel totale'))),
       SizedBox(
         width: 100,
         child: Padding(
           padding: const EdgeInsets.only(top: 12),
           child: Text(
-            _money(line.total),
+            unitPrices ? _money(line.total) : '—',
             textAlign: TextAlign.center,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
       ),
+      _purchaseButton(),
       _removeButton(),
     ],
   );
 
   Widget _narrow(BuildContext context) => Column(
     children: [
-      Row(children: [_number(), const Spacer(), _removeButton()]),
+      Row(
+        children: [
+          _number(),
+          const Spacer(),
+          _purchaseButton(),
+          _removeButton(),
+        ],
+      ),
       _text(line.name, 'Pezzo / intervento', true),
       const SizedBox(height: 8),
       _text(line.code, 'Codice / modello', false),
@@ -1405,10 +1460,13 @@ class _MaintenanceLineEditorRow extends StatelessWidget {
         children: [
           Expanded(child: _numeric(line.quantity, 'Quantità', true)),
           const SizedBox(width: 8),
-          Expanded(child: _numeric(line.price, 'Prezzo unitario €', false)),
+          if (unitPrices)
+            Expanded(child: _numeric(line.price, 'Prezzo unitario €', false))
+          else
+            const Expanded(child: Center(child: Text('Prezzo nel totale'))),
           const SizedBox(width: 12),
           Text(
-            _money(line.total),
+            unitPrices ? _money(line.total) : '—',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
@@ -1425,6 +1483,18 @@ class _MaintenanceLineEditorRow extends StatelessWidget {
     tooltip: 'Rimuovi riga',
     onPressed: canRemove ? onRemove : null,
     icon: const Icon(Icons.remove_circle_outline),
+  );
+
+  Widget _purchaseButton() => IconButton(
+    tooltip: line.seller.text.trim().isEmpty && line.link.text.trim().isEmpty
+        ? 'Venditore e link della riga'
+        : 'Modifica venditore e link',
+    onPressed: onPurchase,
+    icon: Icon(
+      line.seller.text.trim().isEmpty && line.link.text.trim().isEmpty
+          ? Icons.store_outlined
+          : Icons.store,
+    ),
   );
 
   Widget _text(TextEditingController controller, String label, bool required) =>
@@ -1461,9 +1531,13 @@ List<Map<String, dynamic>> _maintenanceItems(VehicleMaintenance item) {
   final raw = item.itemsJson;
   if (raw != null && raw.isNotEmpty) {
     try {
-      return (jsonDecode(raw) as List<dynamic>)
-          .whereType<Map<String, dynamic>>()
-          .toList();
+      final decoded = jsonDecode(raw);
+      final values = decoded is Map<String, dynamic>
+          ? decoded['items']
+          : decoded;
+      if (values is List<dynamic>) {
+        return values.whereType<Map<String, dynamic>>().toList();
+      }
     } catch (_) {}
   }
   return [
@@ -1474,6 +1548,17 @@ List<Map<String, dynamic>> _maintenanceItems(VehicleMaintenance item) {
       'price': item.price,
     },
   ];
+}
+
+Map<String, dynamic>? _maintenanceItemsPayload(VehicleMaintenance item) {
+  final raw = item.itemsJson;
+  if (raw == null || raw.isEmpty) return null;
+  try {
+    final decoded = jsonDecode(raw);
+    return decoded is Map<String, dynamic> ? decoded : null;
+  } catch (_) {
+    return null;
+  }
 }
 
 class AddMaintenanceScreen extends ConsumerStatefulWidget {
@@ -1493,6 +1578,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
   final formKey = GlobalKey<FormState>();
   final shop = TextEditingController(),
       url = TextEditingController(),
+      overallPrice = TextEditingController(),
       km = TextEditingController(),
       nextKm = TextEditingController(),
       warranty = TextEditingController(),
@@ -1503,8 +1589,11 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
   MaintenanceCategory? suggestedCategory;
   bool categoryChosenManually = false;
   bool saving = false, lookingUp = false;
+  String pricingMode = 'unit';
   String? imageData;
-  double get totalAmount => lines.fold(0, (total, line) => total + line.total);
+  double get totalAmount => pricingMode == 'total'
+      ? double.tryParse(overallPrice.text.replaceAll(',', '.')) ?? 0
+      : lines.fold(0, (total, line) => total + line.total);
   int get totalQuantity =>
       lines.fold(0, (total, line) => total + line.quantityValue);
 
@@ -1515,11 +1604,20 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
     category = existing?.category ?? MaintenanceCategory.tagliando;
     selectedDate = existing?.date.toLocal() ?? DateTime.now();
     if (existing != null) {
+      final payload = _maintenanceItemsPayload(existing);
+      pricingMode = payload?['pricingMode'] as String? ?? 'unit';
+      if (pricingMode == 'total') {
+        overallPrice.text =
+            ((payload?['totalPrice'] as num?)?.toDouble() ?? existing.totalCost)
+                .toStringAsFixed(2);
+      }
       for (final value in _maintenanceItems(existing)) {
         _addLine(
           _MaintenanceLineDraft(
             name: value['name'] as String? ?? '',
             code: value['code'] as String? ?? '',
+            seller: value['seller'] as String? ?? '',
+            link: value['link'] as String? ?? '',
             quantity: (value['quantity'] as num?)?.toInt() ?? 1,
             price: (value['price'] as num?)?.toDouble() ?? 0,
           ),
@@ -1539,6 +1637,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
     }
     suggestedCategory = _detectCategory();
     note.addListener(_updateCategorySuggestion);
+    overallPrice.addListener(_updateCategorySuggestion);
   }
 
   MaintenanceCategory? _detectCategory() => _inferMaintenanceCategory(
@@ -1562,6 +1661,49 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
     if (lines.length == 1) return;
     lines.removeAt(index).dispose();
     _updateCategorySuggestion();
+  }
+
+  Future<void> _editLinePurchase(_MaintenanceLineDraft line) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.storefront),
+        title: Text(
+          'Acquisto: ${line.name.text.isEmpty ? 'riga' : line.name.text}',
+        ),
+        content: SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: line.seller,
+                decoration: const InputDecoration(
+                  labelText: 'Venditore / negozio',
+                  prefixIcon: Icon(Icons.store),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: line.link,
+                keyboardType: TextInputType.url,
+                decoration: const InputDecoration(
+                  labelText: 'Link del prodotto',
+                  prefixIcon: Icon(Icons.link),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CHIUDI'),
+          ),
+        ],
+      ),
+    );
+    if (mounted) setState(() {});
   }
 
   void _updateCategorySuggestion() {
@@ -1672,7 +1814,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
 
   @override
   void dispose() {
-    for (final c in [shop, url, km, nextKm, warranty, note]) {
+    for (final c in [shop, url, overallPrice, km, nextKm, warranty, note]) {
       if (c == note) {
         c.removeListener(_updateCategorySuggestion);
       }
@@ -1708,7 +1850,11 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
         'nextServiceKm': int.tryParse(nextKm.text),
         'warrantyMonths': int.tryParse(warranty.text),
         'receiptUrl': imageData,
-        'itemsJson': jsonEncode(lines.map((line) => line.toJson()).toList()),
+        'itemsJson': jsonEncode({
+          'pricingMode': pricingMode,
+          'totalPrice': pricingMode == 'total' ? totalAmount : null,
+          'items': lines.map((line) => line.toJson()).toList(),
+        }),
         'note': note.text.trim(),
       };
       final api = ref.read(vehiclesApiProvider);
@@ -1736,21 +1882,38 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
 
   Widget _lineItemsEditor(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Pezzi, prodotti e interventi',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+        Text(
+          'Pezzi, prodotti e interventi',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(
+              value: 'unit',
+              icon: Icon(Icons.price_change_outlined),
+              label: Text('Prezzo per pezzo'),
             ),
-            FilledButton.tonalIcon(
-              onPressed: () => _addLine(_MaintenanceLineDraft()),
-              icon: const Icon(Icons.add),
-              label: const Text('AGGIUNGI'),
+            ButtonSegment(
+              value: 'total',
+              icon: Icon(Icons.receipt_long_outlined),
+              label: Text('Prezzo complessivo'),
             ),
           ],
+          selected: {pricingMode},
+          onSelectionChanged: (selection) {
+            final next = selection.first;
+            if (next == 'total' && overallPrice.text.trim().isEmpty) {
+              final current = lines.fold<double>(
+                0,
+                (sum, line) => sum + line.total,
+              );
+              if (current > 0) overallPrice.text = current.toStringAsFixed(2);
+            }
+            setState(() => pricingMode = next);
+          },
         ),
         const SizedBox(height: 8),
         for (final entry in lines.asMap().entries) ...[
@@ -1760,9 +1923,40 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
             wide: constraints.maxWidth >= 760,
             canRemove: lines.length > 1,
             onRemove: () => _removeLine(entry.key),
+            unitPrices: pricingMode == 'unit',
+            onPurchase: () => _editLinePurchase(entry.value),
           ),
           const SizedBox(height: 8),
         ],
+        Align(
+          alignment: Alignment.centerRight,
+          child: FilledButton.tonalIcon(
+            onPressed: () => _addLine(_MaintenanceLineDraft()),
+            icon: const Icon(Icons.add),
+            label: const Text('AGGIUNGI RIGA'),
+          ),
+        ),
+        if (pricingMode == 'total') ...[
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: overallPrice,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Prezzo complessivo (€)',
+              prefixIcon: Icon(Icons.euro),
+              isDense: true,
+            ),
+            validator: (value) {
+              final parsed = double.tryParse(
+                (value ?? '').replaceAll(',', '.'),
+              );
+              return parsed == null || parsed < 0
+                  ? 'Inserisci un prezzo valido'
+                  : null;
+            },
+          ),
+        ],
+        const SizedBox(height: 8),
         Card(
           child: ListTile(
             dense: true,
@@ -1889,12 +2083,12 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
                 ),
               ),
             ),
-          _field(shop, 'Venditore / negozio (es. eBay)'),
+          _field(shop, 'Venditore generale / officina'),
           TextFormField(
             controller: url,
             keyboardType: TextInputType.url,
             decoration: const InputDecoration(
-              labelText: 'Link del prodotto',
+              labelText: 'Link generale dell’acquisto',
               hintText: 'https://...',
             ),
             validator: (value) {
