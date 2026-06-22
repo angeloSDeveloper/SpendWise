@@ -104,11 +104,7 @@ final routerProvider = Provider<GoRouter>(
             path: '/vehicle',
             builder: (c, s) => const VehicleScreen(),
             routes: [
-              GoRoute(
-                path: 'add',
-                builder: (c, s) =>
-                    const EntityFormScreen(title: 'Nuovo veicolo'),
-              ),
+              GoRoute(path: 'add', builder: (c, s) => const AddVehicleScreen()),
               GoRoute(
                 path: ':id',
                 builder: (c, s) =>
@@ -117,12 +113,13 @@ final routerProvider = Provider<GoRouter>(
                   GoRoute(
                     path: 'fuel/add',
                     builder: (c, s) =>
-                        const EntityFormScreen(title: 'Nuovo rifornimento'),
+                        AddFuelScreen(vehicleId: s.pathParameters['id']!),
                   ),
                   GoRoute(
                     path: 'maintenance/add',
-                    builder: (c, s) =>
-                        const EntityFormScreen(title: 'Nuova manutenzione'),
+                    builder: (c, s) => AddMaintenanceScreen(
+                      vehicleId: s.pathParameters['id']!,
+                    ),
                   ),
                 ],
               ),

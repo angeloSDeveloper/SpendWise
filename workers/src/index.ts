@@ -33,7 +33,9 @@ const bodyValue = (body: Record<string, unknown>, snake: string) => {
 };
 const serialize = (row: Record<string, unknown>) => Object.fromEntries(Object.entries(row).map(([key, value]) => [
   key.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase()),
-  (key.endsWith('_at') || key === 'date' || key.endsWith('_date')) && typeof value === 'number' ? new Date(value).toISOString() : value,
+  ['is_active','is_full_tank','is_default','synced'].includes(key) && typeof value === 'number'
+    ? value === 1
+    : (key.endsWith('_at') || key === 'date' || key.endsWith('_date')) && typeof value === 'number' ? new Date(value).toISOString() : value,
 ]));
 
 for (const [path, config] of Object.entries(resources)) {
