@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -44,8 +45,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       state = AuthState.authenticated(await action());
     } catch (error) {
-      state = AuthState.error(error.toString());
+      state = AuthState.error(_readableError(error));
     }
+  }
+
+  String _readableError(Object error) {
+    if (error is DioException) {
+      final body = error.response?.data;
+      if (body is Map<String, dynamic>) {
+        final message = body['error'];
+        if (message is String && message.isNotEmpty) {
+          return message;
+        }
+      }
+      if (error.type == DioExceptionType.connectionError ||
+          error.type == DioExceptionType.connectionTimeout) {
+        return 'Impossibile contattare il server. Controlla la connessione.';
+      }
+    }
+    return 'Si è verificato un errore. Riprova.';
   }
 
   Future<void> checkAuthStatus() async {
