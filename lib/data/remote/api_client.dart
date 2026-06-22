@@ -77,7 +77,7 @@ class DioClient {
   }
   late final Dio dio;
   final FlutterSecureStorage storage;
-  bool _refreshing = false;
+  Future<String>? _refreshFuture;
   Future<void> _authorize(
     RequestOptions options,
     RequestInterceptorHandler handler,
@@ -102,40 +102,47 @@ class DioClient {
     ErrorInterceptorHandler handler,
   ) async {
     if (error.response?.statusCode != 401 ||
-        error.requestOptions.path.contains('/auth/refresh') ||
-        _refreshing) {
+        error.requestOptions.path.contains('/auth/refresh')) {
       return handler.next(error);
     }
-    final refreshToken = await storage.read(key: AppConstants.kRefreshTokenKey);
-    if (refreshToken == null) {
-      return handler.next(error);
-    }
-    _refreshing = true;
     try {
-      final refreshDio = Dio(BaseOptions(baseUrl: AppConstants.apiBaseUrl));
-      final response = await refreshDio.post<Map<String, dynamic>>(
-        '/auth/refresh',
-        data: {'refreshToken': refreshToken},
-      );
-      final data = response.data?['data'] as Map<String, dynamic>?;
-      final tokens = data?['tokens'] as Map<String, dynamic>?;
-      if (tokens == null) throw StateError('Risposta refresh non valida');
-      await storage.write(
-        key: AppConstants.kAccessTokenKey,
-        value: tokens['accessToken'] as String,
-      );
-      await storage.write(
-        key: AppConstants.kRefreshTokenKey,
-        value: tokens['refreshToken'] as String,
-      );
-      error.requestOptions.headers['Authorization'] =
-          'Bearer ${tokens['accessToken']}';
+      final accessToken = await _refreshAccessToken();
+      error.requestOptions.headers['Authorization'] = 'Bearer $accessToken';
       handler.resolve(await dio.fetch<dynamic>(error.requestOptions));
     } catch (_) {
       handler.next(error);
-    } finally {
-      _refreshing = false;
     }
+  }
+
+  Future<String> _refreshAccessToken() {
+    final pending = _refreshFuture;
+    if (pending != null) return pending;
+    final refresh = _performRefresh();
+    _refreshFuture = refresh;
+    refresh.whenComplete(() {
+      if (identical(_refreshFuture, refresh)) _refreshFuture = null;
+    }).ignore();
+    return refresh;
+  }
+
+  Future<String> _performRefresh() async {
+    final refreshToken = await storage.read(key: AppConstants.kRefreshTokenKey);
+    if (refreshToken == null) throw StateError('Sessione scaduta');
+    final refreshDio = Dio(BaseOptions(baseUrl: AppConstants.apiBaseUrl));
+    final response = await refreshDio.post<Map<String, dynamic>>(
+      '/auth/refresh',
+      data: {'refreshToken': refreshToken},
+    );
+    final data = response.data?['data'] as Map<String, dynamic>?;
+    final tokens = data?['tokens'] as Map<String, dynamic>?;
+    if (tokens == null) throw StateError('Risposta refresh non valida');
+    final accessToken = tokens['accessToken'] as String;
+    await storage.write(key: AppConstants.kAccessTokenKey, value: accessToken);
+    await storage.write(
+      key: AppConstants.kRefreshTokenKey,
+      value: tokens['refreshToken'] as String,
+    );
+    return accessToken;
   }
 }
 

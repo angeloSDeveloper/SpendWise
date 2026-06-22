@@ -151,7 +151,7 @@ class _State extends ConsumerState<DailyExpensesScreen> {
                               : category.$1,
                         ),
                         subtitle: Text(
-                          '${category.$1} · ${DateFormat('dd/MM/yyyy').format(item.date)}',
+                          '${category.$1} · ${DateFormat('dd/MM/yyyy').format(item.date.toLocal())}',
                         ),
                         trailing: Text(
                           NumberFormat.currency(

@@ -33,7 +33,8 @@ final maintenanceEntriesProvider = FutureProvider.autoDispose
 
 String _money(num value) =>
     NumberFormat.currency(locale: 'it_IT', symbol: '€').format(value);
-String _date(DateTime value) => DateFormat('dd/MM/yyyy').format(value);
+String _date(DateTime value) =>
+    DateFormat('dd/MM/yyyy').format(value.toLocal());
 
 class VehicleScreen extends ConsumerWidget {
   const VehicleScreen({super.key});
@@ -442,113 +443,455 @@ class _MaintenanceTab extends ConsumerWidget {
                   padding: EdgeInsets.only(top: 48),
                   child: Center(child: Text('Nessuna manutenzione registrata')),
                 ),
-              for (final item in items)
-                Card(
-                  child: ListTile(
-                    leading: _maintenanceImage(item.receiptUrl),
-                    title: Text(item.itemName),
-                    subtitle: Text(
-                      [
-                        _date(item.date),
-                        if (item.partCode?.isNotEmpty == true)
-                          'Cod. ${item.partCode}',
-                        if (item.shopName?.isNotEmpty == true) item.shopName!,
-                      ].join(' · '),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_money(item.totalCost)),
-                        if (item.shopUrl?.isNotEmpty == true)
-                          IconButton(
-                            tooltip: 'Apri sito',
-                            icon: const Icon(Icons.open_in_new),
-                            onPressed: () => launchUrl(
-                              Uri.parse(item.shopUrl!),
-                              mode: LaunchMode.externalApplication,
-                            ),
-                          ),
-                      ],
-                    ),
-                    onTap: () => _showMaintenanceDetails(context, item),
-                  ),
-                ),
+              if (items.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                if (MediaQuery.sizeOf(context).width >= 900)
+                  _MaintenanceRegister(items: items)
+                else
+                  for (final item in items) _MaintenanceCard(item: item),
+              ],
             ],
           ),
         ),
       );
 }
 
+class _MaintenanceCard extends StatelessWidget {
+  const _MaintenanceCard({required this.item});
+  final VehicleMaintenance item;
+  @override
+  Widget build(BuildContext context) => Card(
+    child: ListTile(
+      leading: _maintenanceImage(item.receiptUrl),
+      title: Text(item.itemName),
+      subtitle: Text(
+        [
+          _date(item.date),
+          if (item.kmAtService != null) '${item.kmAtService} km',
+          if (item.partCode?.isNotEmpty == true) 'Cod. ${item.partCode}',
+          if (item.shopName?.isNotEmpty == true) item.shopName!,
+        ].join(' · '),
+      ),
+      trailing: Text(_money(item.totalCost)),
+      onTap: () => _showMaintenanceDetails(context, item),
+    ),
+  );
+}
+
+class _MaintenanceRegister extends StatelessWidget {
+  const _MaintenanceRegister({required this.items});
+  final List<VehicleMaintenance> items;
+  @override
+  Widget build(BuildContext context) => Card(
+    clipBehavior: Clip.antiAlias,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          color: Theme.of(context).colorScheme.primaryContainer,
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const Icon(Icons.table_chart),
+              const SizedBox(width: 10),
+              Text(
+                'Registro manutenzione',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const Spacer(),
+              const Text('Scorri orizzontalmente e seleziona una riga'),
+            ],
+          ),
+        ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            showCheckboxColumn: false,
+            headingRowColor: WidgetStatePropertyAll(
+              Theme.of(context).colorScheme.surfaceContainerHighest,
+            ),
+            columns: const [
+              DataColumn(label: Text('DATA')),
+              DataColumn(label: Text('KM')),
+              DataColumn(label: Text('INTERVENTO')),
+              DataColumn(label: Text('MANODOPERA / OFFICINA')),
+              DataColumn(label: Text('OLIO')),
+              DataColumn(label: Text('FILTRI / RICAMBI')),
+              DataColumn(label: Text('DISTRIBUZIONE')),
+              DataColumn(label: Text('FRENI')),
+              DataColumn(label: Text('ALTRO / NOTE')),
+              DataColumn(label: Text('TOTALE')),
+            ],
+            rows: items.map((item) {
+              final details = _MaintenanceDetails.from(item);
+              DataCell cell(String value, {double width = 150}) => DataCell(
+                SizedBox(
+                  width: width,
+                  child: Text(
+                    value.isEmpty ? '—' : value,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              );
+              return DataRow(
+                onSelectChanged: (_) => _showMaintenanceDetails(context, item),
+                cells: [
+                  cell(_date(item.date), width: 82),
+                  cell(item.kmAtService?.toString() ?? '', width: 72),
+                  cell(item.itemName, width: 190),
+                  cell(details.labor, width: 180),
+                  cell(details.oil, width: 180),
+                  cell(details.filters, width: 220),
+                  cell(details.distribution, width: 220),
+                  cell(details.brakes, width: 220),
+                  cell(details.other, width: 220),
+                  cell(_money(item.totalCost), width: 90),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _MaintenanceDetails {
+  const _MaintenanceDetails({
+    required this.labor,
+    required this.oil,
+    required this.filters,
+    required this.distribution,
+    required this.brakes,
+    required this.other,
+  });
+  final String labor, oil, filters, distribution, brakes, other;
+
+  factory _MaintenanceDetails.from(VehicleMaintenance item) {
+    final groups = <String, List<String>>{
+      'labor': [],
+      'oil': [],
+      'filters': [],
+      'distribution': [],
+      'brakes': [],
+      'other': [],
+    };
+    final pieces = (item.note ?? '')
+        .split(RegExp(r'[;\n]|\.\s+'))
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty);
+    for (final part in pieces) {
+      final text = part.toLowerCase();
+      final target = RegExp(r'olio|selenia|motul|actual|5w|10w').hasMatch(text)
+          ? 'oil'
+          : RegExp(
+              r'filtro|ufi|sofima|zaffo|ox\d|lx\d|lh\d|la\d',
+            ).hasMatch(text)
+          ? 'filters'
+          : RegExp(
+              r'distribuz|cinghia|galoppin|pompa|dayco|repkit|valeo',
+            ).hasMatch(text)
+          ? 'distribution'
+          : RegExp(
+              r'fren|pastigl|pattin|dischi|brembo|ferodo|bosch|bp337',
+            ).hasMatch(text)
+          ? 'brakes'
+          : RegExp(
+              r'aiello|tonino|sellia|folino|buffa|calabra|manodopera',
+            ).hasMatch(text)
+          ? 'labor'
+          : 'other';
+      groups[target]!.add(part);
+    }
+    if (item.shopName?.isNotEmpty == true) {
+      groups['labor']!.insert(0, item.shopName!);
+    }
+    if (item.partCode?.isNotEmpty == true) {
+      groups['filters']!.add('Codice: ${item.partCode}');
+    }
+    return _MaintenanceDetails(
+      labor: groups['labor']!.join('\n'),
+      oil: groups['oil']!.join('\n'),
+      filters: groups['filters']!.join('\n'),
+      distribution: groups['distribution']!.join('\n'),
+      brakes: groups['brakes']!.join('\n'),
+      other: groups['other']!.join('\n'),
+    );
+  }
+}
+
 Future<void> _showMaintenanceDetails(
   BuildContext context,
   VehicleMaintenance item,
-) => showModalBottomSheet<void>(
-  context: context,
-  showDragHandle: true,
-  isScrollControlled: true,
-  builder: (context) => SafeArea(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(item.itemName, style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 16),
-          if (item.receiptUrl?.isNotEmpty == true)
-            Center(
-              child: SizedBox(
-                width: 280,
-                height: 200,
-                child: FittedBox(
-                  fit: BoxFit.contain,
-                  child: _maintenanceImage(item.receiptUrl),
+) {
+  final panel = _MaintenanceDetailPanel(item: item);
+  if (MediaQuery.sizeOf(context).width >= 700) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1180, maxHeight: 820),
+          child: panel,
+        ),
+      ),
+    );
+  }
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (_) => FractionallySizedBox(heightFactor: .92, child: panel),
+  );
+}
+
+class _MaintenanceDetailPanel extends StatelessWidget {
+  const _MaintenanceDetailPanel({required this.item});
+  final VehicleMaintenance item;
+  @override
+  Widget build(BuildContext context) {
+    final details = _MaintenanceDetails.from(item);
+    final sections = <(String, String, Color, IconData)>[
+      (
+        'MANODOPERA / OFFICINA',
+        details.labor,
+        const Color(0xFFE8A5A5),
+        Icons.engineering,
+      ),
+      ('OLIO', details.oil, const Color(0xFFB8DDD3), Icons.oil_barrel),
+      (
+        'FILTRI E RICAMBI',
+        details.filters,
+        const Color(0xFFAEDDE5),
+        Icons.filter_alt,
+      ),
+      (
+        'DISTRIBUZIONE',
+        details.distribution,
+        const Color(0xFFF0C27B),
+        Icons.settings,
+      ),
+      ('FRENI', details.brakes, const Color(0xFFD5D8CE), Icons.album),
+      ('ALTRO / NOTE', details.other, const Color(0xFFD7C7E8), Icons.notes),
+    ];
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(24, 18, 12, 18),
+          color: Theme.of(context).colorScheme.primaryContainer,
+          child: Row(
+            children: [
+              const Icon(Icons.build_circle, size: 32),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.itemName,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    Text(
+                      _categoryLabel(
+                        item.category ?? MaintenanceCategory.altro,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ListTile(
-            leading: const Icon(Icons.calendar_today),
-            title: const Text('Data'),
-            trailing: Text(_date(item.date)),
+              IconButton(
+                tooltip: 'Chiudi',
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close),
+              ),
+            ],
           ),
-          if (item.kmAtService != null)
-            ListTile(
-              leading: const Icon(Icons.speed),
-              title: const Text('Chilometraggio'),
-              trailing: Text('${item.kmAtService} km'),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _InfoBox(
+                      icon: Icons.calendar_today,
+                      label: 'DATA',
+                      value: _date(item.date),
+                    ),
+                    _InfoBox(
+                      icon: Icons.speed,
+                      label: 'CHILOMETRAGGIO',
+                      value: item.kmAtService == null
+                          ? 'Non indicato'
+                          : '${NumberFormat.decimalPattern('it_IT').format(item.kmAtService)} km',
+                    ),
+                    _InfoBox(
+                      icon: Icons.euro,
+                      label: 'COSTO TOTALE',
+                      value: _money(item.totalCost),
+                    ),
+                    _InfoBox(
+                      icon: Icons.inventory_2,
+                      label: 'QUANTITÀ',
+                      value: '${item.quantity}',
+                    ),
+                  ],
+                ),
+                if (item.receiptUrl?.isNotEmpty == true) ...[
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 240,
+                    child: Center(
+                      child: _maintenanceImage(
+                        item.receiptUrl,
+                        width: 320,
+                        height: 230,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth >= 900
+                        ? (constraints.maxWidth - 24) / 3
+                        : constraints.maxWidth >= 580
+                        ? (constraints.maxWidth - 12) / 2
+                        : constraints.maxWidth;
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        for (final section in sections)
+                          SizedBox(
+                            width: width,
+                            child: _DetailSection(
+                              title: section.$1,
+                              text: section.$2,
+                              color: section.$3,
+                              icon: section.$4,
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+                if (item.shopUrl?.isNotEmpty == true) ...[
+                  const SizedBox(height: 20),
+                  FilledButton.icon(
+                    onPressed: () => launchUrl(
+                      Uri.parse(item.shopUrl!),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                    icon: const Icon(Icons.open_in_new),
+                    label: const Text('Apri il sito del prodotto'),
+                  ),
+                ],
+              ],
             ),
-          ListTile(
-            leading: const Icon(Icons.euro),
-            title: const Text('Costo totale'),
-            trailing: Text(_money(item.totalCost)),
           ),
-          if (item.partCode?.isNotEmpty == true)
-            ListTile(
-              leading: const Icon(Icons.qr_code),
-              title: const Text('Codice / modello'),
-              subtitle: Text(item.partCode!),
-            ),
-          if (item.shopName?.isNotEmpty == true)
-            ListTile(
-              leading: const Icon(Icons.store),
-              title: const Text('Negozio / officina'),
-              subtitle: Text(item.shopName!),
-            ),
-          if (item.note?.isNotEmpty == true) ...[
-            const Divider(),
-            Text(
-              'Dettagli e note',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            SelectableText(item.note!),
-          ],
-        ],
-      ),
-    ),
-  ),
-);
+        ),
+      ],
+    );
+  }
+}
 
-Widget _maintenanceImage(String? source) {
+class _InfoBox extends StatelessWidget {
+  const _InfoBox({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+  final IconData icon;
+  final String label, value;
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 245,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainer,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      children: [
+        Icon(icon),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: Theme.of(context).textTheme.labelSmall),
+              const SizedBox(height: 4),
+              Text(value, style: Theme.of(context).textTheme.titleMedium),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _DetailSection extends StatelessWidget {
+  const _DetailSection({
+    required this.title,
+    required this.text,
+    required this.color,
+    required this.icon,
+  });
+  final String title, text;
+  final Color color;
+  final IconData icon;
+  @override
+  Widget build(BuildContext context) => Container(
+    constraints: const BoxConstraints(minHeight: 150),
+    decoration: BoxDecoration(
+      border: Border.all(color: color),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.black87),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(14),
+          child: SelectableText(text.isEmpty ? 'Nessun dato registrato' : text),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _maintenanceImage(
+  String? source, {
+  double width = 48,
+  double height = 48,
+}) {
   if (source == null || source.isEmpty) {
     return const Icon(Icons.build_circle_outlined);
   }
@@ -558,8 +901,8 @@ Widget _maintenanceImage(String? source) {
         borderRadius: BorderRadius.circular(8),
         child: Image.memory(
           base64Decode(source.split(',').last),
-          width: 48,
-          height: 48,
+          width: width,
+          height: height,
           fit: BoxFit.cover,
         ),
       );
@@ -569,8 +912,8 @@ Widget _maintenanceImage(String? source) {
     borderRadius: BorderRadius.circular(8),
     child: Image.network(
       source,
-      width: 48,
-      height: 48,
+      width: width,
+      height: height,
       fit: BoxFit.cover,
       errorBuilder: (_, __, ___) => const Icon(Icons.build_circle_outlined),
     ),

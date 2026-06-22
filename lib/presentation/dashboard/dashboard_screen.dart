@@ -150,14 +150,63 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
         onRefresh: () => ref.refresh(dashboardDataProvider.future),
         child: data.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => ListView(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(32),
-                child: Center(child: Text('Dashboard non disponibile: $error')),
-              ),
-            ],
-          ),
+          error: (error, _) {
+            final expired = error.toString().contains('401');
+            return ListView(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 520),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            children: [
+                              Icon(
+                                expired ? Icons.lock_clock : Icons.cloud_off,
+                                size: 48,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                expired
+                                    ? 'La sessione è scaduta'
+                                    : 'Dashboard temporaneamente non disponibile',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                expired
+                                    ? 'Accedi nuovamente per proteggere i tuoi dati.'
+                                    : 'Controlla la connessione e riprova.',
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              FilledButton.icon(
+                                onPressed: expired
+                                    ? () => ref
+                                          .read(authStateProvider.notifier)
+                                          .logout()
+                                    : () =>
+                                          ref.invalidate(dashboardDataProvider),
+                                icon: Icon(
+                                  expired ? Icons.login : Icons.refresh,
+                                ),
+                                label: Text(
+                                  expired ? 'Torna al login' : 'Riprova',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
           data: (summary) => ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -216,7 +265,7 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
                     leading: const Icon(Icons.receipt_long),
                     title: Text(expense.description ?? 'Spesa'),
                     subtitle: Text(
-                      DateFormat('dd/MM/yyyy').format(expense.date),
+                      DateFormat('dd/MM/yyyy').format(expense.date.toLocal()),
                     ),
                     trailing: Text(
                       NumberFormat.currency(

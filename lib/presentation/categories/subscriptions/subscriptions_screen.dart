@@ -223,7 +223,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                         ),
                         title: Text(item.name),
                         subtitle: Text(
-                          '${_cycleLabel(item.billingCycle)} · dal ${DateFormat('dd/MM/yyyy').format(item.startDate)}${item.endDate == null ? '' : ' al ${DateFormat('dd/MM/yyyy').format(item.endDate!)}'}',
+                          '${_cycleLabel(item.billingCycle)} · dal ${DateFormat('dd/MM/yyyy').format(item.startDate.toLocal())}${item.endDate == null ? '' : ' al ${DateFormat('dd/MM/yyyy').format(item.endDate!.toLocal())}'}',
                         ),
                         trailing: Text(
                           NumberFormat.currency(
