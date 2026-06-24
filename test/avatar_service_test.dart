@@ -5,6 +5,7 @@ import 'package:spendwise/presentation/settings/avatar/avatar_service.dart';
 void main() {
   test('serializza e ripristina la configurazione JSON', () {
     const config = AvatarConfig(
+      gender: 'female',
       initials: 'AC',
       backgroundColor: '#e1effe',
       primaryColor: '#2563eb',

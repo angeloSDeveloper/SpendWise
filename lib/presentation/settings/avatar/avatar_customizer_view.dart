@@ -61,25 +61,40 @@ class _AvatarCustomizerViewState extends State<AvatarCustomizerView> {
         final desktop = constraints.maxWidth >= 900;
         final preview = _AvatarPreview(config: config);
         final controls = _AvatarControls(config: config, onChanged: update);
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Center(
+        if (desktop) {
+          return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1180),
-              child: desktop
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(width: 360, child: preview),
-                        const SizedBox(width: 20),
-                        Expanded(child: controls),
-                      ],
-                    )
-                  : Column(
-                      children: [preview, const SizedBox(height: 20), controls],
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(width: 360, child: preview),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: controls,
+                      ),
                     ),
+                  ],
+                ),
+              ),
             ),
-          ),
+          );
+        }
+        return Column(
+          children: [
+            _CompactAvatarPreview(config: config),
+            const Divider(height: 1),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: controls,
+              ),
+            ),
+          ],
         );
       },
     ),
@@ -97,6 +112,49 @@ class _AvatarCustomizerViewState extends State<AvatarCustomizerView> {
           label: const Text('SALVA AVATAR'),
         ),
       ),
+    ),
+  );
+}
+
+class _CompactAvatarPreview extends StatelessWidget {
+  const _CompactAvatarPreview({required this.config});
+  final AvatarConfig config;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    color: Theme.of(context).colorScheme.surface,
+    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+    child: Row(
+      children: [
+        Container(
+          width: 104,
+          height: 104,
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+          ),
+          child: SvgPicture.string(AvatarService.generateAvatarSvg(config)),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                config.gender == 'female' ? 'Profilo Donna' : 'Profilo Uomo',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                config.initials.isEmpty
+                    ? 'Anteprima sempre visibile'
+                    : 'Iniziali ${config.initials.toUpperCase()}',
+              ),
+            ],
+          ),
+        ),
+      ],
     ),
   );
 }
@@ -165,10 +223,34 @@ class _AvatarControls extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     children: [
       _SectionCard(
-        icon: Icons.palette_outlined,
-        title: 'Colori e iniziali',
+        icon: Icons.person_outline,
+        title: 'Persona',
         child: Column(
           children: [
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: 'male',
+                  icon: Icon(Icons.male),
+                  label: Text('Uomo'),
+                ),
+                ButtonSegment(
+                  value: 'female',
+                  icon: Icon(Icons.female),
+                  label: Text('Donna'),
+                ),
+              ],
+              selected: {config.gender},
+              onSelectionChanged: (value) => onChanged(
+                config.copyWith(
+                  gender: value.first,
+                  beardStyle: value.first == 'female'
+                      ? 'none'
+                      : config.beardStyle,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             TextFormField(
               initialValue: config.initials,
               maxLength: 2,
@@ -180,6 +262,14 @@ class _AvatarControls extends StatelessWidget {
               ),
               onChanged: (value) => onChanged(config.copyWith(initials: value)),
             ),
+          ],
+        ),
+      ),
+      _SectionCard(
+        icon: Icons.palette_outlined,
+        title: 'Colori',
+        child: Column(
+          children: [
             _PaletteRow(
               label: 'Principale',
               selected: config.primaryColor,
@@ -230,12 +320,19 @@ class _AvatarControls extends StatelessWidget {
             _ChoiceWrap(
               label: 'Capelli',
               value: config.hairStyle,
-              options: const {
-                'initials': 'Solo iniziali',
-                'short_01': 'Corti',
-                'medium_01': 'Medi',
-                'long_01': 'Lunghi',
-              },
+              options: config.gender == 'female'
+                  ? const {
+                      'initials': 'Solo iniziali',
+                      'short_01': 'Pixie',
+                      'medium_01': 'Caschetto',
+                      'long_01': 'Lunghi',
+                    }
+                  : const {
+                      'initials': 'Solo iniziali',
+                      'short_01': 'Corti',
+                      'medium_01': 'Medi',
+                      'long_01': 'Lunghi',
+                    },
               onChanged: (value) =>
                   onChanged(config.copyWith(hairStyle: value)),
             ),
@@ -255,7 +352,10 @@ class _AvatarControls extends StatelessWidget {
             _ChoiceWrap(
               label: 'Outfit',
               value: config.outfit,
-              options: const {'shirt_01': 'Camicia', 'sweater_01': 'Maglia'},
+              options: const {
+                'shirt_01': 'Blazer',
+                'sweater_01': 'Maglia minimal',
+              },
               onChanged: (value) => onChanged(config.copyWith(outfit: value)),
             ),
           ],
@@ -266,17 +366,18 @@ class _AvatarControls extends StatelessWidget {
         title: 'Accessori',
         child: Column(
           children: [
-            _ChoiceWrap(
-              label: 'Barba / baffi',
-              value: config.beardStyle,
-              options: const {
-                'none': 'Nessuna',
-                'short': 'Barba corta',
-                'mustache': 'Baffi',
-              },
-              onChanged: (value) =>
-                  onChanged(config.copyWith(beardStyle: value)),
-            ),
+            if (config.gender == 'male')
+              _ChoiceWrap(
+                label: 'Barba / baffi',
+                value: config.beardStyle,
+                options: const {
+                  'none': 'Nessuna',
+                  'short': 'Barba corta',
+                  'mustache': 'Baffi',
+                },
+                onChanged: (value) =>
+                    onChanged(config.copyWith(beardStyle: value)),
+              ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               secondary: const Icon(Icons.visibility_outlined),

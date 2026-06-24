@@ -8,6 +8,7 @@ class AvatarService {
 
   static AvatarConfig getDefaultAvatarConfig({String initials = ''}) =>
       AvatarConfig(
+        gender: 'male',
         initials: _sanitizeInitials(initials),
         backgroundColor: '#e7eaf2',
         primaryColor: '#536dfe',
@@ -72,6 +73,7 @@ class AvatarService {
     final background = _safeHex(config.backgroundColor, '#e7eaf2');
     final primary = _safeHex(config.primaryColor, '#536dfe');
     final fallback = config.hairStyle == 'initials';
+    final female = config.gender == 'female';
 
     if (fallback) {
       final content = initials.isEmpty
@@ -103,6 +105,12 @@ class AvatarService {
     final outfit = config.outfit == 'sweater_01'
         ? '<path d="M27 160c4-31 22-45 42-47h22c21 3 39 17 43 47Z" fill="$primary" stroke="#20222a" stroke-width="3"/><path d="M66 115c2 12 27 12 29 0" fill="none" stroke="#20222a" stroke-width="3"/>'
         : '<path d="M27 160c4-31 22-45 42-47h22c21 3 39 17 43 47Z" fill="$primary" stroke="#20222a" stroke-width="3"/><path d="m67 114 13 17 14-17" fill="#fff" stroke="#20222a" stroke-width="3"/>';
+    final facePath = female
+        ? 'M52 53c4-24 52-24 57 1l-3 31c-3 20-15 31-26 31S57 105 53 85Z'
+        : 'M51 53c3-23 55-24 59 1l-3 30c-2 18-14 31-27 32-13-1-25-14-27-32Z';
+    final brows = female
+        ? '<path d="M62 69q8-4 15 0M87 69q8-4 15 0" fill="none" stroke="#20222a" stroke-width="2.4" stroke-linecap="round"/>'
+        : '<path d="M61 68q9-5 17 0M86 68q9-5 17 0" fill="none" stroke="#20222a" stroke-width="3.4" stroke-linecap="round"/>';
 
     final body =
         '''
@@ -111,9 +119,9 @@ $outfit
 <path d="M69 104v18h23v-18" fill="$skin" stroke="#20222a" stroke-width="3"/>
 <ellipse cx="49" cy="76" rx="8" ry="11" fill="$skin" stroke="#20222a" stroke-width="3"/>
 <ellipse cx="112" cy="76" rx="8" ry="11" fill="$skin" stroke="#20222a" stroke-width="3"/>
-<path d="M51 54c3-23 55-24 59 0l-3 31c-3 21-16 31-27 31S56 106 53 85Z" fill="$skin" stroke="#20222a" stroke-width="3"/>
+<path d="$facePath" fill="$skin" stroke="#20222a" stroke-width="3"/>
 $hairFront
-<path d="M64 70q7-5 14 0M87 70q7-5 14 0" fill="none" stroke="#20222a" stroke-width="3" stroke-linecap="round"/>
+$brows
 <circle cx="70" cy="77" r="2.7" fill="#20222a"/><circle cx="94" cy="77" r="2.7" fill="#20222a"/>
 <path d="M82 78l-3 11 6 1" fill="none" stroke="#20222a" stroke-width="2.4" stroke-linecap="round"/>
 <path d="M70 97q11 10 23 0" fill="none" stroke="#20222a" stroke-width="3" stroke-linecap="round"/>

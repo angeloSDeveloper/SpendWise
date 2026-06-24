@@ -24,6 +24,19 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - La variante è disponibile solo in locale: non è stata distribuita su
   Cloudflare e non è stata unita in `dev` o `main`.
 
+### Revisione avatar SVG v2 — non pubblicata
+
+- Analizzati i flussi ufficiali di Apple Memoji e Microsoft Teams Avatars:
+  anteprima persistente, partenza da una persona/base e controlli divisi per
+  categorie.
+- Preview resa fissa a sinistra su desktop.
+- Preview compatta resa fissa sopra i controlli su mobile.
+- Aggiunta selezione esplicita Uomo/Donna.
+- Differenziate forma del volto, sopracciglia e nomi delle acconciature.
+- Resi gli outfit più sobri: blazer e maglia minimal.
+- Barba e baffi disponibili solo sul profilo Uomo.
+- Nessuna modifica alla produzione o ai rami stabili.
+
 ### Avatar vettoriale moderno
 
 - Sostituito l'avatar provvisorio basato su emoji e icone con un disegno

@@ -49,6 +49,9 @@ Legenda:
   customizer SVG professionale con configurazione JSON, iniziali, capelli,
   barba, occhiali, outfit e badge. Da approvare visivamente prima di unire in
   `dev` o pubblicare.
+- [-] Revisione richiesta: preview sempre visibile su desktop e mobile,
+  selezione Uomo/Donna e resa visiva più professionale ispirata ai pattern di
+  personalizzazione di Apple Memoji e Microsoft Teams Avatars.
 - [x] Sostituire l'avatar provvisorio con un avatar vettoriale moderno e
   leggero: 5 volti × 3 capelli × 2 vestiti, 30 combinazioni base.
 - [-] Foto avatar con selezione dalla galleria: implementata, da collaudare su
