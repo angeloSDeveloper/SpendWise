@@ -45,6 +45,10 @@ Legenda:
 
 ## Impostazioni e personalizzazione
 
+- [-] Esperimento `experiment/avatar-svg-v2` pronto per revisione locale:
+  customizer SVG professionale con configurazione JSON, iniziali, capelli,
+  barba, occhiali, outfit e badge. Da approvare visivamente prima di unire in
+  `dev` o pubblicare.
 - [x] Sostituire l'avatar provvisorio con un avatar vettoriale moderno e
   leggero: 5 volti × 3 capelli × 2 vestiti, 30 combinazioni base.
 - [-] Foto avatar con selezione dalla galleria: implementata, da collaudare su

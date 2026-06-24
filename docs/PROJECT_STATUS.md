@@ -55,6 +55,10 @@ Per ogni intervento futuro:
 
 ## Ultima pubblicazione nota
 
-- Commit precedente: `0e1a284`
+- Versione applicazione bloccata su richiesta dell'utente: `1.0.0`.
+- Versione stabile pubblicata: commit `513f309`.
+- Esperimento non pubblicato: ramo `experiment/avatar-svg-v2`.
+- L'esperimento SVG v2 è compilato e testato, ma attende approvazione visiva
+  prima di sostituire l'avatar stabile.
 - Worker: `https://spendwise.lopreteangelo97.workers.dev`
 - Database: `spendwise-db`

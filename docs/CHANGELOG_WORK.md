@@ -5,6 +5,25 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 24 giugno 2026
 
+### Esperimento avatar SVG v2 — non pubblicato
+
+- Creato il ramo isolato `experiment/avatar-svg-v2` dalla versione stabile
+  `513f309`.
+- Il prompt TypeScript/Webix è stato adattato allo stack reale Flutter/Dart,
+  mantenendo separazione tra modello, generatore SVG e interfaccia.
+- Aggiunti `AvatarConfig`, `AvatarService` e `AvatarCustomizerView`.
+- Configurazione salvata come JSON per utente.
+- Preview SVG inline aggiornata in tempo reale.
+- Opzioni: iniziali, colori, tono pelle, capelli, colore capelli, barba/baffi,
+  occhiali, outfit e badge online/offline.
+- Aggiunti fallback con iniziali o icona SVG generica.
+- Aggiunta generazione deterministica da `userId`.
+- UI responsive a una colonna su mobile e preview affiancata su desktop.
+- Confermata e mostrata nell'app la versione `1.0.0`.
+- Analisi, test e build web superati.
+- La variante è disponibile solo in locale: non è stata distribuita su
+  Cloudflare e non è stata unita in `dev` o `main`.
+
 ### Avatar vettoriale moderno
 
 - Sostituito l'avatar provvisorio basato su emoji e icone con un disegno
