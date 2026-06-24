@@ -81,29 +81,47 @@ class SettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         children: [
           Center(
-            child: Stack(
+            child: Column(
               children: [
-                SizedBox(
-                  width: 104,
-                  height: 104,
+                Container(
+                  width: 164,
+                  height: 164,
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 3,
+                    ),
+                  ),
                   child: ClipOval(
                     child: avatar == null
-                        ? SimpleAvatar(settings: settings)
+                        ? ModernAvatar(settings: settings)
                         : Image.memory(
                             base64Decode(avatar.split(',').last),
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) =>
-                                SimpleAvatar(settings: settings),
+                                ModernAvatar(settings: settings),
                           ),
                   ),
                 ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: IconButton.filled(
-                    onPressed: () => pickAvatar(ref),
-                    icon: const Icon(Icons.photo_camera),
-                  ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () => pickAvatar(ref),
+                      icon: const Icon(Icons.photo_library_outlined),
+                      label: const Text('Usa foto'),
+                    ),
+                    if (avatar != null)
+                      FilledButton.tonalIcon(
+                        onPressed: () =>
+                            ref.read(settingsProvider.notifier).clearAvatar(),
+                        icon: const Icon(Icons.palette_outlined),
+                        label: const Text('Usa avatar'),
+                      ),
+                  ],
                 ),
               ],
             ),
@@ -112,55 +130,136 @@ class SettingsScreen extends ConsumerWidget {
           ExpansionTile(
             leading: const Icon(Icons.face_retouching_natural),
             title: const Text('Personalizza avatar'),
-            subtitle: const Text('Faccina, capelli, pelle e vestiti'),
+            subtitle: const Text('30 combinazioni base, leggere e moderne'),
             childrenPadding: const EdgeInsets.all(12),
             children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Espressione',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
+                runSpacing: 8,
                 children: [
-                  for (final face in ['🙂', '😎', '😊', '🤓', '😁'])
+                  for (final face in const {
+                    'smile': ('Sorriso', Icons.sentiment_satisfied_alt),
+                    'calm': ('Calmo', Icons.sentiment_neutral),
+                    'wink': ('Occhiolino', Icons.visibility),
+                    'glasses': ('Occhiali', Icons.visibility_outlined),
+                    'freckles': ('Lentiggini', Icons.face),
+                  }.entries)
                     ChoiceChip(
-                      label: Text(face, style: const TextStyle(fontSize: 22)),
-                      selected: settings.avatarFace == face,
+                      avatar: Icon(face.value.$2, size: 18),
+                      label: Text(face.value.$1),
+                      selected: settings.avatarFace == face.key,
                       onSelected: (_) => ref
                           .read(settingsProvider.notifier)
-                          .setAvatarStyle(face: face),
+                          .setAvatarStyle(face: face.key),
                     ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Capelli',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              const SizedBox(height: 8),
               SegmentedButton<String>(
                 segments: const [
-                  ButtonSegment(value: 'short', label: Text('Corti')),
-                  ButtonSegment(value: 'long', label: Text('Lunghi')),
-                  ButtonSegment(value: 'bald', label: Text('Rasati')),
+                  ButtonSegment(value: 'crop', label: Text('Corti')),
+                  ButtonSegment(value: 'wave', label: Text('Mossi')),
+                  ButtonSegment(value: 'bob', label: Text('Caschetto')),
                 ],
                 selected: {settings.avatarHair},
                 onSelectionChanged: (value) => ref
                     .read(settingsProvider.notifier)
                     .setAvatarStyle(hair: value.first),
               ),
-              const SizedBox(height: 12),
-              _ColorChoices(
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Stile vestiti',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'turtleneck', label: Text('Dolcevita')),
+                  ButtonSegment(value: 'shirt', label: Text('Maglia')),
+                ],
+                selected: {settings.avatarOutfit},
+                onSelectionChanged: (value) => ref
+                    .read(settingsProvider.notifier)
+                    .setAvatarStyle(outfit: value.first),
+              ),
+              const SizedBox(height: 16),
+              _ColorSetting(
+                label: 'Carnagione',
                 selected: settings.avatarColor,
-                colors: const [0xFFFFDBB4, 0xFFE6B17E, 0xFFB8784E, 0xFF70442E],
+                colors: const [
+                  0xFFFFE0C2,
+                  0xFFFFC99D,
+                  0xFFE6A06C,
+                  0xFFB96F47,
+                  0xFF75422F,
+                ],
                 onChanged: (value) => ref
                     .read(settingsProvider.notifier)
                     .setAvatarStyle(skin: value),
               ),
-              const SizedBox(height: 8),
-              _ColorChoices(
+              const SizedBox(height: 12),
+              _ColorSetting(
+                label: 'Capelli',
+                selected: settings.avatarHairColor,
+                colors: const [
+                  0xFF231815,
+                  0xFF4A2C24,
+                  0xFF8A5A3B,
+                  0xFFE1B45F,
+                  0xFFD66B9B,
+                ],
+                onChanged: (value) => ref
+                    .read(settingsProvider.notifier)
+                    .setAvatarStyle(hairColor: value),
+              ),
+              const SizedBox(height: 12),
+              _ColorSetting(
+                label: 'Vestiti',
                 selected: settings.avatarClothes,
                 colors: const [
+                  0xFF2E3038,
                   0xFF536DFE,
-                  0xFFE91E63,
+                  0xFFE84C88,
                   0xFF00A884,
                   0xFFFF9800,
-                  0xFF6A1B9A,
                 ],
                 onChanged: (value) => ref
                     .read(settingsProvider.notifier)
                     .setAvatarStyle(clothes: value),
+              ),
+              const SizedBox(height: 12),
+              _ColorSetting(
+                label: 'Sfondo',
+                selected: settings.avatarBackground,
+                colors: const [
+                  0xFFD98ACB,
+                  0xFF8FB9F4,
+                  0xFF8FD9C4,
+                  0xFFF4C982,
+                  0xFFB6A4ED,
+                ],
+                onChanged: (value) => ref
+                    .read(settingsProvider.notifier)
+                    .setAvatarStyle(background: value),
               ),
             ],
           ),
@@ -261,53 +360,248 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-class SimpleAvatar extends StatelessWidget {
-  const SimpleAvatar({required this.settings, super.key});
+class ModernAvatar extends StatelessWidget {
+  const ModernAvatar({required this.settings, super.key});
   final SettingsState settings;
 
   @override
-  Widget build(BuildContext context) => Container(
-    color: Color(settings.avatarClothes),
-    child: Stack(
-      alignment: Alignment.center,
-      children: [
-        Positioned(
-          bottom: -24,
-          child: Container(
-            width: 92,
-            height: 70,
-            decoration: BoxDecoration(
-              color: Color(settings.avatarClothes),
-              borderRadius: BorderRadius.circular(32),
-            ),
-          ),
+  Widget build(BuildContext context) => CustomPaint(
+    painter: _AvatarPainter(settings),
+    child: const SizedBox.expand(),
+  );
+}
+
+class _AvatarPainter extends CustomPainter {
+  const _AvatarPainter(this.settings);
+  final SettingsState settings;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 160, size.height / 160);
+    final skin = Color(settings.avatarColor);
+    final hair = Color(settings.avatarHairColor);
+    final clothes = Color(settings.avatarClothes);
+    const outline = Color(0xFF25242A);
+    final line = Paint()
+      ..color = outline
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    canvas.drawRect(
+      const Rect.fromLTWH(0, 0, 160, 160),
+      Paint()..color = Color(settings.avatarBackground),
+    );
+
+    final hairBack = switch (settings.avatarHair) {
+      'wave' =>
+        Path()
+          ..moveTo(43, 76)
+          ..cubicTo(34, 38, 52, 18, 80, 18)
+          ..cubicTo(117, 17, 131, 47, 120, 91)
+          ..cubicTo(125, 111, 113, 122, 104, 123)
+          ..lineTo(54, 123)
+          ..cubicTo(38, 119, 34, 99, 43, 76)
+          ..close(),
+      'bob' =>
+        Path()
+          ..moveTo(41, 74)
+          ..cubicTo(36, 38, 53, 20, 80, 19)
+          ..cubicTo(111, 18, 126, 41, 121, 78)
+          ..lineTo(116, 113)
+          ..cubicTo(102, 122, 58, 122, 44, 111)
+          ..close(),
+      _ =>
+        Path()
+          ..moveTo(45, 62)
+          ..cubicTo(44, 32, 62, 20, 83, 20)
+          ..cubicTo(109, 21, 121, 38, 115, 64)
+          ..close(),
+    };
+    canvas.drawPath(hairBack, Paint()..color = hair);
+    canvas.drawPath(hairBack, line);
+
+    final shoulders = Path()
+      ..moveTo(25, 160)
+      ..cubicTo(29, 129, 49, 119, 68, 116)
+      ..lineTo(92, 116)
+      ..cubicTo(112, 120, 132, 130, 136, 160)
+      ..close();
+    canvas.drawPath(shoulders, Paint()..color = clothes);
+    canvas.drawPath(shoulders, line);
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(68, 102, 24, 27),
+        const Radius.circular(8),
+      ),
+      Paint()..color = skin,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(68, 102, 24, 27),
+        const Radius.circular(8),
+      ),
+      line,
+    );
+    canvas.drawOval(const Rect.fromLTWH(42, 66, 15, 22), Paint()..color = skin);
+    canvas.drawOval(
+      const Rect.fromLTWH(103, 66, 15, 22),
+      Paint()..color = skin,
+    );
+
+    final face = Path()
+      ..moveTo(52, 51)
+      ..cubicTo(56, 30, 103, 29, 109, 54)
+      ..lineTo(106, 83)
+      ..cubicTo(102, 105, 91, 115, 80, 116)
+      ..cubicTo(67, 115, 56, 104, 52, 83)
+      ..close();
+    canvas.drawPath(face, Paint()..color = skin);
+    canvas.drawPath(face, line);
+
+    final hairFront = Path()
+      ..moveTo(48, 60)
+      ..cubicTo(46, 38, 59, 27, 80, 26)
+      ..cubicTo(101, 25, 114, 40, 112, 61)
+      ..cubicTo(99, 56, 93, 42, 87, 36)
+      ..cubicTo(79, 49, 66, 57, 48, 60)
+      ..close();
+    canvas.drawPath(hairFront, Paint()..color = hair);
+    canvas.drawPath(hairFront, line);
+
+    void eye(double x, {bool closed = false}) {
+      if (closed) {
+        canvas.drawArc(
+          Rect.fromCenter(center: Offset(x, 75), width: 11, height: 7),
+          .15,
+          2.75,
+          false,
+          line,
+        );
+      } else {
+        canvas.drawOval(
+          Rect.fromCenter(center: Offset(x, 75), width: 5, height: 7),
+          Paint()..color = outline,
+        );
+      }
+    }
+
+    eye(67, closed: settings.avatarFace == 'calm');
+    eye(
+      93,
+      closed: settings.avatarFace == 'calm' || settings.avatarFace == 'wink',
+    );
+    canvas.drawArc(const Rect.fromLTWH(60, 65, 14, 8), 3.35, 2.4, false, line);
+    canvas.drawArc(const Rect.fromLTWH(86, 65, 14, 8), 3.35, 2.4, false, line);
+
+    if (settings.avatarFace == 'glasses') {
+      for (final rect in const [
+        Rect.fromLTWH(57, 68, 20, 15),
+        Rect.fromLTWH(83, 68, 20, 15),
+      ]) {
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(rect, const Radius.circular(6)),
+          line,
+        );
+      }
+      canvas.drawLine(const Offset(77, 74), const Offset(83, 74), line);
+    }
+
+    if (settings.avatarFace == 'freckles') {
+      final dots = Paint()..color = const Color(0xFFC56E62);
+      for (final point in const [
+        Offset(60, 87),
+        Offset(65, 89),
+        Offset(69, 87),
+        Offset(91, 87),
+        Offset(95, 89),
+        Offset(100, 87),
+      ]) {
+        canvas.drawCircle(point, 1.2, dots);
+      }
+    } else {
+      final blush = Paint()..color = const Color(0x55E86D82);
+      canvas.drawOval(const Rect.fromLTWH(56, 84, 15, 7), blush);
+      canvas.drawOval(const Rect.fromLTWH(89, 84, 15, 7), blush);
+    }
+
+    canvas.drawLine(const Offset(80, 76), const Offset(77, 87), line);
+    canvas.drawLine(const Offset(77, 87), const Offset(82, 88), line);
+    if (settings.avatarFace == 'calm') {
+      canvas.drawLine(const Offset(72, 98), const Offset(88, 98), line);
+    } else {
+      canvas.drawArc(
+        const Rect.fromLTWH(68, 89, 24, 15),
+        .2,
+        2.75,
+        false,
+        line,
+      );
+    }
+
+    if (settings.avatarOutfit == 'turtleneck') {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          const Rect.fromLTWH(62, 112, 36, 19),
+          const Radius.circular(7),
         ),
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: Color(settings.avatarColor),
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            settings.avatarFace,
-            style: const TextStyle(fontSize: 38),
-          ),
+        Paint()..color = clothes,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          const Rect.fromLTWH(62, 112, 36, 19),
+          const Radius.circular(7),
         ),
-        if (settings.avatarHair != 'bald')
-          Positioned(
-            top: settings.avatarHair == 'long' ? 5 : 10,
-            child: Icon(
-              settings.avatarHair == 'long'
-                  ? Icons.face_4
-                  : Icons.face_retouching_natural,
-              size: 82,
-              color: const Color(0xFF3E2723),
-            ),
-          ),
-      ],
-    ),
+        line,
+      );
+    } else {
+      canvas.drawLine(const Offset(68, 118), const Offset(80, 129), line);
+      canvas.drawLine(const Offset(92, 118), const Offset(80, 129), line);
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _AvatarPainter oldDelegate) =>
+      oldDelegate.settings.avatarFace != settings.avatarFace ||
+      oldDelegate.settings.avatarHair != settings.avatarHair ||
+      oldDelegate.settings.avatarOutfit != settings.avatarOutfit ||
+      oldDelegate.settings.avatarColor != settings.avatarColor ||
+      oldDelegate.settings.avatarHairColor != settings.avatarHairColor ||
+      oldDelegate.settings.avatarClothes != settings.avatarClothes ||
+      oldDelegate.settings.avatarBackground != settings.avatarBackground;
+}
+
+class _ColorSetting extends StatelessWidget {
+  const _ColorSetting({
+    required this.label,
+    required this.selected,
+    required this.colors,
+    required this.onChanged,
+  });
+  final String label;
+  final int selected;
+  final List<int> colors;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      SizedBox(
+        width: 90,
+        child: Text(label, style: Theme.of(context).textTheme.labelLarge),
+      ),
+      Expanded(
+        child: _ColorChoices(
+          selected: selected,
+          colors: colors,
+          onChanged: onChanged,
+        ),
+      ),
+    ],
   );
 }
 

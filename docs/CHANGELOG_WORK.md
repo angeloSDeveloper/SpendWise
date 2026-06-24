@@ -5,6 +5,18 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 24 giugno 2026
 
+### Avatar vettoriale moderno
+
+- Sostituito l'avatar provvisorio basato su emoji e icone con un disegno
+  vettoriale originale realizzato tramite `CustomPainter`.
+- Aggiunte 5 espressioni, 3 acconciature e 2 vestiti: 30 combinazioni base.
+- Aggiunte palette separate per carnagione, capelli, vestiti e sfondo.
+- Conservata la possibilità di usare una fotografia e di tornare all'avatar.
+- Convertite automaticamente le vecchie preferenze avatar ai nuovi valori.
+- Nessun pacchetto grafico o asset esterno aggiunto.
+- Aggiunto test widget che disegna e verifica tutte le 30 combinazioni.
+- Verificati analisi statica, test Flutter e build web release.
+
 ### Rettifica dello stato
 
 - Eseguito un audit dopo la segnalazione dell'utente.

@@ -8,10 +8,13 @@ class SettingsState {
   const SettingsState({
     this.themeMode = ThemeMode.system,
     this.avatarData,
-    this.avatarFace = '🙂',
-    this.avatarHair = 'short',
-    this.avatarColor = 0xFF8C6A4F,
+    this.avatarFace = 'smile',
+    this.avatarHair = 'bob',
+    this.avatarColor = 0xFFFFDBB4,
+    this.avatarHairColor = 0xFF4A2C24,
     this.avatarClothes = 0xFF536DFE,
+    this.avatarBackground = 0xFFD98ACB,
+    this.avatarOutfit = 'turtleneck',
     this.biometricsEnabled = false,
     this.visibleModules = appModules,
     this.notificationsEnabled = false,
@@ -19,8 +22,8 @@ class SettingsState {
   });
   final ThemeMode themeMode;
   final String? avatarData;
-  final String avatarFace, avatarHair;
-  final int avatarColor, avatarClothes;
+  final String avatarFace, avatarHair, avatarOutfit;
+  final int avatarColor, avatarHairColor, avatarClothes, avatarBackground;
   final bool biometricsEnabled, notificationsEnabled;
   final Set<String> visibleModules;
   final int notificationDaysBefore;
@@ -32,7 +35,10 @@ class SettingsState {
     String? avatarFace,
     String? avatarHair,
     int? avatarColor,
+    int? avatarHairColor,
     int? avatarClothes,
+    int? avatarBackground,
+    String? avatarOutfit,
     bool? biometricsEnabled,
     Set<String>? visibleModules,
     bool? notificationsEnabled,
@@ -43,7 +49,10 @@ class SettingsState {
     avatarFace: avatarFace ?? this.avatarFace,
     avatarHair: avatarHair ?? this.avatarHair,
     avatarColor: avatarColor ?? this.avatarColor,
+    avatarHairColor: avatarHairColor ?? this.avatarHairColor,
     avatarClothes: avatarClothes ?? this.avatarClothes,
+    avatarBackground: avatarBackground ?? this.avatarBackground,
+    avatarOutfit: avatarOutfit ?? this.avatarOutfit,
     biometricsEnabled: biometricsEnabled ?? this.biometricsEnabled,
     visibleModules: visibleModules ?? this.visibleModules,
     notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
@@ -67,10 +76,13 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         orElse: () => ThemeMode.system,
       ),
       avatarData: prefs.getString('avatar_data'),
-      avatarFace: prefs.getString('avatar_face') ?? '🙂',
-      avatarHair: prefs.getString('avatar_hair') ?? 'short',
-      avatarColor: prefs.getInt('avatar_color') ?? 0xFF8C6A4F,
+      avatarFace: _normalizeFace(prefs.getString('avatar_face')),
+      avatarHair: _normalizeHair(prefs.getString('avatar_hair')),
+      avatarColor: prefs.getInt('avatar_color') ?? 0xFFFFDBB4,
+      avatarHairColor: prefs.getInt('avatar_hair_color') ?? 0xFF4A2C24,
       avatarClothes: prefs.getInt('avatar_clothes') ?? 0xFF536DFE,
+      avatarBackground: prefs.getInt('avatar_background') ?? 0xFFD98ACB,
+      avatarOutfit: prefs.getString('avatar_outfit') ?? 'turtleneck',
       biometricsEnabled: prefs.getBool('biometrics_enabled') ?? false,
       visibleModules:
           prefs.getStringList('visible_modules')?.toSet() ?? appModules,
@@ -98,13 +110,19 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     String? face,
     String? hair,
     int? skin,
+    int? hairColor,
     int? clothes,
+    int? background,
+    String? outfit,
   }) async {
     state = state.copyWith(
       avatarFace: face,
       avatarHair: hair,
       avatarColor: skin,
+      avatarHairColor: hairColor,
       avatarClothes: clothes,
+      avatarBackground: background,
+      avatarOutfit: outfit,
       clearAvatar: true,
     );
     final prefs = await SharedPreferences.getInstance();
@@ -112,7 +130,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     if (face != null) await prefs.setString('avatar_face', face);
     if (hair != null) await prefs.setString('avatar_hair', hair);
     if (skin != null) await prefs.setInt('avatar_color', skin);
+    if (hairColor != null) {
+      await prefs.setInt('avatar_hair_color', hairColor);
+    }
     if (clothes != null) await prefs.setInt('avatar_clothes', clothes);
+    if (background != null) {
+      await prefs.setInt('avatar_background', background);
+    }
+    if (outfit != null) await prefs.setString('avatar_outfit', outfit);
   }
 
   Future<void> setBiometrics(bool value) async {
@@ -149,3 +174,15 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     );
   }
 }
+
+String _normalizeFace(String? value) => switch (value) {
+  'calm' || 'wink' || 'glasses' || 'freckles' => value!,
+  _ => 'smile',
+};
+
+String _normalizeHair(String? value) => switch (value) {
+  'crop' || 'wave' || 'bob' => value!,
+  'bald' || 'short' => 'crop',
+  'long' => 'wave',
+  _ => 'bob',
+};

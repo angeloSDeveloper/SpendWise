@@ -29,6 +29,8 @@ Per ogni intervento futuro:
 - CRUD per spese quotidiane, abbonamenti, rate, manutenzioni e accessori.
 - Menu principali configurabili dalle impostazioni.
 - Preferenze locali per tema, avatar, biometria e promemoria.
+- Avatar vettoriale moderno e leggero con 30 combinazioni base, colori
+  personalizzabili e compatibilità con le preferenze precedenti.
 
 ## Funzioni parziali
 
@@ -36,7 +38,6 @@ Per ogni intervento futuro:
   confermata sul browser che mostrava il problema.
 - Avatar fotografico: gestione degli errori aggiunta, ma manca il collaudo
   multipiattaforma.
-- Avatar componibile: disponibile solo come prima versione essenziale.
 - Dashboard modulare: rispetta i flag, ma richiede verifica funzionale con
   tutte le combinazioni.
 - Pagina Analisi: rispetta la visibilità dei moduli, ma usa ancora grafici e
@@ -49,10 +50,11 @@ Per ogni intervento futuro:
 - CRUD dei rifornimenti.
 - Notifiche Web Push/FCM reali.
 - Test end-to-end e copertura widget delle nuove funzioni.
-- Avatar con più elementi e resa grafica rifinita.
+- Eventuali ulteriori accessori grafici per l'avatar, solo se richiesti dopo il
+  collaudo visivo dell'utente.
 
 ## Ultima pubblicazione nota
 
-- Commit: `8a46df6`
+- Commit precedente: `0e1a284`
 - Worker: `https://spendwise.lopreteangelo97.workers.dev`
 - Database: `spendwise-db`
