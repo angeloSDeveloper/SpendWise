@@ -2,13 +2,13 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
 import 'package:spendwise/presentation/settings/avatar/avatar_config.dart';
 import 'package:spendwise/presentation/settings/avatar/avatar_customizer_view.dart';
 import 'package:spendwise/presentation/settings/avatar/avatar_service.dart';
+import 'package:spendwise/presentation/settings/avatar/avatar_visual.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 
@@ -119,14 +119,13 @@ class SettingsScreen extends ConsumerWidget {
                                 userId,
                                 initials: initials,
                               ),
-                              builder: (context, snapshot) => SvgPicture.string(
-                                AvatarService.generateAvatarSvg(
-                                  snapshot.data ??
-                                      AvatarService.generateAvatarFromUserId(
-                                        userId,
-                                        initials,
-                                      ),
-                                ),
+                              builder: (context, snapshot) => AvatarVisual(
+                                config:
+                                    snapshot.data ??
+                                    AvatarService.generateAvatarFromUserId(
+                                      userId,
+                                      initials,
+                                    ),
                               ),
                             ),
                     ),

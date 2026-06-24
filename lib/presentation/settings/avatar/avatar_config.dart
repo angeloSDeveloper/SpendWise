@@ -3,6 +3,7 @@ import 'dart:convert';
 class AvatarConfig {
   const AvatarConfig({
     required this.gender,
+    required this.presetId,
     required this.initials,
     required this.backgroundColor,
     required this.primaryColor,
@@ -16,6 +17,7 @@ class AvatarConfig {
   });
 
   final String gender;
+  final String presetId;
   final String initials;
   final String backgroundColor;
   final String primaryColor;
@@ -29,6 +31,7 @@ class AvatarConfig {
 
   AvatarConfig copyWith({
     String? gender,
+    String? presetId,
     String? initials,
     String? backgroundColor,
     String? primaryColor,
@@ -41,6 +44,7 @@ class AvatarConfig {
     String? statusBadge,
   }) => AvatarConfig(
     gender: gender ?? this.gender,
+    presetId: presetId ?? this.presetId,
     initials: initials ?? this.initials,
     backgroundColor: backgroundColor ?? this.backgroundColor,
     primaryColor: primaryColor ?? this.primaryColor,
@@ -55,6 +59,7 @@ class AvatarConfig {
 
   Map<String, dynamic> toJson() => {
     'gender': gender,
+    'presetId': presetId,
     'initials': initials,
     'backgroundColor': backgroundColor,
     'primaryColor': primaryColor,
@@ -69,6 +74,7 @@ class AvatarConfig {
 
   factory AvatarConfig.fromJson(Map<String, dynamic> json) => AvatarConfig(
     gender: json['gender'] as String? ?? 'male',
+    presetId: json['presetId'] as String? ?? 'male-navy',
     initials: json['initials'] as String? ?? '',
     backgroundColor: json['backgroundColor'] as String? ?? '#e8eaf0',
     primaryColor: json['primaryColor'] as String? ?? '#536dfe',

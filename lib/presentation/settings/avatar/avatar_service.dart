@@ -9,6 +9,7 @@ class AvatarService {
   static AvatarConfig getDefaultAvatarConfig({String initials = ''}) =>
       AvatarConfig(
         gender: 'male',
+        presetId: 'male-navy',
         initials: _sanitizeInitials(initials),
         backgroundColor: '#e7eaf2',
         primaryColor: '#536dfe',
@@ -33,6 +34,12 @@ class AvatarService {
     return getDefaultAvatarConfig(initials: initials).copyWith(
       backgroundColor: backgrounds[hash % backgrounds.length],
       primaryColor: primary[(hash ~/ 3) % primary.length],
+      presetId: const [
+        'male-navy',
+        'female-teal',
+        'male-charcoal',
+        'female-burgundy',
+      ][hash % 4],
       hairStyle: hair[(hash ~/ 7) % hair.length],
       hairColor: colors[(hash ~/ 11) % colors.length],
       outfit: outfits[(hash ~/ 13) % outfits.length],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:spendwise/presentation/settings/avatar/avatar_config.dart';
 import 'package:spendwise/presentation/settings/avatar/avatar_service.dart';
+import 'package:spendwise/presentation/settings/avatar/avatar_visual.dart';
 
 class AvatarCustomizerView extends StatefulWidget {
   const AvatarCustomizerView({
@@ -134,7 +134,7 @@ class _CompactAvatarPreview extends StatelessWidget {
             shape: BoxShape.circle,
             color: Theme.of(context).colorScheme.surfaceContainerLow,
           ),
-          child: SvgPicture.string(AvatarService.generateAvatarSvg(config)),
+          child: AvatarVisual(config: config),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -191,10 +191,7 @@ class _AvatarPreview extends StatelessWidget {
                 ),
               ],
             ),
-            child: SvgPicture.string(
-              AvatarService.generateAvatarSvg(config),
-              fit: BoxFit.contain,
-            ),
+            child: AvatarVisual(config: config),
           ),
           const SizedBox(height: 18),
           Text(
@@ -244,6 +241,9 @@ class _AvatarControls extends StatelessWidget {
               onSelectionChanged: (value) => onChanged(
                 config.copyWith(
                   gender: value.first,
+                  presetId: value.first == 'female'
+                      ? 'female-teal'
+                      : 'male-navy',
                   beardStyle: value.first == 'female'
                       ? 'none'
                       : config.beardStyle,
@@ -266,128 +266,175 @@ class _AvatarControls extends StatelessWidget {
         ),
       ),
       _SectionCard(
-        icon: Icons.palette_outlined,
-        title: 'Colori',
-        child: Column(
-          children: [
-            _PaletteRow(
-              label: 'Principale',
-              selected: config.primaryColor,
-              colors: const [
-                '#2563eb',
-                '#14b8a6',
-                '#7c3aed',
-                '#d97706',
-                '#db2777',
-              ],
-              onChanged: (value) =>
-                  onChanged(config.copyWith(primaryColor: value)),
-            ),
-            _PaletteRow(
-              label: 'Sfondo',
-              selected: config.backgroundColor,
-              colors: const [
-                '#e1effe',
-                '#dff4ef',
-                '#eee7fb',
-                '#fff0d5',
-                '#f7e7ef',
-              ],
-              onChanged: (value) =>
-                  onChanged(config.copyWith(backgroundColor: value)),
-            ),
-          ],
-        ),
-      ),
-      _SectionCard(
-        icon: Icons.face_retouching_natural,
-        title: 'Aspetto',
+        icon: Icons.grid_view_rounded,
+        title: 'Stile 2.5D',
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _ChoiceWrap(
-              label: 'Tono pelle',
-              value: config.skinTone,
-              options: const {
-                'porcelain': 'Porcellana',
-                'light': 'Chiaro',
-                'medium': 'Medio',
-                'tan': 'Ambrato',
-                'deep': 'Scuro',
-              },
-              onChanged: (value) => onChanged(config.copyWith(skinTone: value)),
+            Text(
+              'Scegli una base professionale',
+              style: Theme.of(context).textTheme.labelLarge,
             ),
-            _ChoiceWrap(
-              label: 'Capelli',
-              value: config.hairStyle,
-              options: config.gender == 'female'
-                  ? const {
-                      'initials': 'Solo iniziali',
-                      'short_01': 'Pixie',
-                      'medium_01': 'Caschetto',
-                      'long_01': 'Lunghi',
-                    }
-                  : const {
-                      'initials': 'Solo iniziali',
-                      'short_01': 'Corti',
-                      'medium_01': 'Medi',
-                      'long_01': 'Lunghi',
-                    },
-              onChanged: (value) =>
-                  onChanged(config.copyWith(hairStyle: value)),
-            ),
-            _ChoiceWrap(
-              label: 'Colore capelli',
-              value: config.hairColor,
-              options: const {
-                'black': 'Nero',
-                'brown': 'Castano',
-                'blonde': 'Biondo',
-                'auburn': 'Ramato',
-                'silver': 'Argento',
-              },
-              onChanged: (value) =>
-                  onChanged(config.copyWith(hairColor: value)),
-            ),
-            _ChoiceWrap(
-              label: 'Outfit',
-              value: config.outfit,
-              options: const {
-                'shirt_01': 'Blazer',
-                'sweater_01': 'Maglia minimal',
-              },
-              onChanged: (value) => onChanged(config.copyWith(outfit: value)),
+            const SizedBox(height: 12),
+            LayoutBuilder(
+              builder: (context, constraints) => GridView.count(
+                crossAxisCount: constraints.maxWidth >= 620 ? 3 : 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: .82,
+                children: [
+                  for (final preset in avatarPresets.entries.where(
+                    (entry) => entry.value.$2 == config.gender,
+                  ))
+                    _PresetCard(
+                      label: preset.value.$1,
+                      asset: preset.value.$3,
+                      selected: config.presetId == preset.key,
+                      onTap: () =>
+                          onChanged(config.copyWith(presetId: preset.key)),
+                    ),
+                  _PresetCard(
+                    label: 'SVG semplice',
+                    selected: config.presetId == 'custom-svg',
+                    onTap: () =>
+                        onChanged(config.copyWith(presetId: 'custom-svg')),
+                    config: config.copyWith(presetId: 'custom-svg'),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
-      _SectionCard(
-        icon: Icons.auto_awesome_outlined,
-        title: 'Accessori',
-        child: Column(
-          children: [
-            if (config.gender == 'male')
+      if (config.presetId == 'custom-svg') ...[
+        _SectionCard(
+          icon: Icons.palette_outlined,
+          title: 'Colori',
+          child: Column(
+            children: [
+              _PaletteRow(
+                label: 'Principale',
+                selected: config.primaryColor,
+                colors: const [
+                  '#2563eb',
+                  '#14b8a6',
+                  '#7c3aed',
+                  '#d97706',
+                  '#db2777',
+                ],
+                onChanged: (value) =>
+                    onChanged(config.copyWith(primaryColor: value)),
+              ),
+              _PaletteRow(
+                label: 'Sfondo',
+                selected: config.backgroundColor,
+                colors: const [
+                  '#e1effe',
+                  '#dff4ef',
+                  '#eee7fb',
+                  '#fff0d5',
+                  '#f7e7ef',
+                ],
+                onChanged: (value) =>
+                    onChanged(config.copyWith(backgroundColor: value)),
+              ),
+            ],
+          ),
+        ),
+        _SectionCard(
+          icon: Icons.face_retouching_natural,
+          title: 'Aspetto',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               _ChoiceWrap(
-                label: 'Barba / baffi',
-                value: config.beardStyle,
+                label: 'Tono pelle',
+                value: config.skinTone,
                 options: const {
-                  'none': 'Nessuna',
-                  'short': 'Barba corta',
-                  'mustache': 'Baffi',
+                  'porcelain': 'Porcellana',
+                  'light': 'Chiaro',
+                  'medium': 'Medio',
+                  'tan': 'Ambrato',
+                  'deep': 'Scuro',
                 },
                 onChanged: (value) =>
-                    onChanged(config.copyWith(beardStyle: value)),
+                    onChanged(config.copyWith(skinTone: value)),
               ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.visibility_outlined),
-              title: const Text('Occhiali'),
-              value: config.glasses,
-              onChanged: (value) => onChanged(config.copyWith(glasses: value)),
-            ),
-          ],
+              _ChoiceWrap(
+                label: 'Capelli',
+                value: config.hairStyle,
+                options: config.gender == 'female'
+                    ? const {
+                        'initials': 'Solo iniziali',
+                        'short_01': 'Pixie',
+                        'medium_01': 'Caschetto',
+                        'long_01': 'Lunghi',
+                      }
+                    : const {
+                        'initials': 'Solo iniziali',
+                        'short_01': 'Corti',
+                        'medium_01': 'Medi',
+                        'long_01': 'Lunghi',
+                      },
+                onChanged: (value) =>
+                    onChanged(config.copyWith(hairStyle: value)),
+              ),
+              _ChoiceWrap(
+                label: 'Colore capelli',
+                value: config.hairColor,
+                options: const {
+                  'black': 'Nero',
+                  'brown': 'Castano',
+                  'blonde': 'Biondo',
+                  'auburn': 'Ramato',
+                  'silver': 'Argento',
+                },
+                onChanged: (value) =>
+                    onChanged(config.copyWith(hairColor: value)),
+              ),
+              _ChoiceWrap(
+                label: 'Outfit',
+                value: config.outfit,
+                options: const {
+                  'shirt_01': 'Blazer',
+                  'sweater_01': 'Maglia minimal',
+                },
+                onChanged: (value) => onChanged(config.copyWith(outfit: value)),
+              ),
+            ],
+          ),
         ),
-      ),
+        _SectionCard(
+          icon: Icons.auto_awesome_outlined,
+          title: 'Accessori',
+          child: Column(
+            children: [
+              if (config.gender == 'male')
+                _ChoiceWrap(
+                  label: 'Barba / baffi',
+                  value: config.beardStyle,
+                  options: const {
+                    'none': 'Nessuna',
+                    'short': 'Barba corta',
+                    'mustache': 'Baffi',
+                  },
+                  onChanged: (value) =>
+                      onChanged(config.copyWith(beardStyle: value)),
+                ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.visibility_outlined),
+                title: const Text('Occhiali'),
+                value: config.glasses,
+                onChanged: (value) =>
+                    onChanged(config.copyWith(glasses: value)),
+              ),
+            ],
+          ),
+        ),
+      ],
       _SectionCard(
         icon: Icons.circle_outlined,
         title: 'Badge stato',
@@ -403,6 +450,71 @@ class _AvatarControls extends StatelessWidget {
         ),
       ),
     ],
+  );
+}
+
+class _PresetCard extends StatelessWidget {
+  const _PresetCard({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.asset,
+    this.config,
+  });
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final String? asset;
+  final AvatarConfig? config;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(18),
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: selected
+            ? Theme.of(context).colorScheme.primaryContainer
+            : Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: selected
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.outlineVariant,
+          width: selected ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            child: ClipOval(
+              child: asset != null
+                  ? Image.asset(asset!, fit: BoxFit.cover)
+                  : AvatarVisual(config: config!),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (selected) ...[
+                const Icon(Icons.check_circle, size: 17),
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
   );
 }
 

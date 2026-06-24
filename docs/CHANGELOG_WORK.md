@@ -46,6 +46,19 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
   stato modificato.
 - File di riferimento: `docs/design/avatar-2_5d-concept-v1.png`.
 
+### Prova avatar 2.5D integrata — solo ramo sperimentale
+
+- Approvata dall'utente la direzione grafica del concept.
+- Generate quattro basi originali coerenti: due uomini e due donne.
+- Ottimizzate a 512×512 JPEG; peso complessivo inferiore a 120 KB.
+- Aggiunta selezione Uomo/Donna e griglia delle basi disponibili.
+- Preview 2.5D persistente su desktop e mobile.
+- Conservato il fallback SVG personalizzabile e quello con iniziali.
+- Badge online/offline sovrapposto senza duplicare gli asset.
+- Analisi statica, test e build web superati.
+- La prova resta esclusivamente nel ramo `experiment/avatar-svg-v2`; nessun
+  deploy Cloudflare e nessuna modifica a `main` o `dev`.
+
 ### Avatar vettoriale moderno
 
 - Sostituito l'avatar provvisorio basato su emoji e icone con un disegno

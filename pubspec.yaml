@@ -78,6 +78,7 @@ flutter:
   generate: true  # per l10n
 
   assets:
+    - assets/avatars/
     - assets/icons/categories/
     - assets/images/
     - assets/fonts/

@@ -55,6 +55,9 @@ Legenda:
 - [-] Valutare la tavola 2.5D con quattro avatar professionali salvata in
   `docs/design/avatar-2_5d-concept-v1.png`. Non integrare gli asset nell'app
   prima dell'approvazione visiva.
+- [-] Approvato lo stile 2.5D: integrare una prima prova con 4 basi originali
+  selezionabili, sfondo e badge configurabili. Resta sul ramo sperimentale
+  finché non viene approvata nell'app.
 - [x] Sostituire l'avatar provvisorio con un avatar vettoriale moderno e
   leggero: 5 volti × 3 capelli × 2 vestiti, 30 combinazioni base.
 - [-] Foto avatar con selezione dalla galleria: implementata, da collaudare su

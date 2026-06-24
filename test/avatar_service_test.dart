@@ -6,6 +6,7 @@ void main() {
   test('serializza e ripristina la configurazione JSON', () {
     const config = AvatarConfig(
       gender: 'female',
+      presetId: 'female-teal',
       initials: 'AC',
       backgroundColor: '#e1effe',
       primaryColor: '#2563eb',
