@@ -22,9 +22,9 @@ app.post('/api/auth/logout', logout);
 
 const resources = {
   expenses: { table: 'daily_expenses', fields: ['category_id','amount','description','date','note'] },
-  subscriptions: { table: 'subscriptions', fields: ['name','amount','currency','billing_cycle','billing_day','start_date','end_date','url','icon','color','is_active','note'] },
+  subscriptions: { table: 'subscriptions', fields: ['name','amount','currency','billing_cycle','billing_day','start_date','end_date','next_due_date','recurrence_months','url','icon','color','is_active','note'] },
   installments: { table: 'installment_plans', fields: ['name','provider','total_amount','installment_amount','total_installments','paid_installments','frequency','start_date','next_due_date','is_active','note'] },
-  vehicles: { table: 'vehicles', fields: ['name','plate','brand','model','year','fuel_type'] },
+  vehicles: { table: 'vehicles', fields: ['name','plate','brand','model','year','fuel_type','is_archived'] },
 } as const;
 
 const bodyValue = (body: Record<string, unknown>, snake: string) => {
@@ -33,7 +33,7 @@ const bodyValue = (body: Record<string, unknown>, snake: string) => {
 };
 const serialize = (row: Record<string, unknown>) => Object.fromEntries(Object.entries(row).map(([key, value]) => [
   key.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase()),
-  ['is_active','is_full_tank','is_default','synced'].includes(key) && typeof value === 'number'
+  ['is_active','is_full_tank','is_default','is_archived','synced'].includes(key) && typeof value === 'number'
     ? value === 1
     : (key.endsWith('_at') || key === 'date' || key.endsWith('_date')) && typeof value === 'number' ? new Date(value).toISOString() : value,
 ]));
@@ -123,11 +123,17 @@ app.post('/api/installments/:id/pay-installment', async (c) => {
   if (!plan) return c.json({ data: null, error: 'Piano non trovato' }, 404);
   const paid = Number(plan.paid_installments) + 1;
   if (paid > Number(plan.total_installments)) return c.json({ data: null, error: 'Piano già completato' }, 409);
+  const currentDue = new Date(Number(plan.next_due_date || Date.now()));
+  const nextDue = String(plan.frequency) === 'weekly'
+    ? currentDue.getTime() + 7 * 86400000
+    : String(plan.frequency) === 'biweekly'
+      ? currentDue.getTime() + 14 * 86400000
+      : new Date(currentDue.getFullYear(), currentDue.getMonth() + 1, currentDue.getDate()).getTime();
   await c.env.DB.batch([
     c.env.DB.prepare('INSERT INTO installment_payments (id,plan_id,user_id,installment_number,amount,due_date,paid_date,status) VALUES (?,?,?,?,?,?,?,?)')
       .bind(crypto.randomUUID(), id, userId, paid, plan.installment_amount, plan.next_due_date || Date.now(), Date.now(), 'paid'),
-    c.env.DB.prepare('UPDATE installment_plans SET paid_installments = ?, is_active = ?, updated_at = ? WHERE id = ?')
-      .bind(paid, paid < Number(plan.total_installments) ? 1 : 0, Date.now(), id),
+    c.env.DB.prepare('UPDATE installment_plans SET paid_installments = ?, next_due_date = ?, is_active = ?, updated_at = ? WHERE id = ?')
+      .bind(paid, nextDue, paid < Number(plan.total_installments) ? 1 : 0, Date.now(), id),
   ]);
   return c.json({ data: { paidInstallments: paid }, error: null });
 });

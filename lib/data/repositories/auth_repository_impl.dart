@@ -40,9 +40,18 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<User?> currentUser() async {
     final raw = await storage.read(key: _userKey);
-    return raw == null
-        ? null
-        : User.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    final refreshToken = await storage.read(key: AppConstants.kRefreshTokenKey);
+    if (raw == null || refreshToken == null) return null;
+    try {
+      final response = await client.refreshToken({
+        'refreshToken': refreshToken,
+      });
+      await _save(Future.value(response));
+      return response.user;
+    } catch (_) {
+      await storage.deleteAll();
+      return null;
+    }
   }
 
   @override

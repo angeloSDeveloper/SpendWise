@@ -15,6 +15,8 @@ abstract class Subscription with _$Subscription {
     int? billingDay,
     required DateTime startDate,
     DateTime? endDate,
+    DateTime? nextDueDate,
+    int? recurrenceMonths,
     String? url,
     String? icon,
     String? color,

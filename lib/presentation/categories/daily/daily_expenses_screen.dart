@@ -159,6 +159,7 @@ class _State extends ConsumerState<DailyExpensesScreen> {
                             symbol: '€',
                           ).format(item.amount),
                         ),
+                        onTap: () => _showExpense(context, ref, item),
                       ),
                     );
                   },
@@ -176,8 +177,94 @@ class _State extends ConsumerState<DailyExpensesScreen> {
   }
 }
 
+Future<void> _showExpense(
+  BuildContext context,
+  WidgetRef ref,
+  DailyExpense item,
+) => showModalBottomSheet<void>(
+  context: context,
+  showDragHandle: true,
+  builder: (sheetContext) => SafeArea(
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  item.description ?? 'Spesa',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+              ),
+              IconButton(
+                onPressed: () async {
+                  Navigator.pop(sheetContext);
+                  await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (_) => AddDailyExpenseScreen(existing: item),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.edit),
+              ),
+              IconButton(
+                color: Theme.of(context).colorScheme.error,
+                onPressed: () async {
+                  final yes = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Eliminare questa spesa?'),
+                      content: const Text(
+                        'Il movimento verrà eliminato definitivamente.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          child: const Text('ANNULLA'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          child: const Text('ELIMINA'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (yes != true) return;
+                  await ref.read(expensesApiProvider).deleteExpense(item.id);
+                  ref.invalidate(dailyExpensesProvider);
+                  if (sheetContext.mounted) Navigator.pop(sheetContext);
+                },
+                icon: const Icon(Icons.delete_outline),
+              ),
+            ],
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.euro),
+            title: Text(
+              NumberFormat.currency(
+                locale: 'it_IT',
+                symbol: '€',
+              ).format(item.amount),
+            ),
+            subtitle: Text(
+              DateFormat('dd/MM/yyyy').format(item.date.toLocal()),
+            ),
+          ),
+          if (item.note?.isNotEmpty == true)
+            Text(item.note!.replaceFirst(RegExp(r'^categoria:[^\n]+\n?'), '')),
+        ],
+      ),
+    ),
+  ),
+);
+
 class AddDailyExpenseScreen extends ConsumerStatefulWidget {
-  const AddDailyExpenseScreen({super.key});
+  const AddDailyExpenseScreen({this.existing, super.key});
+  final DailyExpense? existing;
   @override
   ConsumerState<AddDailyExpenseScreen> createState() => _AddDailyExpenseState();
 }
@@ -187,10 +274,23 @@ class _AddDailyExpenseState extends ConsumerState<AddDailyExpenseScreen> {
       amount = TextEditingController(),
       note = TextEditingController();
   String category = 'altro';
+  DateTime date = DateTime.now();
   bool automatic = true, saving = false;
   @override
   void initState() {
     super.initState();
+    final item = widget.existing;
+    if (item != null) {
+      description.text = item.description ?? '';
+      amount.text = item.amount.toStringAsFixed(2);
+      category = categoryFrom(item);
+      note.text = (item.note ?? '').replaceFirst(
+        RegExp(r'^categoria:[^\n]+\n?'),
+        '',
+      );
+      date = item.date.toLocal();
+      automatic = false;
+    }
     description.addListener(() {
       if (automatic) setState(() => category = inferCategory(description.text));
     });
@@ -214,12 +314,18 @@ class _AddDailyExpenseState extends ConsumerState<AddDailyExpenseScreen> {
     }
     setState(() => saving = true);
     try {
-      await ref.read(expensesApiProvider).createExpense({
+      final body = {
         'amount': value,
         'description': description.text.trim(),
-        'date': DateTime.now().millisecondsSinceEpoch,
+        'date': date.millisecondsSinceEpoch,
         'note': 'categoria:$category\n${note.text.trim()}',
-      });
+      };
+      final api = ref.read(expensesApiProvider);
+      if (widget.existing == null) {
+        await api.createExpense(body);
+      } else {
+        await api.updateExpense(widget.existing!.id, body);
+      }
       ref.invalidate(dailyExpensesProvider);
       if (mounted) context.pop();
     } catch (error) {
@@ -235,7 +341,9 @@ class _AddDailyExpenseState extends ConsumerState<AddDailyExpenseScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Nuova spesa')),
+    appBar: AppBar(
+      title: Text(widget.existing == null ? 'Nuova spesa' : 'Modifica spesa'),
+    ),
     body: ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -244,6 +352,26 @@ class _AddDailyExpenseState extends ConsumerState<AddDailyExpenseScreen> {
           decoration: const InputDecoration(
             labelText: 'Cosa hai acquistato? *',
             hintText: 'Es. cassa d’acqua, mele, trapano',
+          ),
+        ),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: () async {
+            final selected = await showDatePicker(
+              context: context,
+              locale: const Locale('it', 'IT'),
+              initialDate: date,
+              firstDate: DateTime(1900),
+              lastDate: DateTime.now().add(const Duration(days: 365)),
+            );
+            if (selected != null) setState(() => date = selected);
+          },
+          child: InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Data',
+              prefixIcon: Icon(Icons.calendar_month),
+            ),
+            child: Text(DateFormat('dd/MM/yyyy').format(date)),
           ),
         ),
         const SizedBox(height: 12),

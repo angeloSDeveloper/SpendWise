@@ -8,6 +8,7 @@ import 'package:spendwise/data/remote/api_client.dart';
 import 'package:spendwise/domain/models/daily_expense.dart';
 import 'package:spendwise/domain/models/enums.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
+import 'package:spendwise/presentation/settings/settings_provider.dart';
 
 class DashboardData {
   const DashboardData({
@@ -24,6 +25,7 @@ class DashboardData {
 final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
   ref,
 ) async {
+  final modules = ref.watch(settingsProvider).visibleModules;
   final dio = ref.watch(dioClientProvider).dio;
   final now = DateTime.now();
   final from = DateTime(now.year, now.month - 5, 1);
@@ -32,11 +34,13 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
       dio,
     ).getExpenses(from.toIso8601String(), now.toIso8601String(), null),
     SubscriptionsApiClient(dio).getAll(),
+    InstallmentsApiClient(dio).getAll(),
     VehiclesApiClient(dio).getAll(),
   ]);
   final expenses = results[0] as List<DailyExpense>;
   final subscriptions = results[1] as List<dynamic>;
-  final vehicles = results[2] as List<dynamic>;
+  final installments = results[2] as List<dynamic>;
+  final vehicles = results[3] as List<dynamic>;
   final vehicleApi = VehiclesApiClient(dio);
   final fuelLists = await Future.wait(
     vehicles.map((v) => vehicleApi.fuel(v.id as String)),
@@ -50,58 +54,86 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
   final monthTotals = List<double>.filled(6, 0);
   int monthIndex(DateTime date) =>
       (date.year - from.year) * 12 + date.month - from.month;
-  for (final expense in expenses) {
-    final index = monthIndex(expense.date);
-    if (index >= 0 && index < 6) monthTotals[index] += expense.amount;
+  if (modules.contains('daily')) {
+    for (final expense in expenses) {
+      final index = monthIndex(expense.date);
+      if (index >= 0 && index < 6) monthTotals[index] += expense.amount;
+    }
+  }
+  if (modules.contains('installments')) {
+    for (final plan in installments) {
+      if (plan.nextDueDate == null || plan.isActive != true) continue;
+      final index = monthIndex(plan.nextDueDate as DateTime);
+      if (index >= 0 && index < 6) {
+        monthTotals[index] += plan.installmentAmount as double;
+      }
+    }
   }
   var vehicleMonth = 0.0;
-  for (final list in fuelLists) {
-    for (final entry in list) {
-      final index = monthIndex(entry.date);
-      if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;
-      if (entry.date.year == now.year && entry.date.month == now.month) {
-        vehicleMonth += entry.totalCost;
+  if (modules.contains('vehicle')) {
+    for (final list in fuelLists) {
+      for (final entry in list) {
+        final index = monthIndex(entry.date);
+        if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;
+        if (entry.date.year == now.year && entry.date.month == now.month) {
+          vehicleMonth += entry.totalCost;
+        }
       }
     }
   }
-  for (final list in maintenanceLists) {
-    for (final entry in list) {
-      final index = monthIndex(entry.date);
-      if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;
-      if (entry.date.year == now.year && entry.date.month == now.month) {
-        vehicleMonth += entry.totalCost;
+  if (modules.contains('vehicle')) {
+    for (final list in maintenanceLists) {
+      for (final entry in list) {
+        final index = monthIndex(entry.date);
+        if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;
+        if (entry.date.year == now.year && entry.date.month == now.month) {
+          vehicleMonth += entry.totalCost;
+        }
       }
     }
   }
-  for (final list in accessoryLists) {
-    for (final entry in list) {
-      final index = monthIndex(entry.date);
-      if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;
-      if (entry.date.year == now.year && entry.date.month == now.month) {
-        vehicleMonth += entry.totalCost;
+  if (modules.contains('vehicle')) {
+    for (final list in accessoryLists) {
+      for (final entry in list) {
+        final index = monthIndex(entry.date);
+        if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;
+        if (entry.date.year == now.year && entry.date.month == now.month) {
+          vehicleMonth += entry.totalCost;
+        }
       }
     }
   }
-  final dailyMonth = expenses
-      .where((x) => x.date.year == now.year && x.date.month == now.month)
-      .fold<double>(0, (sum, x) => sum + x.amount);
-  final subscriptionMonth = subscriptions
-      .where((x) => x.isActive == true)
-      .fold<double>(
-        0,
-        (sum, x) =>
-            sum +
-            switch (x.billingCycle as BillingCycle) {
-              BillingCycle.weekly => (x.amount as double) * 52 / 12,
-              BillingCycle.monthly => x.amount as double,
-              BillingCycle.yearly => (x.amount as double) / 12,
-            },
-      );
+  final dailyMonth = modules.contains('daily')
+      ? expenses
+            .where((x) => x.date.year == now.year && x.date.month == now.month)
+            .fold<double>(0, (sum, x) => sum + x.amount)
+      : 0.0;
+  final subscriptionMonth = modules.contains('subscriptions')
+      ? subscriptions
+            .where((x) => x.isActive == true)
+            .fold<double>(
+              0,
+              (sum, x) =>
+                  sum +
+                  switch (x.billingCycle as BillingCycle) {
+                    BillingCycle.weekly => (x.amount as double) * 52 / 12,
+                    BillingCycle.monthly =>
+                      (x.amount as double) /
+                          ((x.recurrenceMonths as int?) ?? 1),
+                    BillingCycle.yearly => (x.amount as double) / 12,
+                  },
+            )
+      : 0.0;
+  final installmentMonth = modules.contains('installments')
+      ? installments
+            .where((x) => x.isActive == true)
+            .fold<double>(0, (sum, x) => sum + (x.installmentAmount as double))
+      : 0.0;
   expenses.sort((a, b) => b.date.compareTo(a.date));
   return DashboardData(
-    categories: [dailyMonth, subscriptionMonth, 0, vehicleMonth],
+    categories: [dailyMonth, subscriptionMonth, installmentMonth, vehicleMonth],
     months: monthTotals,
-    recent: expenses.take(5).toList(),
+    recent: modules.contains('daily') ? expenses.take(5).toList() : const [],
   );
 });
 
@@ -118,6 +150,7 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
     final user = ref.watch(currentUserProvider);
     final sync = ref.watch(syncStatusProvider);
     final data = ref.watch(dashboardDataProvider);
+    final modules = ref.watch(settingsProvider).visibleModules;
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -265,36 +298,42 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
                       ),
               ),
               const SizedBox(height: 20),
-              Text(
-                'Ultime spese',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              if (summary.recent.isEmpty)
-                const Card(child: ListTile(title: Text('Nessuna transazione'))),
-              for (final expense in summary.recent)
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.receipt_long),
-                    title: Text(expense.description ?? 'Spesa'),
-                    subtitle: Text(
-                      DateFormat('dd/MM/yyyy').format(expense.date.toLocal()),
-                    ),
-                    trailing: Text(
-                      NumberFormat.currency(
-                        locale: 'it_IT',
-                        symbol: '€',
-                      ).format(expense.amount),
+              if (modules.contains('daily')) ...[
+                Text(
+                  'Ultime spese',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                if (summary.recent.isEmpty)
+                  const Card(
+                    child: ListTile(title: Text('Nessuna transazione')),
+                  ),
+                for (final expense in summary.recent)
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.receipt_long),
+                      title: Text(expense.description ?? 'Spesa'),
+                      subtitle: Text(
+                        DateFormat('dd/MM/yyyy').format(expense.date.toLocal()),
+                      ),
+                      trailing: Text(
+                        NumberFormat.currency(
+                          locale: 'it_IT',
+                          symbol: '€',
+                        ).format(expense.amount),
+                      ),
                     ),
                   ),
-                ),
+              ],
             ],
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/daily/add'),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: modules.contains('daily')
+          ? FloatingActionButton(
+              onPressed: () => context.push('/daily/add'),
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 
@@ -305,6 +344,13 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
       AppColors.subscription,
       AppColors.installment,
       AppColors.vehicle,
+    ];
+    final modules = ref.read(settingsProvider).visibleModules;
+    final visible = [
+      if (modules.contains('daily')) 0,
+      if (modules.contains('subscriptions')) 1,
+      if (modules.contains('installments')) 2,
+      if (modules.contains('vehicle')) 3,
     ];
     return Card(
       child: Padding(
@@ -325,7 +371,7 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
                           response?.touchedSection?.touchedSectionIndex ?? -1,
                     ),
                   ),
-                  sections: List.generate(4, (index) {
+                  sections: visible.map((index) {
                     final value = data.categories[index];
                     return PieChartSectionData(
                       value: value <= 0 ? .001 : value,
@@ -339,23 +385,24 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
                             ).format(value),
                       titleStyle: const TextStyle(fontWeight: FontWeight.bold),
                     );
-                  }),
+                  }).toList(),
                 ),
               ),
             ),
             Wrap(
               spacing: 12,
-              children: List.generate(
-                4,
-                (i) => Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.circle, size: 12, color: colors[i]),
-                    const SizedBox(width: 4),
-                    Text(labels[i]),
-                  ],
-                ),
-              ),
+              children: visible
+                  .map(
+                    (i) => Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.circle, size: 12, color: colors[i]),
+                        const SizedBox(width: 4),
+                        Text(labels[i]),
+                      ],
+                    ),
+                  )
+                  .toList(),
             ),
           ],
         ),

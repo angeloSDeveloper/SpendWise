@@ -11,6 +11,7 @@ import 'package:spendwise/presentation/categories/vehicle/vehicle_screen.dart';
 import 'package:spendwise/presentation/dashboard/dashboard_screen.dart';
 import 'package:spendwise/presentation/manual/manual_screen.dart';
 import 'package:spendwise/presentation/settings/settings_screen.dart';
+import 'package:spendwise/presentation/settings/settings_provider.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 
 final routerProvider = Provider<GoRouter>(
@@ -89,8 +90,7 @@ final routerProvider = Provider<GoRouter>(
             routes: [
               GoRoute(
                 path: 'add',
-                builder: (c, s) =>
-                    const EntityFormScreen(title: 'Nuovo piano rateale'),
+                builder: (c, s) => const AddInstallmentScreen(),
               ),
               GoRoute(
                 path: ':id',
@@ -149,7 +149,7 @@ class _RouterRefresh extends ChangeNotifier {
   }
 }
 
-class NavigationShell extends StatelessWidget {
+class NavigationShell extends ConsumerWidget {
   const NavigationShell({required this.child, super.key});
   final Widget child;
   static const paths = [
@@ -168,18 +168,29 @@ class NavigationShell extends StatelessWidget {
     Icons.directions_car_outlined,
   ];
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final modules = ref.watch(settingsProvider).visibleModules;
+    final visibleIndexes = <int>[
+      0,
+      if (modules.contains('daily')) 1,
+      if (modules.contains('subscriptions')) 2,
+      if (modules.contains('installments')) 3,
+      if (modules.contains('vehicle')) 4,
+    ];
     final location = GoRouterState.of(context).matchedLocation;
-    final index = paths.indexWhere(location.startsWith).clamp(0, 4);
+    final absoluteIndex = paths.indexWhere(location.startsWith).clamp(0, 4);
+    final index = visibleIndexes
+        .indexOf(absoluteIndex)
+        .clamp(0, visibleIndexes.length - 1);
     final wide = MediaQuery.sizeOf(context).width > 1024;
     final nav = NavigationRail(
       selectedIndex: index,
-      onDestinationSelected: (i) => context.go(paths[i]),
+      onDestinationSelected: (i) => context.go(paths[visibleIndexes[i]]),
       destinations: List.generate(
-        5,
+        visibleIndexes.length,
         (i) => NavigationRailDestination(
-          icon: Icon(icons[i]),
-          label: Text(labels[i]),
+          icon: Icon(icons[visibleIndexes[i]]),
+          label: Text(labels[visibleIndexes[i]]),
         ),
       ),
     );
@@ -194,12 +205,13 @@ class NavigationShell extends StatelessWidget {
           ? null
           : NavigationBar(
               selectedIndex: index,
-              onDestinationSelected: (i) => context.go(paths[i]),
+              onDestinationSelected: (i) =>
+                  context.go(paths[visibleIndexes[i]]),
               destinations: List.generate(
-                5,
+                visibleIndexes.length,
                 (i) => NavigationDestination(
-                  icon: Icon(icons[i]),
-                  label: labels[i],
+                  icon: Icon(icons[visibleIndexes[i]]),
+                  label: labels[visibleIndexes[i]],
                 ),
               ),
             ),

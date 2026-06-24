@@ -54,6 +54,8 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   billing_day INTEGER,
   start_date INTEGER NOT NULL,
   end_date INTEGER,
+  next_due_date INTEGER,
+  recurrence_months INTEGER,
   url TEXT,
   icon TEXT,
   color TEXT,
@@ -119,6 +121,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
   model TEXT,
   year INTEGER,
   fuel_type TEXT CHECK(fuel_type IN ('gasoline','diesel','electric','hybrid','lpg')),
+  is_archived INTEGER DEFAULT 0,
   created_at INTEGER NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

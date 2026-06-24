@@ -8,6 +8,7 @@ import 'package:spendwise/domain/models/enums.dart';
 import 'package:spendwise/domain/models/subscription.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
+import 'package:spendwise/presentation/settings/settings_provider.dart';
 
 final subscriptionsApiProvider = Provider(
   (ref) => SubscriptionsApiClient(ref.watch(dioClientProvider).dio),
@@ -140,6 +141,17 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
     final visible = filter == null
         ? all
         : all.where((item) => item.billingCycle == filter).toList();
+    final settings = ref.watch(settingsProvider);
+    final dueSoon = settings.notificationsEnabled
+        ? all.where((item) {
+            final days = _nextSubscriptionDue(
+              item,
+            ).difference(DateTime.now()).inDays;
+            return item.isActive &&
+                days >= 0 &&
+                days <= settings.notificationDaysBefore;
+          }).toList()
+        : const <Subscription>[];
     final monthly = all
         .where((item) => item.isActive)
         .fold<double>(
@@ -148,7 +160,8 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
               sum +
               switch (item.billingCycle) {
                 BillingCycle.weekly => item.amount * 52 / 12,
-                BillingCycle.monthly => item.amount,
+                BillingCycle.monthly =>
+                  item.amount / (item.recurrenceMonths ?? 1),
                 BillingCycle.yearly => item.amount / 12,
               },
         );
@@ -168,6 +181,27 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                     '${all.where((x) => x.isActive).length} abbonamenti attivi',
               ),
             ),
+            if (dueSoon.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Card(
+                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  color: Theme.of(context).colorScheme.tertiaryContainer,
+                  child: ListTile(
+                    leading: const Icon(Icons.notifications_active),
+                    title: Text(
+                      '${dueSoon.length} abbonamenti vicini alla scadenza',
+                    ),
+                    subtitle: Text(
+                      dueSoon
+                          .map(
+                            (item) =>
+                                '${item.name}: ${DateFormat('dd/MM').format(_nextSubscriptionDue(item))}',
+                          )
+                          .join(' · '),
+                    ),
+                  ),
+                ),
+              ),
             SliverToBoxAdapter(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -231,6 +265,7 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                             symbol: '€',
                           ).format(item.amount),
                         ),
+                        onTap: () => _showSubscription(context, ref, item),
                       ),
                     );
                   },
@@ -248,8 +283,137 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
   }
 }
 
+DateTime _nextSubscriptionDue(Subscription item) {
+  var due = (item.nextDueDate ?? item.startDate).toLocal();
+  final now = DateTime.now();
+  while (due.isBefore(DateTime(now.year, now.month, now.day))) {
+    if (item.billingCycle == BillingCycle.weekly) {
+      due = due.add(const Duration(days: 7));
+    } else {
+      final months =
+          item.recurrenceMonths ??
+          (item.billingCycle == BillingCycle.yearly ? 12 : 1);
+      due = DateTime(due.year, due.month + months, due.day);
+    }
+  }
+  return due;
+}
+
+Future<void> _showSubscription(
+  BuildContext context,
+  WidgetRef ref,
+  Subscription item,
+) => showModalBottomSheet<void>(
+  context: context,
+  showDragHandle: true,
+  isScrollControlled: true,
+  builder: (sheetContext) => SafeArea(
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  item.name,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+              ),
+              IconButton(
+                tooltip: 'Modifica',
+                onPressed: () async {
+                  Navigator.pop(sheetContext);
+                  final changed = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (_) => AddSubscriptionScreen(existing: item),
+                    ),
+                  );
+                  if (changed == true) ref.invalidate(subscriptionsProvider);
+                },
+                icon: const Icon(Icons.edit),
+              ),
+              IconButton(
+                tooltip: 'Elimina',
+                color: Theme.of(context).colorScheme.error,
+                onPressed: () async {
+                  final yes = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Eliminare l’abbonamento?'),
+                      content: Text(
+                        '“${item.name}” verrà eliminato definitivamente.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          child: const Text('ANNULLA'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          child: const Text('ELIMINA'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (yes != true) return;
+                  await ref.read(subscriptionsApiProvider).delete(item.id);
+                  ref.invalidate(subscriptionsProvider);
+                  if (sheetContext.mounted) Navigator.pop(sheetContext);
+                },
+                icon: const Icon(Icons.delete_outline),
+              ),
+            ],
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.euro),
+            title: const Text('Importo'),
+            trailing: Text(
+              NumberFormat.currency(
+                locale: 'it_IT',
+                symbol: '€',
+              ).format(item.amount),
+            ),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.event_repeat),
+            title: Text(_cycleLabel(item.billingCycle)),
+            subtitle: item.recurrenceMonths != null
+                ? Text('Ogni ${item.recurrenceMonths} mesi')
+                : null,
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.notifications_active_outlined),
+            title: const Text('Prossima scadenza'),
+            trailing: Text(
+              DateFormat('dd/MM/yyyy').format(_nextSubscriptionDue(item)),
+            ),
+          ),
+          if (item.endDate != null)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.event_busy),
+              title: const Text('Fine contratto'),
+              trailing: Text(
+                DateFormat('dd/MM/yyyy').format(item.endDate!.toLocal()),
+              ),
+            ),
+          if (item.note?.isNotEmpty == true)
+            Text(item.note!, style: Theme.of(context).textTheme.bodyLarge),
+        ],
+      ),
+    ),
+  ),
+);
+
 class AddSubscriptionScreen extends ConsumerStatefulWidget {
-  const AddSubscriptionScreen({super.key});
+  const AddSubscriptionScreen({this.existing, super.key});
+  final Subscription? existing;
   @override
   ConsumerState<AddSubscriptionScreen> createState() => _AddSubscriptionState();
 }
@@ -258,14 +422,41 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
   final formKey = GlobalKey<FormState>();
   final name = TextEditingController(),
       amount = TextEditingController(),
+      customMonths = TextEditingController(),
       url = TextEditingController(),
       note = TextEditingController();
   BillingCycle cycle = BillingCycle.monthly;
   int duration = 0;
+  int recurrence = 1;
+  DateTime nextDueDate = DateTime.now();
+  DateTime? endDate;
   bool saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final item = widget.existing;
+    if (item != null) {
+      name.text = item.name;
+      amount.text = item.amount.toStringAsFixed(2);
+      url.text = item.url ?? '';
+      note.text = item.note ?? '';
+      cycle = item.billingCycle;
+      recurrence =
+          item.recurrenceMonths ??
+          (item.billingCycle == BillingCycle.yearly ? 12 : 1);
+      nextDueDate = item.nextDueDate?.toLocal() ?? item.startDate.toLocal();
+      endDate = item.endDate?.toLocal();
+      if (![1, 3, 12].contains(recurrence)) {
+        customMonths.text = '$recurrence';
+        recurrence = -1;
+      }
+    }
+  }
+
   @override
   void dispose() {
-    for (final c in [name, amount, url, note]) {
+    for (final c in [name, amount, customMonths, url, note]) {
       c.dispose();
     }
     super.dispose();
@@ -281,26 +472,33 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
     setState(() => saving = true);
     try {
       final start = DateTime.now();
-      await ref.read(subscriptionsApiProvider).create({
+      final recurrenceMonths = cycle == BillingCycle.weekly
+          ? null
+          : recurrence == -1
+          ? int.tryParse(customMonths.text)
+          : recurrence;
+      final body = {
         'name': name.text.trim(),
         'amount': double.parse(amount.text.replaceAll(',', '.')),
         'currency': 'EUR',
         'billingCycle': cycle.name,
         'billingDay': start.day,
         'startDate': start.millisecondsSinceEpoch,
-        'endDate': duration == 0
-            ? null
-            : DateTime(
-                start.year,
-                start.month + duration,
-                start.day,
-              ).millisecondsSinceEpoch,
+        'endDate': endDate?.millisecondsSinceEpoch,
+        'nextDueDate': nextDueDate.millisecondsSinceEpoch,
+        'recurrenceMonths': recurrenceMonths,
         'url': url.text.trim(),
         'isActive': 1,
         'note': note.text.trim(),
-      });
+      };
+      final api = ref.read(subscriptionsApiProvider);
+      if (widget.existing == null) {
+        await api.create(body);
+      } else {
+        await api.update(widget.existing!.id, body);
+      }
       ref.invalidate(subscriptionsProvider);
-      if (mounted) context.pop();
+      if (mounted) Navigator.pop(context, true);
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -314,7 +512,11 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Nuovo abbonamento')),
+    appBar: AppBar(
+      title: Text(
+        widget.existing == null ? 'Nuovo abbonamento' : 'Modifica abbonamento',
+      ),
+    ),
     body: Form(
       key: formKey,
       child: ListView(
@@ -350,20 +552,82 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
                       DropdownMenuItem(value: x, child: Text(_cycleLabel(x))),
                 )
                 .toList(),
-            onChanged: (x) => cycle = x!,
+            onChanged: (x) => setState(() {
+              cycle = x!;
+              if (cycle == BillingCycle.yearly) recurrence = 12;
+              if (cycle == BillingCycle.monthly && recurrence == 12) {
+                recurrence = 1;
+              }
+            }),
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<int>(
-            initialValue: duration,
-            decoration: const InputDecoration(labelText: 'Durata / range'),
-            items: const [
-              DropdownMenuItem(value: 0, child: Text('Senza scadenza')),
-              DropdownMenuItem(value: 3, child: Text('3 mesi')),
-              DropdownMenuItem(value: 6, child: Text('6 mesi')),
-              DropdownMenuItem(value: 12, child: Text('12 mesi')),
-              DropdownMenuItem(value: 24, child: Text('24 mesi')),
-            ],
-            onChanged: (x) => duration = x!,
+          if (cycle != BillingCycle.weekly)
+            DropdownButtonFormField<int>(
+              initialValue: recurrence,
+              decoration: const InputDecoration(
+                labelText: 'Rinnovo / addebito',
+              ),
+              items: const [
+                DropdownMenuItem(value: 1, child: Text('Ogni 1 mese')),
+                DropdownMenuItem(value: 3, child: Text('Ogni 3 mesi')),
+                DropdownMenuItem(value: 12, child: Text('Ogni 1 anno')),
+                DropdownMenuItem(value: -1, child: Text('Personalizzato')),
+              ],
+              onChanged: (x) => setState(() => recurrence = x!),
+            ),
+          if (cycle != BillingCycle.weekly && recurrence == -1) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: customMonths,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Numero di mesi *',
+                hintText: 'Es. 7 oppure 8',
+              ),
+              validator: (value) =>
+                  recurrence == -1 && (int.tryParse(value ?? '') ?? 0) < 1
+                  ? 'Inserisci almeno 1 mese'
+                  : null,
+            ),
+          ],
+          const SizedBox(height: 12),
+          _SubscriptionDateField(
+            label: 'Prossima scadenza / pagamento *',
+            date: nextDueDate,
+            onTap: () async {
+              final value = await showDatePicker(
+                context: context,
+                locale: const Locale('it', 'IT'),
+                initialDate: nextDueDate,
+                firstDate: DateTime.now().subtract(const Duration(days: 3650)),
+                lastDate: DateTime.now().add(const Duration(days: 3650)),
+                helpText: 'SELEZIONA LA PROSSIMA SCADENZA',
+                cancelText: 'ANNULLA',
+                confirmText: 'CONFERMA',
+              );
+              if (value != null) setState(() => nextDueDate = value);
+            },
+          ),
+          const SizedBox(height: 12),
+          _SubscriptionDateField(
+            label: 'Fine contratto (opzionale)',
+            date: endDate,
+            onTap: () async {
+              final value = await showDatePicker(
+                context: context,
+                locale: const Locale('it', 'IT'),
+                initialDate: endDate ?? nextDueDate,
+                firstDate: nextDueDate,
+                lastDate: DateTime.now().add(const Duration(days: 36500)),
+                helpText: 'SELEZIONA LA FINE DEL CONTRATTO',
+                cancelText: 'ANNULLA',
+                confirmText: 'CONFERMA',
+              );
+              if (value != null) setState(() => endDate = value);
+            },
+            onClear: endDate == null
+                ? null
+                : () => setState(() => endDate = null),
           ),
           const SizedBox(height: 12),
           TextFormField(
@@ -386,6 +650,37 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
             label: const Text('Salva abbonamento'),
           ),
         ],
+      ),
+    ),
+  );
+}
+
+class _SubscriptionDateField extends StatelessWidget {
+  const _SubscriptionDateField({
+    required this.label,
+    required this.date,
+    required this.onTap,
+    this.onClear,
+  });
+  final String label;
+  final DateTime? date;
+  final VoidCallback onTap;
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: const Icon(Icons.calendar_month),
+        suffixIcon: onClear == null
+            ? const Icon(Icons.arrow_drop_down)
+            : IconButton(onPressed: onClear, icon: const Icon(Icons.clear)),
+      ),
+      child: Text(
+        date == null ? 'Non impostata' : DateFormat('dd/MM/yyyy').format(date!),
       ),
     ),
   );

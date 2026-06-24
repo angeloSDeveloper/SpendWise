@@ -12,6 +12,7 @@ import 'package:spendwise/core/constants/app_constants.dart';
 import 'package:spendwise/data/remote/api_client.dart';
 import 'package:spendwise/domain/models/enums.dart';
 import 'package:spendwise/domain/models/fuel_entry.dart';
+import 'package:spendwise/domain/models/vehicle.dart';
 import 'package:spendwise/domain/models/vehicle_maintenance.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
@@ -103,12 +104,56 @@ class _DesktopHorizontalScrollState extends State<_DesktopHorizontalScroll> {
 String _date(DateTime value) =>
     DateFormat('dd/MM/yyyy').format(value.toLocal());
 
-class VehicleScreen extends ConsumerWidget {
+class VehicleScreen extends ConsumerStatefulWidget {
   const VehicleScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VehicleScreen> createState() => _VehicleScreenState();
+}
+
+class _VehicleScreenState extends ConsumerState<VehicleScreen> {
+  bool showArchived = false;
+
+  Future<void> _deleteVehicle(Vehicle vehicle) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.warning_amber),
+        title: const Text('Eliminare definitivamente il veicolo?'),
+        content: Text(
+          'Eliminando “${vehicle.name}” verranno eliminati anche tutti i rifornimenti, gli accessori e gli interventi di manutenzione associati.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('ANNULLA'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('ELIMINA TUTTO'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(vehiclesApiProvider).delete(vehicle.id);
+    ref.invalidate(vehiclesProvider);
+  }
+
+  Future<void> _archiveVehicle(Vehicle vehicle) async {
+    await ref.read(vehiclesApiProvider).update(vehicle.id, {
+      'isArchived': vehicle.isArchived ? 0 : 1,
+    });
+    ref.invalidate(vehiclesProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final vehicles = ref.watch(vehiclesProvider);
+    final all = vehicles.valueOrNull ?? const <Vehicle>[];
+    final visible = all
+        .where((vehicle) => vehicle.isArchived == showArchived)
+        .toList();
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(vehiclesProvider.future),
@@ -119,8 +164,32 @@ class VehicleScreen extends ConsumerWidget {
               child: CategoryHeader(
                 color: AppColors.vehicle,
                 title: 'I tuoi veicoli',
-                value: vehicles.valueOrNull?.length.toString() ?? '–',
-                subtitle: 'Auto e moto registrate',
+                value: visible.length.toString(),
+                subtitle: showArchived
+                    ? 'Veicoli archiviati'
+                    : 'Auto e moto registrate',
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(
+                      value: false,
+                      icon: Icon(Icons.directions_car),
+                      label: Text('Attivi'),
+                    ),
+                    ButtonSegment(
+                      value: true,
+                      icon: Icon(Icons.archive_outlined),
+                      label: Text('Archiviati'),
+                    ),
+                  ],
+                  selected: {showArchived},
+                  onSelectionChanged: (value) =>
+                      setState(() => showArchived = value.first),
+                ),
               ),
             ),
             vehicles.when(
@@ -132,7 +201,7 @@ class VehicleScreen extends ConsumerWidget {
                   child: Text('Impossibile caricare i veicoli: $error'),
                 ),
               ),
-              data: (items) => items.isEmpty
+              data: (_) => visible.isEmpty
                   ? SliverFillRemaining(
                       hasScrollBody: false,
                       child: EmptyState(
@@ -144,9 +213,9 @@ class VehicleScreen extends ConsumerWidget {
                   : SliverPadding(
                       padding: const EdgeInsets.all(16),
                       sliver: SliverList.builder(
-                        itemCount: items.length,
+                        itemCount: visible.length,
                         itemBuilder: (context, index) {
-                          final vehicle = items[index];
+                          final vehicle = visible[index];
                           final details = <String>[
                             if (vehicle.plate?.isNotEmpty == true)
                               vehicle.plate!,
@@ -165,7 +234,46 @@ class VehicleScreen extends ConsumerWidget {
                               subtitle: details.isEmpty
                                   ? null
                                   : Text(details.join(' · ')),
-                              trailing: const Icon(Icons.chevron_right),
+                              trailing: PopupMenuButton<String>(
+                                onSelected: (action) async {
+                                  if (action == 'open') {
+                                    context.push('/vehicle/${vehicle.id}');
+                                  } else if (action == 'edit') {
+                                    await Navigator.of(context).push<bool>(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            AddVehicleScreen(existing: vehicle),
+                                      ),
+                                    );
+                                  } else if (action == 'archive') {
+                                    await _archiveVehicle(vehicle);
+                                  } else if (action == 'delete') {
+                                    await _deleteVehicle(vehicle);
+                                  }
+                                },
+                                itemBuilder: (_) => [
+                                  const PopupMenuItem(
+                                    value: 'open',
+                                    child: Text('Apri dettaglio'),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'edit',
+                                    child: Text('Modifica'),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'archive',
+                                    child: Text(
+                                      vehicle.isArchived
+                                          ? 'Ripristina'
+                                          : 'Archivia',
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text('Elimina'),
+                                  ),
+                                ],
+                              ),
                               onTap: () =>
                                   context.push('/vehicle/${vehicle.id}'),
                             ),
@@ -187,7 +295,8 @@ class VehicleScreen extends ConsumerWidget {
 }
 
 class AddVehicleScreen extends ConsumerStatefulWidget {
-  const AddVehicleScreen({super.key});
+  const AddVehicleScreen({this.existing, super.key});
+  final Vehicle? existing;
   @override
   ConsumerState<AddVehicleScreen> createState() => _AddVehicleScreenState();
 }
@@ -203,6 +312,20 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
   bool saving = false;
 
   @override
+  void initState() {
+    super.initState();
+    final vehicle = widget.existing;
+    if (vehicle != null) {
+      name.text = vehicle.name;
+      plate.text = vehicle.plate ?? '';
+      brand.text = vehicle.brand ?? '';
+      model.text = vehicle.model ?? '';
+      year.text = vehicle.year?.toString() ?? '';
+      fuelType = vehicle.fuelType?.name ?? 'gasoline';
+    }
+  }
+
+  @override
   void dispose() {
     for (final controller in [name, plate, brand, model, year]) {
       controller.dispose();
@@ -214,16 +337,26 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
     if (!formKey.currentState!.validate()) return;
     setState(() => saving = true);
     try {
-      final vehicle = await ref.read(vehiclesApiProvider).create({
+      final body = {
         'name': name.text.trim(),
         'plate': plate.text.trim().toUpperCase(),
         'brand': brand.text.trim(),
         'model': model.text.trim(),
         'year': int.tryParse(year.text),
         'fuelType': fuelType,
-      });
+      };
+      final api = ref.read(vehiclesApiProvider);
+      final vehicle = widget.existing == null
+          ? await api.create(body)
+          : await api.update(widget.existing!.id, body);
       ref.invalidate(vehiclesProvider);
-      if (mounted) context.go('/vehicle/${vehicle.id}');
+      if (mounted) {
+        if (widget.existing == null) {
+          context.go('/vehicle/${vehicle.id}');
+        } else {
+          Navigator.pop(context, true);
+        }
+      }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -237,7 +370,11 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Nuovo veicolo')),
+    appBar: AppBar(
+      title: Text(
+        widget.existing == null ? 'Nuovo veicolo' : 'Modifica veicolo',
+      ),
+    ),
     body: Form(
       key: formKey,
       child: ListView(

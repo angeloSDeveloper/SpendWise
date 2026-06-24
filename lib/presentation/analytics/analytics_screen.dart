@@ -1,14 +1,16 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:spendwise/presentation/settings/settings_provider.dart';
 
-class AnalyticsScreen extends StatefulWidget {
+class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
   @override
-  State<AnalyticsScreen> createState() => _AnalyticsState();
+  ConsumerState<AnalyticsScreen> createState() => _AnalyticsState();
 }
 
-class _AnalyticsState extends State<AnalyticsScreen> {
+class _AnalyticsState extends ConsumerState<AnalyticsScreen> {
   int period = 0;
 
   @override
@@ -18,6 +20,13 @@ class _AnalyticsState extends State<AnalyticsScreen> {
       AppColors.subscription,
       AppColors.installment,
       AppColors.vehicle,
+    ];
+    final modules = ref.watch(settingsProvider).visibleModules;
+    final visible = [
+      if (modules.contains('daily')) 0,
+      if (modules.contains('subscriptions')) 1,
+      if (modules.contains('installments')) 2,
+      if (modules.contains('vehicle')) 3,
     ];
     return Scaffold(
       appBar: AppBar(title: const Text('Analisi')),
@@ -44,14 +53,15 @@ class _AnalyticsState extends State<AnalyticsScreen> {
             child: PieChart(
               PieChartData(
                 centerSpaceRadius: 55,
-                sections: List.generate(
-                  4,
-                  (index) => PieChartSectionData(
-                    value: 1,
-                    color: colors[index],
-                    title: '0%',
-                  ),
-                ),
+                sections: visible
+                    .map(
+                      (index) => PieChartSectionData(
+                        value: 1,
+                        color: colors[index],
+                        title: '0%',
+                      ),
+                    )
+                    .toList(),
               ),
             ),
           ),
@@ -77,21 +87,20 @@ class _AnalyticsState extends State<AnalyticsScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          ...[
-            'Spese quotidiane',
-            'Abbonamenti',
-            'Rateizzazioni',
-            'Veicolo',
-          ].asMap().entries.map(
-            (entry) => Card(
-              child: ListTile(
-                leading: CircleAvatar(backgroundColor: colors[entry.key]),
-                title: Text(entry.value),
-                subtitle: const Text('Media mensile € 0,00'),
-                trailing: const Text('€ 0,00'),
+          ...['Spese quotidiane', 'Abbonamenti', 'Rateizzazioni', 'Veicolo']
+              .asMap()
+              .entries
+              .where((entry) => visible.contains(entry.key))
+              .map(
+                (entry) => Card(
+                  child: ListTile(
+                    leading: CircleAvatar(backgroundColor: colors[entry.key]),
+                    title: Text(entry.value),
+                    subtitle: const Text('Media mensile € 0,00'),
+                    trailing: const Text('€ 0,00'),
+                  ),
+                ),
               ),
-            ),
-          ),
           const SizedBox(height: 20),
           Text(
             'Top 5 spese singole',
@@ -99,14 +108,16 @@ class _AnalyticsState extends State<AnalyticsScreen> {
           ),
           const Card(child: ListTile(title: Text('Nessun dato disponibile'))),
           const SizedBox(height: 20),
-          Text('Veicolo', style: Theme.of(context).textTheme.titleLarge),
-          const Card(
-            child: ListTile(
-              leading: Icon(Icons.directions_car),
-              title: Text('Consumo medio'),
-              trailing: Text('— km/L'),
+          if (modules.contains('vehicle')) ...[
+            Text('Veicolo', style: Theme.of(context).textTheme.titleLarge),
+            const Card(
+              child: ListTile(
+                leading: Icon(Icons.directions_car),
+                title: Text('Consumo medio'),
+                trailing: Text('— km/L'),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
