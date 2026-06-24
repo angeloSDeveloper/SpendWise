@@ -1,26 +1,65 @@
 # TODO SpendWise
 
-Ultimo aggiornamento: 24/06/2026
-Storico dettagliato: docs/CHANGELOG_WORK.md
+Ultimo audit: 24/06/2026
+Storico: `docs/CHANGELOG_WORK.md`
+Stato corrente: `docs/PROJECT_STATUS.md`
 
-## Completato il 24/06/2026
+Legenda:
 
-- [x] Correzione errore 401/sessione su desktop.
-- [x] In Nuovo abbonamento:
-poter selezionare la data di scadenza cosi da poter dare al sistema la possibilità di calcolare in automatico le scadenza in base al settimanale, mensile o annuale
-- [x] Aggiungere una scadenza personalizzata dove posso inserire io il numero di mesi, per esempio scadenza ogni 8 mesi.
-    In poche parole voglio inserire il mio abbonamento con data scadenza per esempio al 25/06/2026 e dire al sistema la durata dell'abbonamento per esempio mensile cosi lui sa già che il 25/07/2026 ci sarà una spesa da sostenere.
-    Quindi devo poter selezionare "1 mese" "3 mesi" "1 anno" oppure "Personalizzato" dove posso inserire quanti mesi voglio, per esempio abbonamenti ogni 7 mesi. ( che questo potrebbe essere  nella sezione "RATE")
-- [x] Dare la possibilità di modificare, eliminare e aprire il dettaglio nei menu principali.
-- [x] Modificare, eliminare, archiviare e ripristinare i veicoli con conferma della cancellazione dei dati collegati.
+- `[x]` completato e verificato
+- `[-]` implementato parzialmente o da collaudare
+- `[ ]` da implementare
 
-- [x] Correggere il caricamento immagine e aggiungere avatar semplice personalizzabile.
-- [x] Poter visualizzare o nascondere i vari menu dalle impostazioni.
-    e quindi avere i tab modulari o visibili/disabilitati cosi come nella scheda delle statistiche poter visualizzare o meno inbase ai flag selezionati dalle impostazioni e wla visibilità anche nella dashboard principale che deve essere in base ai flag impostati nelle impostazioni
+## Problemi prioritari
 
-- [x] Preferenze promemoria e giorni di preavviso per abbonamenti e rate.
+- [-] Verificare sul browser desktop dell'utente che il rinnovo automatico
+  della sessione abbia eliminato definitivamente gli errori `401`.
+- [ ] Aggiungere dettaglio, modifica ed eliminazione ai rifornimenti.
+- [ ] Completare dettaglio, modifica ed eliminazione in ogni eventuale schermata
+  rimasta esclusa, con audit manuale di tutti i menu.
+- [-] Collaudare caricamento e persistenza della foto avatar su Chrome desktop,
+  web mobile, Android e iOS.
+- [ ] Implementare vere notifiche push in background tramite Web Push/FCM,
+  service worker e registrazione dei dispositivi.
 
-## Da completare
+## Abbonamenti e rate
 
-- [ ] Collegare vere notifiche push in background tramite Web Push/FCM e token dispositivo.
-- [ ] Ampliare gli elementi grafici disponibili per la personalizzazione avatar.
+- [x] Selezione della prossima data di pagamento.
+- [x] Ricorrenza settimanale, mensile e annuale.
+- [x] Ricorrenza ogni 1 mese, 3 mesi, 1 anno o numero personalizzato di mesi.
+- [x] Visualizzazione della prossima scadenza nel dettaglio.
+- [x] Modifica ed eliminazione degli abbonamenti.
+- [x] Creazione, dettaglio, modifica ed eliminazione dei piani rateali.
+- [x] Avanzamento automatico della prossima rata quando viene segnata pagata.
+- [-] Promemoria visivi interni all'app in base ai giorni configurati.
+- [ ] Notifiche push reali anche quando SpendWise non è aperto.
+
+## Veicoli
+
+- [x] Modifica dei dati del veicolo.
+- [x] Eliminazione con conferma e avviso sui dati collegati.
+- [x] Archiviazione, elenco separato, ripristino.
+- [x] Dettaglio/modifica/eliminazione manutenzioni.
+- [x] Dettaglio/modifica/eliminazione accessori.
+- [ ] Dettaglio/modifica/eliminazione rifornimenti.
+
+## Impostazioni e personalizzazione
+
+- [-] Foto avatar con selezione dalla galleria: implementata, da collaudare su
+  tutti i browser e dispositivi.
+- [-] Avatar semplice con faccina, capelli, carnagione e vestiti: prima
+  versione, grafica e opzioni da ampliare.
+- [x] Selezione dei menu visibili nella navigazione.
+- [-] Dashboard filtrata in base ai menu selezionati.
+- [-] Statistiche filtrate in base ai menu selezionati; i grafici della pagina
+  Analisi sono ancora dimostrativi e devono usare dati reali.
+- [x] Preferenze locali per attivare promemoria e scegliere i giorni di
+  preavviso.
+
+## Qualità e verifica
+
+- [ ] Aggiungere test widget per CRUD, archivio veicoli e ricorrenze.
+- [ ] Aggiungere test end-to-end desktop e mobile.
+- [ ] Verificare responsive layout di tutte le nuove finestre.
+- [ ] Verificare che una sezione nascosta non sia raggiungibile da pulsanti o
+  collegamenti secondari.

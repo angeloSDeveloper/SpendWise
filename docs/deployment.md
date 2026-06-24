@@ -1,5 +1,8 @@
 # SpendWise — Guida al Deployment
 
+> Stato aggiornato al 24/06/2026: SpendWise viene pubblicato come Worker con
+> asset Flutter integrati, non come progetto Cloudflare Pages separato.
+
 ## Setup iniziale Cloudflare
 
 ### 1. Crea account Cloudflare
@@ -18,13 +21,17 @@ wrangler d1 create spendwise-db
 # Copia il database_id nell'output e incollalo in wrangler.toml
 ```
 
-### 4. Esegui le migrazioni
+### 4. Esegui schema e migrazioni
 ```bash
 # Ambiente di sviluppo (locale)
 wrangler d1 execute spendwise-db --local --file=schema.sql
 
 # Produzione
 wrangler d1 execute spendwise-db --file=schema.sql
+
+# Migrazioni incrementali già presenti nel repository
+wrangler d1 execute spendwise-db --remote \
+  --file=migrations/2026-06-24_subscriptions_vehicles.sql
 ```
 
 ### 5. Configura i secrets
@@ -33,32 +40,35 @@ wrangler secret put JWT_SECRET
 # Inserisci una stringa random di almeno 64 caratteri
 ```
 
-### 6. Deploy del Worker
+### 6. Build Flutter
+
 ```bash
-wrangler deploy
-# Nota il URL dell'API (es. https://spendwise-api.nome.workers.dev)
+flutter build web --release --no-wasm-dry-run \
+  --dart-define=API_URL=https://spendwise.lopreteangelo97.workers.dev
 ```
 
-### 7. Crea il progetto Pages
-```bash
-# Nella root del progetto Flutter
-flutter build web --release --dart-define=API_URL=https://spendwise-api.nome.workers.dev
+### 7. Deploy del Worker e del sito
 
-# Deploy manuale (la prima volta)
-wrangler pages project create spendwise
-wrangler pages deploy build/web --project-name=spendwise
+```bash
+cd workers
+wrangler deploy --env production
 ```
 
-### 8. Configura GitHub Actions
+URL corrente: https://spendwise.lopreteangelo97.workers.dev
+
+Non creare un secondo progetto Pages: produrrebbe un'applicazione duplicata e
+non collegata correttamente all'API.
+
+### 8. GitHub
 Nel tuo repository GitHub, vai in Settings → Secrets and variables → Actions:
 - `CF_API_TOKEN`: il tuo Cloudflare API token
 - `CF_ACCOUNT_ID`: il tuo Account ID (dalla dashboard Cloudflare)
 - `API_URL`: URL del tuo Worker
 
-## Dominio custom (fase 2)
+## Dominio personalizzato (fase futura)
 
 1. Acquista un dominio su Cloudflare Registrar o trasferiscilo
-2. In Cloudflare Dashboard → Pages → spendwise → Custom domains → Add custom domain
+2. Collega il dominio al Worker `spendwise`
 3. Aggiorna `API_URL` con il dominio definitivo
 
 ## Build Android per Play Store
