@@ -5,6 +5,15 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 24 giugno 2026
 
+### Avatar stabile semplificato
+
+- Su richiesta dell'utente, rimossi dall'interfaccia stabile tutti i controlli
+  avanzati dell'avatar.
+- Restano esclusivamente due scelte: Uomo e Donna.
+- Conservata la possibilità di usare una fotografia personale.
+- La scelta viene salvata localmente e ripristinata all'avvio.
+- Il ramo sperimentale 2.5D resta separato e recuperabile.
+
 ### Avatar vettoriale moderno
 
 - Sostituito l'avatar provvisorio basato su emoji e icone con un disegno

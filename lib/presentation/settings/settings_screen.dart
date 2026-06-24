@@ -127,141 +127,39 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          ExpansionTile(
-            leading: const Icon(Icons.face_retouching_natural),
-            title: const Text('Personalizza avatar'),
-            subtitle: const Text('30 combinazioni base, leggere e moderne'),
-            childrenPadding: const EdgeInsets.all(12),
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Espressione',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final face in const {
-                    'smile': ('Sorriso', Icons.sentiment_satisfied_alt),
-                    'calm': ('Calmo', Icons.sentiment_neutral),
-                    'wink': ('Occhiolino', Icons.visibility),
-                    'glasses': ('Occhiali', Icons.visibility_outlined),
-                    'freckles': ('Lentiggini', Icons.face),
-                  }.entries)
-                    ChoiceChip(
-                      avatar: Icon(face.value.$2, size: 18),
-                      label: Text(face.value.$1),
-                      selected: settings.avatarFace == face.key,
-                      onSelected: (_) => ref
-                          .read(settingsProvider.notifier)
-                          .setAvatarStyle(face: face.key),
-                    ),
+                  Text('Avatar', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Scegli una delle due versioni oppure usa una fotografia.',
+                  ),
+                  const SizedBox(height: 16),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(
+                        value: 'male',
+                        icon: Icon(Icons.male),
+                        label: Text('Uomo'),
+                      ),
+                      ButtonSegment(
+                        value: 'female',
+                        icon: Icon(Icons.female),
+                        label: Text('Donna'),
+                      ),
+                    ],
+                    selected: {settings.avatarGender},
+                    onSelectionChanged: (value) => ref
+                        .read(settingsProvider.notifier)
+                        .setAvatarGender(value.first),
+                  ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Capelli',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              const SizedBox(height: 8),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'crop', label: Text('Corti')),
-                  ButtonSegment(value: 'wave', label: Text('Mossi')),
-                  ButtonSegment(value: 'bob', label: Text('Caschetto')),
-                ],
-                selected: {settings.avatarHair},
-                onSelectionChanged: (value) => ref
-                    .read(settingsProvider.notifier)
-                    .setAvatarStyle(hair: value.first),
-              ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Stile vestiti',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              const SizedBox(height: 8),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'turtleneck', label: Text('Dolcevita')),
-                  ButtonSegment(value: 'shirt', label: Text('Maglia')),
-                ],
-                selected: {settings.avatarOutfit},
-                onSelectionChanged: (value) => ref
-                    .read(settingsProvider.notifier)
-                    .setAvatarStyle(outfit: value.first),
-              ),
-              const SizedBox(height: 16),
-              _ColorSetting(
-                label: 'Carnagione',
-                selected: settings.avatarColor,
-                colors: const [
-                  0xFFFFE0C2,
-                  0xFFFFC99D,
-                  0xFFE6A06C,
-                  0xFFB96F47,
-                  0xFF75422F,
-                ],
-                onChanged: (value) => ref
-                    .read(settingsProvider.notifier)
-                    .setAvatarStyle(skin: value),
-              ),
-              const SizedBox(height: 12),
-              _ColorSetting(
-                label: 'Capelli',
-                selected: settings.avatarHairColor,
-                colors: const [
-                  0xFF231815,
-                  0xFF4A2C24,
-                  0xFF8A5A3B,
-                  0xFFE1B45F,
-                  0xFFD66B9B,
-                ],
-                onChanged: (value) => ref
-                    .read(settingsProvider.notifier)
-                    .setAvatarStyle(hairColor: value),
-              ),
-              const SizedBox(height: 12),
-              _ColorSetting(
-                label: 'Vestiti',
-                selected: settings.avatarClothes,
-                colors: const [
-                  0xFF2E3038,
-                  0xFF536DFE,
-                  0xFFE84C88,
-                  0xFF00A884,
-                  0xFFFF9800,
-                ],
-                onChanged: (value) => ref
-                    .read(settingsProvider.notifier)
-                    .setAvatarStyle(clothes: value),
-              ),
-              const SizedBox(height: 12),
-              _ColorSetting(
-                label: 'Sfondo',
-                selected: settings.avatarBackground,
-                colors: const [
-                  0xFFD98ACB,
-                  0xFF8FB9F4,
-                  0xFF8FD9C4,
-                  0xFFF4C982,
-                  0xFFB6A4ED,
-                ],
-                onChanged: (value) => ref
-                    .read(settingsProvider.notifier)
-                    .setAvatarStyle(background: value),
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: 12),
           Text('Aspetto', style: Theme.of(context).textTheme.titleLarge),
@@ -573,71 +471,4 @@ class _AvatarPainter extends CustomPainter {
       oldDelegate.settings.avatarHairColor != settings.avatarHairColor ||
       oldDelegate.settings.avatarClothes != settings.avatarClothes ||
       oldDelegate.settings.avatarBackground != settings.avatarBackground;
-}
-
-class _ColorSetting extends StatelessWidget {
-  const _ColorSetting({
-    required this.label,
-    required this.selected,
-    required this.colors,
-    required this.onChanged,
-  });
-  final String label;
-  final int selected;
-  final List<int> colors;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      SizedBox(
-        width: 90,
-        child: Text(label, style: Theme.of(context).textTheme.labelLarge),
-      ),
-      Expanded(
-        child: _ColorChoices(
-          selected: selected,
-          colors: colors,
-          onChanged: onChanged,
-        ),
-      ),
-    ],
-  );
-}
-
-class _ColorChoices extends StatelessWidget {
-  const _ColorChoices({
-    required this.selected,
-    required this.colors,
-    required this.onChanged,
-  });
-  final int selected;
-  final List<int> colors;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) => Wrap(
-    spacing: 10,
-    children: [
-      for (final color in colors)
-        InkWell(
-          onTap: () => onChanged(color),
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: Color(color),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: selected == color
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.transparent,
-                width: 3,
-              ),
-            ),
-          ),
-        ),
-    ],
-  );
 }

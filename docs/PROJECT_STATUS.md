@@ -29,8 +29,8 @@ Per ogni intervento futuro:
 - CRUD per spese quotidiane, abbonamenti, rate, manutenzioni e accessori.
 - Menu principali configurabili dalle impostazioni.
 - Preferenze locali per tema, avatar, biometria e promemoria.
-- Avatar vettoriale moderno e leggero con 30 combinazioni base, colori
-  personalizzabili e compatibilità con le preferenze precedenti.
+- Avatar vettoriale leggero semplificato alle versioni Uomo e Donna, con foto
+  personale opzionale.
 
 ## Funzioni parziali
 

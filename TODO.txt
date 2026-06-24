@@ -45,12 +45,10 @@ Legenda:
 
 ## Impostazioni e personalizzazione
 
-- [x] Sostituire l'avatar provvisorio con un avatar vettoriale moderno e
-  leggero: 5 volti × 3 capelli × 2 vestiti, 30 combinazioni base.
+- [x] Avatar stabile semplificato alle sole versioni Uomo e Donna.
 - [-] Foto avatar con selezione dalla galleria: implementata, da collaudare su
   tutti i browser e dispositivi.
-- [x] Avatar vettoriale con espressione, capelli, vestito, carnagione e palette
-  colori; verificato automaticamente su tutte le 30 combinazioni base.
+- [x] Selezione Uomo/Donna verificata automaticamente.
 - [x] Selezione dei menu visibili nella navigazione.
 - [-] Dashboard filtrata in base ai menu selezionati.
 - [-] Statistiche filtrate in base ai menu selezionati; i grafici della pagina

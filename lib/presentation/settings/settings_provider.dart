@@ -8,6 +8,7 @@ class SettingsState {
   const SettingsState({
     this.themeMode = ThemeMode.system,
     this.avatarData,
+    this.avatarGender = 'male',
     this.avatarFace = 'smile',
     this.avatarHair = 'bob',
     this.avatarColor = 0xFFFFDBB4,
@@ -22,6 +23,7 @@ class SettingsState {
   });
   final ThemeMode themeMode;
   final String? avatarData;
+  final String avatarGender;
   final String avatarFace, avatarHair, avatarOutfit;
   final int avatarColor, avatarHairColor, avatarClothes, avatarBackground;
   final bool biometricsEnabled, notificationsEnabled;
@@ -32,6 +34,7 @@ class SettingsState {
     ThemeMode? themeMode,
     String? avatarData,
     bool clearAvatar = false,
+    String? avatarGender,
     String? avatarFace,
     String? avatarHair,
     int? avatarColor,
@@ -46,6 +49,7 @@ class SettingsState {
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     avatarData: clearAvatar ? null : avatarData ?? this.avatarData,
+    avatarGender: avatarGender ?? this.avatarGender,
     avatarFace: avatarFace ?? this.avatarFace,
     avatarHair: avatarHair ?? this.avatarHair,
     avatarColor: avatarColor ?? this.avatarColor,
@@ -76,6 +80,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         orElse: () => ThemeMode.system,
       ),
       avatarData: prefs.getString('avatar_data'),
+      avatarGender: prefs.getString('avatar_gender') ?? 'male',
       avatarFace: _normalizeFace(prefs.getString('avatar_face')),
       avatarHair: _normalizeHair(prefs.getString('avatar_hair')),
       avatarColor: prefs.getInt('avatar_color') ?? 0xFFFFDBB4,
@@ -104,6 +109,24 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> clearAvatar() async {
     state = state.copyWith(clearAvatar: true);
     (await SharedPreferences.getInstance()).remove('avatar_data');
+  }
+
+  Future<void> setAvatarGender(String value) async {
+    final female = value == 'female';
+    state = state.copyWith(
+      avatarGender: value,
+      avatarFace: 'smile',
+      avatarHair: female ? 'bob' : 'crop',
+      avatarColor: female ? 0xFFFFC99D : 0xFFE6A06C,
+      avatarHairColor: female ? 0xFF4A2C24 : 0xFF231815,
+      avatarClothes: female ? 0xFFE84C88 : 0xFF536DFE,
+      avatarBackground: female ? 0xFFF0B7D2 : 0xFF9FC4F4,
+      avatarOutfit: female ? 'shirt' : 'turtleneck',
+      clearAvatar: true,
+    );
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('avatar_data');
+    await prefs.setString('avatar_gender', value);
   }
 
   Future<void> setAvatarStyle({
