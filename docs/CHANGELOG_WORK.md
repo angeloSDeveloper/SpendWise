@@ -37,6 +37,15 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - Barba e baffi disponibili solo sul profilo Uomo.
 - Nessuna modifica alla produzione o ai rami stabili.
 
+### Concept avatar 2.5D — non integrato
+
+- Utilizzata la skill `imagegen` per creare una tavola originale con quattro
+  avatar adulti e professionali in stile 2.5D.
+- La tavola serve esclusivamente per scegliere il linguaggio grafico.
+- Nessun asset è stato ancora usato dall'app e nessun codice di produzione è
+  stato modificato.
+- File di riferimento: `docs/design/avatar-2_5d-concept-v1.png`.
+
 ### Avatar vettoriale moderno
 
 - Sostituito l'avatar provvisorio basato su emoji e icone con un disegno

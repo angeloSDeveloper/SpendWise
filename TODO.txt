@@ -52,6 +52,9 @@ Legenda:
 - [-] Revisione richiesta: preview sempre visibile su desktop e mobile,
   selezione Uomo/Donna e resa visiva più professionale ispirata ai pattern di
   personalizzazione di Apple Memoji e Microsoft Teams Avatars.
+- [-] Valutare la tavola 2.5D con quattro avatar professionali salvata in
+  `docs/design/avatar-2_5d-concept-v1.png`. Non integrare gli asset nell'app
+  prima dell'approvazione visiva.
 - [x] Sostituire l'avatar provvisorio con un avatar vettoriale moderno e
   leggero: 5 volti × 3 capelli × 2 vestiti, 30 combinazioni base.
 - [-] Foto avatar con selezione dalla galleria: implementata, da collaudare su
