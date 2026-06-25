@@ -44,7 +44,7 @@ wrangler secret put JWT_SECRET
 
 ```bash
 flutter build web --release --no-wasm-dry-run \
-  --dart-define=API_URL=https://spendwise.lopreteangelo97.workers.dev
+  --dart-define=API_URL=https://spendwise.lopreteangelo97.workers.dev/api
 ```
 
 ### 7. Deploy del Worker e del sito
