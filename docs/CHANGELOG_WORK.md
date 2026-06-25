@@ -7,6 +7,8 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ### Builder avatar profilo (ramo di prova)
 
+- Corretta la modalità mobile: aggiunta un'anteprima live compatta e fissa
+  sotto la barra superiore, mentre soltanto i controlli scorrono verticalmente.
 - Creato il ramo isolato `feature/avatar-builder-profile`, senza modificare o
   pubblicare il ramo stabile `dev`.
 - Aggiunta in Impostazioni la sezione `Personalizza avatar`.

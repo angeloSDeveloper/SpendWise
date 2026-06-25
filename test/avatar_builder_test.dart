@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_config.dart';
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_preview.dart';
+import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_screen.dart';
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_storage.dart';
 
 void main() {
@@ -79,5 +80,27 @@ void main() {
 
     expect(find.byIcon(Icons.star_rounded), findsOneWidget);
     expect(find.text('AC'), findsNothing);
+  });
+
+  testWidgets('su mobile la preview live resta fuori dall’area scorrevole', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: AvatarBuilderScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Anteprima live'), findsOneWidget);
+    await tester.drag(
+      find.text('Personalizza avatar').last,
+      const Offset(0, -600),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Anteprima live'), findsOneWidget);
   });
 }

@@ -117,50 +117,62 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
                 initials: initials,
                 onChanged: update,
               );
-              return SingleChildScrollView(
+              final card = Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
+                child: desktop
+                    ? IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SizedBox(width: 410, child: preview),
+                            VerticalDivider(
+                              width: 1,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outlineVariant,
+                            ),
+                            Expanded(child: controls),
+                          ],
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          preview,
+                          Divider(
+                            height: 1,
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
+                          controls,
+                        ],
+                      ),
+              );
+              final scrollableContent = SingleChildScrollView(
                 padding: const EdgeInsets.all(18),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1180),
-                    child: Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        side: BorderSide(
-                          color: Theme.of(context).colorScheme.outlineVariant,
-                        ),
-                      ),
-                      child: desktop
-                          ? IntrinsicHeight(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  SizedBox(width: 410, child: preview),
-                                  VerticalDivider(
-                                    width: 1,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.outlineVariant,
-                                  ),
-                                  Expanded(child: controls),
-                                ],
-                              ),
-                            )
-                          : Column(
-                              children: [
-                                preview,
-                                Divider(
-                                  height: 1,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.outlineVariant,
-                                ),
-                                controls,
-                              ],
-                            ),
-                    ),
+                    child: card,
                   ),
                 ),
+              );
+
+              if (desktop) return scrollableContent;
+
+              return Column(
+                children: [
+                  _MobileStickyPreview(config: config),
+                  Divider(
+                    height: 1,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                  Expanded(child: scrollableContent),
+                ],
               );
             },
           ),
@@ -198,6 +210,63 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
             ),
           ),
   );
+}
+
+class _MobileStickyPreview extends StatelessWidget {
+  const _MobileStickyPreview({required this.config});
+
+  final AvatarBuilderConfig config;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final content = config.icon == AvatarIcon.none
+        ? config.initials.trim().isEmpty
+              ? 'Avatar con iniziali'
+              : 'Iniziali ${config.initials.trim().toUpperCase()}'
+        : 'Icona ${config.icon.name}';
+
+    return Material(
+      color: colors.surface,
+      elevation: 3,
+      shadowColor: Colors.black26,
+      child: SafeArea(
+        top: false,
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          child: Row(
+            children: [
+              AvatarBuilderPreview(config: config, overrideSize: 72),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Anteprima live',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      content,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.visibility_outlined, color: colors.primary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _PreviewPanel extends StatelessWidget {

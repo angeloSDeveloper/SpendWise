@@ -45,6 +45,8 @@ Legenda:
 
 ## Impostazioni e personalizzazione
 
+- [x] Anteprima avatar compatta sempre visibile durante lo scorrimento dei
+  controlli su mobile.
 - [x] Feature `feature/avatar-builder-profile`: nuovo builder avatar premium
   con iniziali/icona, forme, colori, gradiente, bordo, dimensioni, preset e
   randomizzazione. Approvato visivamente, verificato e rilasciato.
