@@ -4,8 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:spendwise/core/constants/app_constants.dart';
+import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_config.dart';
+import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_preview.dart';
+import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_screen.dart';
+import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_storage.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
+
+final avatarBuilderRevisionProvider = StateProvider<int>((ref) => 0);
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -74,6 +81,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    ref.watch(avatarBuilderRevisionProvider);
     final avatar = settings.avatarData;
     return Scaffold(
       appBar: AppBar(title: const Text('Impostazioni')),
@@ -83,25 +91,32 @@ class SettingsScreen extends ConsumerWidget {
           Center(
             child: Column(
               children: [
-                Container(
-                  width: 164,
-                  height: 164,
-                  padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 3,
-                    ),
-                  ),
-                  child: ClipOval(
+                SizedBox.square(
+                  dimension: 164,
+                  child: Center(
                     child: avatar == null
-                        ? ModernAvatar(settings: settings)
-                        : Image.memory(
-                            base64Decode(avatar.split(',').last),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                ModernAvatar(settings: settings),
+                        ? FutureBuilder<AvatarBuilderConfig>(
+                            future: AvatarBuilderStorage.load(),
+                            builder: (context, snapshot) =>
+                                AvatarBuilderPreview(
+                                  config:
+                                      snapshot.data ??
+                                      const AvatarBuilderConfig(),
+                                  overrideSize: 154,
+                                ),
+                          )
+                        : ClipOval(
+                            child: Image.memory(
+                              base64Decode(avatar.split(',').last),
+                              width: 154,
+                              height: 154,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const AvatarBuilderPreview(
+                                    config: AvatarBuilderConfig(),
+                                    overrideSize: 154,
+                                  ),
+                            ),
                           ),
                   ),
                 ),
@@ -128,37 +143,24 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('Avatar', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Scegli una delle due versioni oppure usa una fotografia.',
-                  ),
-                  const SizedBox(height: 16),
-                  SegmentedButton<String>(
-                    segments: const [
-                      ButtonSegment(
-                        value: 'male',
-                        icon: Icon(Icons.male),
-                        label: Text('Uomo'),
-                      ),
-                      ButtonSegment(
-                        value: 'female',
-                        icon: Icon(Icons.female),
-                        label: Text('Donna'),
-                      ),
-                    ],
-                    selected: {settings.avatarGender},
-                    onSelectionChanged: (value) => ref
-                        .read(settingsProvider.notifier)
-                        .setAvatarGender(value.first),
-                  ),
-                ],
+            child: ListTile(
+              leading: const Icon(Icons.auto_awesome),
+              title: const Text('Personalizza avatar'),
+              subtitle: const Text(
+                'Iniziali, icone, forme, colori, bordo e preset rapidi.',
               ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final changed = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => const AvatarBuilderScreen(),
+                  ),
+                );
+                if (changed == true) {
+                  await ref.read(settingsProvider.notifier).clearAvatar();
+                  ref.read(avatarBuilderRevisionProvider.notifier).state++;
+                }
+              },
             ),
           ),
           const SizedBox(height: 12),
@@ -247,6 +249,11 @@ class SettingsScreen extends ConsumerWidget {
             onChanged: (value) => toggleBiometrics(context, ref, value),
           ),
           const Divider(),
+          const ListTile(
+            leading: Icon(Icons.info_outline),
+            title: Text('Versione applicazione'),
+            trailing: Text(AppConstants.appVersion),
+          ),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Esci'),

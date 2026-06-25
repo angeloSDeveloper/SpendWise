@@ -1,6 +1,6 @@
 # TODO SpendWise
 
-Ultimo audit: 24/06/2026
+Ultimo audit: 25/06/2026
 Storico: `docs/CHANGELOG_WORK.md`
 Stato corrente: `docs/PROJECT_STATUS.md`
 
@@ -45,6 +45,10 @@ Legenda:
 
 ## Impostazioni e personalizzazione
 
+- [-] Feature `feature/avatar-builder-profile`: nuovo builder avatar premium
+  con iniziali/icona, forme, colori, gradiente, bordo, dimensioni, preset e
+  randomizzazione. Analisi, test e build web superati; da approvare
+  visivamente in locale prima dell'unione in `dev`.
 - [x] Avatar stabile semplificato alle sole versioni Uomo e Donna.
 - [-] Foto avatar con selezione dalla galleria: implementata, da collaudare su
   tutti i browser e dispositivi.

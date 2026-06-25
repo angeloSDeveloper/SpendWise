@@ -1,6 +1,6 @@
 # Stato corrente di SpendWise
 
-Ultimo aggiornamento: 24 giugno 2026
+Ultimo aggiornamento: 25 giugno 2026
 
 Questo file è la fonte principale per capire cosa funziona, cosa è parziale e
 cosa manca. `TODO.txt` contiene le attività operative; `CHANGELOG_WORK.md`
@@ -33,6 +33,10 @@ Per ogni intervento futuro:
   personale opzionale.
 
 ## Funzioni parziali
+
+- Nuovo builder avatar premium completo sul ramo
+  `feature/avatar-builder-profile`: verificato tecnicamente, ma ancora da
+  approvare visivamente prima dell'unione nel ramo stabile `dev`.
 
 - Sessione desktop: la correzione del rinnovo token è pubblicata, ma va
   confermata sul browser che mostrava il problema.

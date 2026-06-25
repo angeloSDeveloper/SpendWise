@@ -3,6 +3,26 @@
 Questo documento conserva lo storico delle modifiche, delle verifiche e delle
 attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
+## 25 giugno 2026
+
+### Builder avatar profilo (ramo di prova)
+
+- Creato il ramo isolato `feature/avatar-builder-profile`, senza modificare o
+  pubblicare il ramo stabile `dev`.
+- Aggiunta in Impostazioni la sezione `Personalizza avatar`.
+- Implementati anteprima live, iniziali fino a tre caratteri, icone, quattro
+  forme, colori solidi, gradiente, colore personalizzato, bordo configurabile
+  e dimensioni S/M/L/XL.
+- Aggiunti cinque preset rapidi, randomizzazione controllata, ripristino,
+  annullamento e salvataggio locale della configurazione in JSON.
+- La schermata usa un layout a due colonne su desktop e verticale su mobile,
+  con tema chiaro/scuro e azioni responsive.
+- La versione applicazione resta `1.0.0` ed è ora visibile nelle Impostazioni.
+- Aggiunti test per serializzazione, persistenza e rendering iniziali/icona.
+- Verificati `flutter analyze`, tutti i test e la build web release.
+- Funzione non ancora unita in `dev` e non pubblicata: attende il collaudo
+  visivo dell'utente in locale.
+
 ## 24 giugno 2026
 
 ### Avatar stabile semplificato
