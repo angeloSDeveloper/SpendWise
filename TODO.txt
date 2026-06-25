@@ -45,10 +45,9 @@ Legenda:
 
 ## Impostazioni e personalizzazione
 
-- [-] Feature `feature/avatar-builder-profile`: nuovo builder avatar premium
+- [x] Feature `feature/avatar-builder-profile`: nuovo builder avatar premium
   con iniziali/icona, forme, colori, gradiente, bordo, dimensioni, preset e
-  randomizzazione. Analisi, test e build web superati; da approvare
-  visivamente in locale prima dell'unione in `dev`.
+  randomizzazione. Approvato visivamente, verificato e rilasciato.
 - [x] Avatar stabile semplificato alle sole versioni Uomo e Donna.
 - [-] Foto avatar con selezione dalla galleria: implementata, da collaudare su
   tutti i browser e dispositivi.

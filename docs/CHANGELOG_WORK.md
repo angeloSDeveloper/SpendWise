@@ -20,8 +20,9 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - La versione applicazione resta `1.0.0` ed è ora visibile nelle Impostazioni.
 - Aggiunti test per serializzazione, persistenza e rendering iniziali/icona.
 - Verificati `flutter analyze`, tutti i test e la build web release.
-- Funzione non ancora unita in `dev` e non pubblicata: attende il collaudo
-  visivo dell'utente in locale.
+- Funzione approvata dall'utente dopo il collaudo visivo locale.
+- Promossa sui rami `dev` e `main` e pubblicata sul Worker Cloudflare
+  `spendwise`.
 
 ## 24 giugno 2026
 

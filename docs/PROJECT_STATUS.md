@@ -22,6 +22,8 @@ Per ogni intervento futuro:
 
 ## Funzioni completate
 
+- Builder avatar premium con anteprima live, preset, randomizzazione, forme,
+  iniziali, icone, colori, gradiente, bordo e dimensioni.
 - Registro veicoli con manutenzioni e accessori.
 - Modifica, archiviazione, ripristino ed eliminazione dei veicoli.
 - Abbonamenti con prossima scadenza e ricorrenza personalizzata in mesi.
@@ -33,10 +35,6 @@ Per ogni intervento futuro:
   personale opzionale.
 
 ## Funzioni parziali
-
-- Nuovo builder avatar premium completo sul ramo
-  `feature/avatar-builder-profile`: verificato tecnicamente, ma ancora da
-  approvare visivamente prima dell'unione nel ramo stabile `dev`.
 
 - Sessione desktop: la correzione del rinnovo token è pubblicata, ma va
   confermata sul browser che mostrava il problema.
