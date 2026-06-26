@@ -1,6 +1,6 @@
 # Stato corrente di SpendWise
 
-Ultimo aggiornamento: 25 giugno 2026
+Ultimo aggiornamento: 26 giugno 2026
 
 Questo file è la fonte principale per capire cosa funziona, cosa è parziale e
 cosa manca. `TODO.txt` contiene le attività operative; `CHANGELOG_WORK.md`
@@ -19,6 +19,16 @@ Per ogni intervento futuro:
 5. lasciare in `TODO.txt` tutto ciò che resta incompleto;
 6. distinguere sempre tra interfaccia predisposta e funzione realmente attiva
    in background o su servizi esterni.
+
+## Memoria operativa Codex
+
+- `AGENTS.md` nella root del repository contiene le istruzioni automatiche per
+  Codex quando il progetto viene aperto da un altro PC o da una nuova sessione.
+- La memoria principale del progetto resta nei file versionati:
+  `TODO.txt`, `docs/PROJECT_STATUS.md`, `docs/CHANGELOG_WORK.md` e
+  `docs/deployment.md`.
+- La cronologia di una chat locale Codex non deve essere considerata l'unica
+  fonte di contesto.
 
 ## Funzioni completate
 
@@ -57,6 +67,6 @@ Per ogni intervento futuro:
 
 ## Ultima pubblicazione nota
 
-- Commit precedente: `0e1a284`
+- Commit precedente: `a86592c`
 - Worker: `https://spendwise.lopreteangelo97.workers.dev`
 - Database: `spendwise-db`

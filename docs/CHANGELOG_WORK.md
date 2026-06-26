@@ -3,6 +3,18 @@
 Questo documento conserva lo storico delle modifiche, delle verifiche e delle
 attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
+## 26 giugno 2026
+
+### Memoria operativa Codex
+
+- Aggiunto `AGENTS.md` nella root del repository.
+- Il file contiene le istruzioni stabili per riprendere SpendWise da un altro
+  PC o da una nuova sessione Codex senza dipendere dalla cronologia locale.
+- Documentati file da leggere a inizio sessione, versione bloccata a `1.0.0`,
+  workflow Git, comandi Flutter/Cloudflare e regole di aggiornamento dello
+  storico.
+- Nessuna modifica al codice applicativo.
+
 ## 25 giugno 2026
 
 ### Builder avatar profilo (ramo di prova)
