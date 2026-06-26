@@ -5,6 +5,14 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 26 giugno 2026
 
+### Setup nuovo PC Windows
+
+- Aggiunto `tools/bootstrap_windows.ps1` per configurare un nuovo PC Windows
+  senza rilanciare lo script storico `setup_spendwise.sh`.
+- Aggiunta la guida `docs/new-pc-setup.md`.
+- Aggiornato `AGENTS.md` con l'avviso di non usare `setup_spendwise.sh` su un
+  repository gia' implementato e con il comando di bootstrap corretto.
+
 ### Memoria operativa Codex
 
 - Aggiunto `AGENTS.md` nella root del repository.

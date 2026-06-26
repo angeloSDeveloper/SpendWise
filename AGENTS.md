@@ -89,6 +89,19 @@ Per Cloudflare usa `npx.cmd` su Windows:
 Il deploy va eseguito dalla cartella `workers` e solo quando Angelo chiede di
 rilasciare/pubblicare.
 
+## Setup su nuovo PC
+
+- Se `.tooling\flutter\bin\flutter.bat` non esiste, non rilanciare
+  `setup_spendwise.sh`: e' uno script storico di scaffolding e puo'
+  sovrascrivere file.
+- Su Windows usa invece:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\bootstrap_windows.ps1
+```
+
+- La guida completa e' in `docs/new-pc-setup.md`.
+
 ## Qualita'
 
 - Esegui verifiche proporzionate al rischio della modifica.
