@@ -13,6 +13,8 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - Documentati file da leggere a inizio sessione, versione bloccata a `1.0.0`,
   workflow Git, comandi Flutter/Cloudflare e regole di aggiornamento dello
   storico.
+- Aggiunta la regola operativa di eseguire `git fetch origin --prune` e
+  controllare l'allineamento del ramo quando si riprende il lavoro da piu' PC.
 - Nessuna modifica al codice applicativo.
 
 ## 25 giugno 2026

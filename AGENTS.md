@@ -32,6 +32,14 @@ una funzione se in questi file risulta parziale, da verificare o mancante.
 
 ## Workflow Git
 
+- All'inizio di ogni intervento esegui `git fetch origin --prune` quando la
+  rete e' disponibile.
+- Dopo il fetch controlla `git status --short --branch` per capire se il ramo
+  locale e' indietro, avanti o divergente rispetto al remoto.
+- Se il ramo locale e' indietro e non ci sono modifiche locali, allinealo con
+  `git pull --ff-only` prima di lavorare.
+- Se ci sono modifiche locali o divergenze, fermati e segnala la situazione
+  invece di sovrascrivere lavoro esistente.
 - Prima di modifiche importanti crea un ramo dedicato, ad esempio
   `feature/...`, `fix/...` o `docs/...`.
 - Mantieni `main` e `dev` allineati quando una modifica e' approvata e
