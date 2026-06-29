@@ -1,6 +1,6 @@
 # Stato corrente di SpendWise
 
-Ultimo aggiornamento: 26 giugno 2026
+Ultimo aggiornamento: 29 giugno 2026
 
 Questo file è la fonte principale per capire cosa funziona, cosa è parziale e
 cosa manca. `TODO.txt` contiene le attività operative; `CHANGELOG_WORK.md`
@@ -38,6 +38,8 @@ Per ogni intervento futuro:
 - Modifica, archiviazione, ripristino ed eliminazione dei veicoli.
 - Abbonamenti con prossima scadenza e ricorrenza personalizzata in mesi.
 - Piani rateali con prossima scadenza e registrazione della rata pagata.
+- Form piani rateali con data iniziale/prima rata e scadenza finale calcolata
+  automaticamente in base a frequenza e numero rate.
 - CRUD per spese quotidiane, abbonamenti, rate, manutenzioni e accessori.
 - Menu principali configurabili dalle impostazioni.
 - Preferenze locali per tema, avatar, biometria e promemoria.

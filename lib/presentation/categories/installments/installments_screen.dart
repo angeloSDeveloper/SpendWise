@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +20,54 @@ final installmentsProvider = FutureProvider.autoDispose(
 
 String _money(num value) =>
     NumberFormat.currency(locale: 'it_IT', symbol: '€').format(value);
+
+DateTime _dateOnly(DateTime value) =>
+    DateTime(value.year, value.month, value.day);
+
+int _lastDayOfMonth(int year, int month) => DateTime(year, month + 1, 0).day;
+
+DateTime _addMonthsClamped(DateTime date, int months) {
+  final zeroBasedMonth = date.month - 1 + months;
+  final year = date.year + zeroBasedMonth ~/ 12;
+  final month = zeroBasedMonth % 12 + 1;
+  final day = date.day.clamp(1, _lastDayOfMonth(year, month));
+  return DateTime(year, month, day);
+}
+
+DateTime installmentDueDate(
+  DateTime startDate,
+  InstallmentFrequency frequency,
+  int installmentIndex,
+) {
+  final start = _dateOnly(startDate);
+  final safeIndex = installmentIndex < 0 ? 0 : installmentIndex;
+  return switch (frequency) {
+    InstallmentFrequency.weekly => start.add(Duration(days: 7 * safeIndex)),
+    InstallmentFrequency.biweekly => start.add(Duration(days: 14 * safeIndex)),
+    InstallmentFrequency.monthly => _addMonthsClamped(start, safeIndex),
+  };
+}
+
+DateTime installmentFinalDueDate(
+  DateTime startDate,
+  InstallmentFrequency frequency,
+  int totalInstallments,
+) => installmentDueDate(startDate, frequency, totalInstallments - 1);
+
+String _readableSaveError(Object error) {
+  if (error is DioException) {
+    if (error.response?.statusCode == 401) {
+      return 'Sessione scaduta, accedi di nuovo.';
+    }
+    final body = error.response?.data;
+    if (body is Map<String, dynamic>) {
+      final message = body['error'];
+      if (message is String && message.isNotEmpty) return message;
+    }
+    if (error.message?.isNotEmpty == true) return error.message!;
+  }
+  return 'Salvataggio non riuscito. Riprova.';
+}
 
 class InstallmentsScreen extends ConsumerWidget {
   const InstallmentsScreen({super.key});
@@ -235,7 +284,7 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
       count = TextEditingController(),
       note = TextEditingController();
   InstallmentFrequency frequency = InstallmentFrequency.monthly;
-  DateTime nextDue = DateTime.now();
+  DateTime startDate = DateTime.now();
   bool saving = false;
 
   @override
@@ -250,9 +299,22 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
       count.text = '${item.totalInstallments}';
       note.text = item.note ?? '';
       frequency = item.frequency;
-      nextDue = item.nextDueDate?.toLocal() ?? item.startDate.toLocal();
+      startDate = item.startDate.toLocal();
     }
   }
+
+  int get _countValue => int.tryParse(count.text) ?? 0;
+
+  int get _paidInstallments => widget.existing?.paidInstallments ?? 0;
+
+  DateTime get _nextDue =>
+      installmentDueDate(startDate, frequency, _paidInstallments);
+
+  DateTime get _finalDue => installmentFinalDueDate(
+    startDate,
+    frequency,
+    _countValue < 1 ? 1 : _countValue,
+  );
 
   Future<void> save() async {
     final totalValue = double.tryParse(total.text.replaceAll(',', '.')) ?? 0;
@@ -278,11 +340,9 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
         'totalInstallments': countValue,
         'paidInstallments': widget.existing?.paidInstallments ?? 0,
         'frequency': frequency.name,
-        'startDate':
-            widget.existing?.startDate.millisecondsSinceEpoch ??
-            DateTime.now().millisecondsSinceEpoch,
-        'nextDueDate': nextDue.millisecondsSinceEpoch,
-        'isActive': 1,
+        'startDate': _dateOnly(startDate).millisecondsSinceEpoch,
+        'nextDueDate': _nextDue.millisecondsSinceEpoch,
+        'isActive': _paidInstallments < countValue ? 1 : 0,
         'note': note.text.trim(),
       };
       final api = ref.read(installmentsApiProvider);
@@ -291,6 +351,15 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
           : await api.update(widget.existing!.id, body);
       ref.invalidate(installmentsProvider);
       if (mounted) Navigator.pop(context, true);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_readableSaveError(error))));
+      if (error is DioException && error.response?.statusCode == 401) {
+        await ref.read(authStateProvider.notifier).logout();
+        if (mounted) context.go('/login');
+      }
     } finally {
       if (mounted) setState(() => saving = false);
     }
@@ -358,6 +427,7 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
                 controller: count,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Numero rate *'),
+                onChanged: (_) => setState(() {}),
               ),
             ),
           ],
@@ -378,7 +448,7 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
                 ),
               )
               .toList(),
-          onChanged: (value) => frequency = value!,
+          onChanged: (value) => setState(() => frequency = value!),
         ),
         const SizedBox(height: 12),
         InkWell(
@@ -386,19 +456,43 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
             final value = await showDatePicker(
               context: context,
               locale: const Locale('it', 'IT'),
-              initialDate: nextDue,
+              initialDate: startDate,
               firstDate: DateTime.now().subtract(const Duration(days: 3650)),
               lastDate: DateTime.now().add(const Duration(days: 3650)),
             );
-            if (value != null) setState(() => nextDue = value);
+            if (value != null) setState(() => startDate = value);
           },
           child: InputDecorator(
             decoration: const InputDecoration(
-              labelText: 'Prossima scadenza',
+              labelText: 'Data iniziale / prima rata',
               prefixIcon: Icon(Icons.calendar_month),
             ),
-            child: Text(DateFormat('dd/MM/yyyy').format(nextDue)),
+            child: Text(DateFormat('dd/MM/yyyy').format(startDate)),
           ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Prossima scadenza',
+                  prefixIcon: Icon(Icons.event_available),
+                ),
+                child: Text(DateFormat('dd/MM/yyyy').format(_nextDue)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Scadenza finale calcolata',
+                  prefixIcon: Icon(Icons.flag),
+                ),
+                child: Text(DateFormat('dd/MM/yyyy').format(_finalDue)),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         TextField(

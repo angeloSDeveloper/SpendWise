@@ -3,6 +3,21 @@
 Questo documento conserva lo storico delle modifiche, delle verifiche e delle
 attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
+## 29 giugno 2026
+
+### Rate e sessione scaduta
+
+- Nel form `Nuovo piano rateale` sostituita la scadenza manuale con la data
+  iniziale/prima rata.
+- La prossima scadenza viene calcolata automaticamente dalla data iniziale e
+  dalle rate gia' pagate.
+- La scadenza finale viene calcolata automaticamente in base a data iniziale,
+  frequenza e numero rate.
+- Aggiunta gestione piu' leggibile dell'errore `401`: se il refresh fallisce,
+  i token locali vengono rimossi e il form mostra `Sessione scaduta, accedi di
+  nuovo` invece del messaggio tecnico Dio.
+- Aggiunti test sul calendario rateale mensile/settimanale.
+
 ## 26 giugno 2026
 
 ### Setup nuovo PC Windows

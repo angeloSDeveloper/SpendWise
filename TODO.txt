@@ -1,6 +1,6 @@
 # TODO SpendWise
 
-Ultimo audit: 25/06/2026
+Ultimo audit: 29/06/2026
 Storico: `docs/CHANGELOG_WORK.md`
 Stato corrente: `docs/PROJECT_STATUS.md`
 
@@ -13,7 +13,9 @@ Legenda:
 ## Problemi prioritari
 
 - [-] Verificare sul browser desktop dell'utente che il rinnovo automatico
-  della sessione abbia eliminato definitivamente gli errori `401`.
+  della sessione abbia eliminato definitivamente gli errori `401`. Migliorata
+  la gestione del salvataggio rate: se la sessione scade viene mostrato un
+  messaggio leggibile e l'utente viene riportato al login.
 - [ ] Aggiungere dettaglio, modifica ed eliminazione ai rifornimenti.
 - [ ] Completare dettaglio, modifica ed eliminazione in ogni eventuale schermata
   rimasta esclusa, con audit manuale di tutti i menu.
@@ -31,6 +33,8 @@ Legenda:
 - [x] Modifica ed eliminazione degli abbonamenti.
 - [x] Creazione, dettaglio, modifica ed eliminazione dei piani rateali.
 - [x] Avanzamento automatico della prossima rata quando viene segnata pagata.
+- [x] Nel form rate, data iniziale/prima rata e scadenza finale calcolata in
+  automatico in base a frequenza e numero rate.
 - [-] Promemoria visivi interni all'app in base ai giorni configurati.
 - [ ] Notifiche push reali anche quando SpendWise non è aperto.
 

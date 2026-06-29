@@ -110,7 +110,17 @@ class DioClient {
       error.requestOptions.headers['Authorization'] = 'Bearer $accessToken';
       handler.resolve(await dio.fetch<dynamic>(error.requestOptions));
     } catch (_) {
-      handler.next(error);
+      await storage.delete(key: AppConstants.kAccessTokenKey);
+      await storage.delete(key: AppConstants.kRefreshTokenKey);
+      handler.next(
+        DioException(
+          requestOptions: error.requestOptions,
+          response: error.response,
+          type: error.type,
+          error: 'Sessione scaduta',
+          message: 'Sessione scaduta, accedi di nuovo.',
+        ),
+      );
     }
   }
 
