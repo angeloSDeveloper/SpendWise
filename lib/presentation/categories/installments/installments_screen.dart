@@ -8,6 +8,7 @@ import 'package:spendwise/data/remote/api_client.dart';
 import 'package:spendwise/domain/models/enums.dart';
 import 'package:spendwise/domain/models/installment_plan.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
+import 'package:spendwise/presentation/shared/app_feedback.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
 import 'package:spendwise/presentation/shared/widgets/swipe_reveal_delete.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
@@ -394,9 +395,7 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
           _number(draft.installment) <= 0,
     );
     if (invalidDraft || countValue < 1 || (multiple && drafts.length < 2)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Completa tutti i dati obbligatori')),
-      );
+      showAppMessage(context, 'Completa tutti i dati obbligatori');
       return;
     }
     setState(() => saving = true);
@@ -416,9 +415,7 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
       if (mounted) Navigator.pop(context, true);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_readableSaveError(error))));
+      showAppMessage(context, _readableSaveError(error));
       if (error is DioException && error.response?.statusCode == 401) {
         await ref.read(authStateProvider.notifier).logout();
         if (mounted) context.go('/login');

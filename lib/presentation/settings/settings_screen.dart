@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
@@ -12,6 +11,7 @@ import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_sc
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_storage.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
+import 'package:spendwise/presentation/shared/app_feedback.dart';
 
 final avatarBuilderRevisionProvider = StateProvider<int>((ref) => 0);
 
@@ -37,12 +37,9 @@ class SettingsScreen extends ConsumerWidget {
   ) async {
     await ref.read(settingsProvider.notifier).setNotifications(value);
     if (value && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Promemoria attivati. Il browser o il telefono potrà chiedere il consenso alle notifiche.',
-          ),
-        ),
+      showAppMessage(
+        context,
+        'Promemoria attivati. Il browser o il telefono potrà chiedere il consenso alle notifiche.',
       );
     }
   }
@@ -68,12 +65,9 @@ class SettingsScreen extends ConsumerWidget {
       }
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Face ID o biometria non disponibili su questo dispositivo/browser.',
-            ),
-          ),
+        showAppMessage(
+          context,
+          'Face ID o biometria non disponibili su questo dispositivo/browser.',
         );
       }
     }
@@ -84,7 +78,6 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     ref.watch(avatarBuilderRevisionProvider);
     final avatar = settings.avatarData;
-    final user = ref.watch(currentUserProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Impostazioni')),
       body: ListView(
@@ -209,6 +202,50 @@ class SettingsScreen extends ConsumerWidget {
                 ref.read(settingsProvider.notifier).setLocale(value!),
           ),
           const SizedBox(height: 20),
+          Text('Interazioni', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(
+                value: 'left',
+                label: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Swipe a sinistra', maxLines: 1),
+                ),
+              ),
+              ButtonSegment(
+                value: 'right',
+                label: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Swipe a destra', maxLines: 1),
+                ),
+              ),
+            ],
+            selected: {settings.swipeDirection},
+            onSelectionChanged: (value) => ref
+                .read(settingsProvider.notifier)
+                .setSwipeDirection(value.first),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<int>(
+            initialValue: settings.bannerDurationSeconds,
+            decoration: const InputDecoration(
+              labelText: 'Durata messaggi',
+              helperText: '0 disattiva i banner; massimo 15 secondi',
+              suffixText: 'secondi',
+            ),
+            items: [
+              for (var seconds = 0; seconds <= 15; seconds++)
+                DropdownMenuItem(
+                  value: seconds,
+                  child: Text(seconds == 0 ? 'Nessun banner' : '$seconds'),
+                ),
+            ],
+            onChanged: (value) =>
+                ref.read(settingsProvider.notifier).setBannerDuration(value!),
+          ),
+          const SizedBox(height: 20),
           Text(
             'Sezioni visibili',
             style: Theme.of(context).textTheme.titleLarge,
@@ -257,20 +294,6 @@ class SettingsScreen extends ConsumerWidget {
                   .read(settingsProvider.notifier)
                   .setNotificationDays(value!),
             ),
-          if (user != null && {'tester', 'admin'}.contains(user.role)) ...[
-            const SizedBox(height: 12),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.science_outlined),
-                title: const Text('Dashboard tester'),
-                subtitle: const Text(
-                  'Invia test notifiche e registra esito, parziale o KO.',
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('/tester'),
-              ),
-            ),
-          ],
           const SizedBox(height: 20),
           Text('Sicurezza', style: Theme.of(context).textTheme.titleLarge),
           SwitchListTile(

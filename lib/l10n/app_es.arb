@@ -3,6 +3,7 @@
   "appName": "SpendWise",
   "dashboard": "Panel",
   "dailyExpenses": "Gastos diarios",
+  "expensesNav": "Gastos",
   "subscriptions": "Suscripciones",
   "installments": "Cuotas",
   "vehicle": "Vehículo",

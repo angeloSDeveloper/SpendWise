@@ -35,7 +35,13 @@ class _AnalyticsState extends ConsumerState<AnalyticsScreen> {
         children: [
           SegmentedButton<int>(
             segments: const [
-              ButtonSegment(value: 0, label: Text('1 mese')),
+              ButtonSegment(
+                value: 0,
+                label: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('1 mese', maxLines: 1),
+                ),
+              ),
               ButtonSegment(value: 1, label: Text('3 mesi')),
               ButtonSegment(value: 2, label: Text('6 mesi')),
               ButtonSegment(value: 3, label: Text('Anno')),

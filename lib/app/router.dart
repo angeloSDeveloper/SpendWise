@@ -191,7 +191,7 @@ class NavigationShell extends ConsumerWidget {
     final strings = AppLocalizations.of(context)!;
     final labels = [
       strings.dashboard,
-      strings.dailyExpenses,
+      strings.expensesNav,
       strings.subscriptions,
       strings.installments,
       strings.vehicle,

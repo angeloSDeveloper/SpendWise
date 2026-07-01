@@ -7,6 +7,7 @@ import 'package:spendwise/data/remote/api_client.dart';
 import 'package:spendwise/domain/models/enums.dart';
 import 'package:spendwise/domain/models/subscription.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
+import 'package:spendwise/presentation/shared/app_feedback.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
 import 'package:spendwise/presentation/shared/widgets/swipe_reveal_delete.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
@@ -435,11 +436,12 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
   final formKey = GlobalKey<FormState>();
   final name = TextEditingController(),
       amount = TextEditingController(),
+      customMonths = TextEditingController(),
       url = TextEditingController(),
       note = TextEditingController();
   BillingCycle cycle = BillingCycle.monthly;
-  int duration = 0;
   int recurrence = 1;
+  bool customPeriod = false;
   DateTime nextDueDate = DateTime.now();
   DateTime? endDate;
   bool saving = false;
@@ -457,6 +459,9 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
       recurrence =
           item.recurrenceMonths ??
           (item.billingCycle == BillingCycle.yearly ? 12 : 1);
+      customPeriod =
+          item.billingCycle == BillingCycle.monthly && recurrence != 1;
+      if (customPeriod) customMonths.text = '$recurrence';
       nextDueDate = item.nextDueDate?.toLocal() ?? item.startDate.toLocal();
       endDate = item.endDate?.toLocal();
     }
@@ -464,7 +469,7 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
 
   @override
   void dispose() {
-    for (final c in [name, amount, url, note]) {
+    for (final c in [name, amount, customMonths, url, note]) {
       c.dispose();
     }
     super.dispose();
@@ -472,15 +477,19 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
 
   Future<void> save() async {
     if (!formKey.currentState!.validate() || name.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Scegli o scrivi il nome del servizio')),
-      );
+      showAppMessage(context, 'Scegli o scrivi il nome del servizio');
       return;
     }
     setState(() => saving = true);
     try {
       final start = DateTime.now();
-      final recurrenceMonths = cycle == BillingCycle.weekly ? null : recurrence;
+      final recurrenceMonths = cycle == BillingCycle.weekly
+          ? null
+          : customPeriod
+          ? int.parse(customMonths.text)
+          : cycle == BillingCycle.yearly
+          ? 12
+          : 1;
       final body = {
         'name': name.text.trim(),
         'amount': double.parse(amount.text.replaceAll(',', '.')),
@@ -505,9 +514,7 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
       if (mounted) Navigator.pop(context, true);
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Salvataggio non riuscito: $error')),
-        );
+        showAppMessage(context, 'Salvataggio non riuscito: $error');
       }
     } finally {
       if (mounted) setState(() => saving = false);
@@ -547,56 +554,42 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
                 : null,
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<BillingCycle>(
-                  initialValue: cycle,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Periodicità'),
-                  items: BillingCycle.values
-                      .map(
-                        (x) => DropdownMenuItem(
-                          value: x,
-                          child: Text(_cycleLabel(x)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (x) => setState(() {
-                    cycle = x!;
-                    if (cycle == BillingCycle.yearly) recurrence = 12;
-                    if (cycle == BillingCycle.monthly && recurrence == 12) {
-                      recurrence = 1;
-                    }
-                  }),
-                ),
-              ),
-              if (cycle != BillingCycle.weekly) ...[
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    initialValue: recurrence,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Rinnovo / addebito',
-                    ),
-                    items: [
-                      for (var months = 1; months <= 36; months++)
-                        DropdownMenuItem(
-                          value: months,
-                          child: Text(
-                            months == 12
-                                ? 'Ogni 1 anno'
-                                : 'Ogni $months ${months == 1 ? 'mese' : 'mesi'}',
-                          ),
-                        ),
-                    ],
-                    onChanged: (x) => setState(() => recurrence = x!),
-                  ),
-                ),
-              ],
+          DropdownButtonFormField<String>(
+            initialValue: customPeriod ? 'custom' : cycle.name,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Periodicità'),
+            items: const [
+              DropdownMenuItem(value: 'weekly', child: Text('Settimanale')),
+              DropdownMenuItem(value: 'monthly', child: Text('Mensile')),
+              DropdownMenuItem(value: 'yearly', child: Text('Annuale')),
+              DropdownMenuItem(value: 'custom', child: Text('Personalizzata')),
             ],
+            onChanged: (value) => setState(() {
+              customPeriod = value == 'custom';
+              cycle = switch (value) {
+                'weekly' => BillingCycle.weekly,
+                'yearly' => BillingCycle.yearly,
+                _ => BillingCycle.monthly,
+              };
+              recurrence = cycle == BillingCycle.yearly ? 12 : 1;
+            }),
           ),
+          if (customPeriod) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: customMonths,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Ripeti ogni quanti mesi? *',
+                hintText: 'Es. 7',
+                suffixText: 'mesi',
+              ),
+              validator: (value) =>
+                  customPeriod && (int.tryParse(value ?? '') ?? 0) < 1
+                  ? 'Inserisci almeno 1 mese'
+                  : null,
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [

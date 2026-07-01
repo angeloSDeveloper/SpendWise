@@ -6,6 +6,7 @@ import 'package:spendwise/core/constants/app_constants.dart';
 import 'package:spendwise/data/remote/api_client.dart';
 import 'package:spendwise/domain/models/daily_expense.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
+import 'package:spendwise/presentation/shared/app_feedback.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
 import 'package:spendwise/presentation/shared/widgets/swipe_reveal_delete.dart';
 
@@ -318,9 +319,7 @@ class _AddDailyExpenseState extends ConsumerState<AddDailyExpenseScreen> {
   Future<void> save() async {
     final value = double.tryParse(amount.text.replaceAll(',', '.')) ?? 0;
     if (description.text.trim().isEmpty || value <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Inserisci descrizione e importo validi')),
-      );
+      showAppMessage(context, 'Inserisci descrizione e importo validi');
       return;
     }
     setState(() => saving = true);
@@ -341,9 +340,7 @@ class _AddDailyExpenseState extends ConsumerState<AddDailyExpenseScreen> {
       if (mounted) context.pop();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Salvataggio non riuscito: $error')),
-        );
+        showAppMessage(context, 'Salvataggio non riuscito: $error');
       }
     } finally {
       if (mounted) setState(() => saving = false);

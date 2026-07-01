@@ -5,6 +5,7 @@ import 'package:spendwise/presentation/categories/daily/daily_expenses_screen.da
 import 'package:spendwise/presentation/categories/installments/installments_screen.dart';
 import 'package:spendwise/presentation/categories/subscriptions/subscriptions_screen.dart';
 import 'package:spendwise/presentation/categories/vehicle/vehicle_screen.dart';
+import 'package:spendwise/presentation/analytics/analytics_screen.dart';
 
 void main() {
   Future<void> pumpMobile(WidgetTester tester, Widget child) async {
@@ -35,8 +36,12 @@ void main() {
 
   testWidgets('nuovo abbonamento usa righe compatte', (tester) async {
     await pumpMobile(tester, const AddSubscriptionScreen());
-    expectSameRow(tester, 'Periodicità', 'Rinnovo / addebito');
     expectSameRow(tester, 'Prossima scadenza *', 'Fine contratto');
+    await tester.tap(find.text('Mensile').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Personalizzata').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Ripeti ogni quanti mesi? *'), findsOneWidget);
   });
 
   testWidgets('nuovo piano affianca numero rate e frequenza', (tester) async {
@@ -72,6 +77,13 @@ void main() {
     );
     expect(find.text('Prezzo (€) *'), findsOneWidget);
     expect(find.text('Montaggio (€)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('analisi mantiene 1 mese su una sola riga', (tester) async {
+    await pumpMobile(tester, const AnalyticsScreen());
+    final label = tester.widget<Text>(find.text('1 mese'));
+    expect(label.maxLines, 1);
     expect(tester.takeException(), isNull);
   });
 }

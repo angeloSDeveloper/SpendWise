@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:spendwise/presentation/shared/app_feedback.dart';
 
 const appModules = {'daily', 'subscriptions', 'installments', 'vehicle'};
 
@@ -21,6 +22,8 @@ class SettingsState {
     this.notificationsEnabled = false,
     this.notificationDaysBefore = 3,
     this.localeCode = 'it',
+    this.swipeDirection = 'left',
+    this.bannerDurationSeconds = 10,
   });
   final ThemeMode themeMode;
   final String? avatarData;
@@ -31,6 +34,8 @@ class SettingsState {
   final Set<String> visibleModules;
   final int notificationDaysBefore;
   final String localeCode;
+  final String swipeDirection;
+  final int bannerDurationSeconds;
 
   SettingsState copyWith({
     ThemeMode? themeMode,
@@ -49,6 +54,8 @@ class SettingsState {
     bool? notificationsEnabled,
     int? notificationDaysBefore,
     String? localeCode,
+    String? swipeDirection,
+    int? bannerDurationSeconds,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     avatarData: clearAvatar ? null : avatarData ?? this.avatarData,
@@ -66,6 +73,8 @@ class SettingsState {
     notificationDaysBefore:
         notificationDaysBefore ?? this.notificationDaysBefore,
     localeCode: localeCode ?? this.localeCode,
+    swipeDirection: swipeDirection ?? this.swipeDirection,
+    bannerDurationSeconds: bannerDurationSeconds ?? this.bannerDurationSeconds,
   );
 }
 
@@ -78,6 +87,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
+    final bannerDurationSeconds = prefs.getInt('banner_duration_seconds') ?? 10;
+    AppFeedback.bannerSeconds = bannerDurationSeconds;
     state = SettingsState(
       themeMode: ThemeMode.values.firstWhere(
         (x) => x.name == prefs.getString('theme_mode'),
@@ -98,6 +109,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       notificationsEnabled: prefs.getBool('notifications_enabled') ?? false,
       notificationDaysBefore: prefs.getInt('notification_days_before') ?? 3,
       localeCode: prefs.getString('locale_code') ?? 'it',
+      swipeDirection: prefs.getString('swipe_direction') ?? 'left',
+      bannerDurationSeconds: bannerDurationSeconds,
     );
   }
 
@@ -205,6 +218,20 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setLocale(String value) async {
     state = state.copyWith(localeCode: value);
     (await SharedPreferences.getInstance()).setString('locale_code', value);
+  }
+
+  Future<void> setSwipeDirection(String value) async {
+    state = state.copyWith(swipeDirection: value);
+    (await SharedPreferences.getInstance()).setString('swipe_direction', value);
+  }
+
+  Future<void> setBannerDuration(int value) async {
+    AppFeedback.bannerSeconds = value;
+    state = state.copyWith(bannerDurationSeconds: value);
+    (await SharedPreferences.getInstance()).setInt(
+      'banner_duration_seconds',
+      value,
+    );
   }
 }
 

@@ -193,6 +193,14 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
             onPressed: () => context.push('/manual'),
             icon: const Icon(Icons.help_outline),
           ),
+          if (user != null &&
+              ({'tester', 'admin'}.contains(user.role) ||
+                  user.email == 'acampione97@gmail.com'))
+            IconButton(
+              tooltip: 'Dashboard tester',
+              onPressed: () => context.push('/tester'),
+              icon: const Icon(Icons.science_outlined),
+            ),
           IconButton(
             tooltip: 'Impostazioni',
             onPressed: () => context.push('/settings'),

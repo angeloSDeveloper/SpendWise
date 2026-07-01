@@ -9,15 +9,15 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 - Aggiunto annullamento dell'ultima rata segnata come pagata, con ripristino
   del conteggio, dello stato attivo e della prossima scadenza.
-- Creato un componente swipe riutilizzabile: lo swipe a destra mostra soltanto
-  il cestino; l'eliminazione parte al click dopo 10 secondi ed è annullabile.
+- Creato un componente swipe riutilizzabile: il gesto mostra soltanto il
+  cestino; l'eliminazione parte al click ed è annullabile.
 - Applicato il componente a spese, abbonamenti, rate, veicoli, rifornimenti,
   manutenzioni e accessori nelle rispettive liste mobile.
 - Aggiunta eliminazione API dei rifornimenti.
 - Compattati i form mobile richiesti e corretti gli overflow rilevati dai test
   a 390 px.
-- Sostituito il campo extra del rinnovo personalizzato con una selezione
-  diretta da 1 a 36 mesi.
+- Semplificato il rinnovo degli abbonamenti; la modalità personalizzata
+  consente di inserire direttamente il numero di mesi.
 - Aggiunta selezione lingua italiano, inglese, spagnolo e tedesco; localizzati
   navigazione, componenti Material e stato sincronizzazione. La traduzione
   completa dei testi storici resta parziale.
@@ -28,11 +28,34 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
   corrente. Non sono push in background: Web Push/FCM e registrazione
   dispositivi restano da implementare con le relative credenziali.
 
+### Rifiniture dopo collaudo visivo
+
+- Ripristinata l'etichetta compatta `Spese` nella navigazione inferiore.
+- Rimosso lo sfondo rosso del gesto swipe.
+- Lo swipe aperto si richiude toccando un altro elemento e solo una riga può
+  restare aperta alla volta.
+- Aggiunta nelle Impostazioni la scelta swipe a sinistra/destra; il valore
+  predefinito è ora sinistra.
+- Tutti gli Snackbar passano da un unico gestore: durata configurabile da 0 a
+  15 secondi, valore 0 senza banner e chiusura al tap.
+- Anche l'attesa prima dell'eliminazione segue la durata configurata; con 0
+  l'eliminazione è immediata.
+- Semplificata la periodicità degli abbonamenti a settimanale, mensile,
+  annuale o personalizzata con numero mesi inserito dall'utente.
+- Corretta l'etichetta `1 mese` della pagina Analisi affinché resti su una
+  riga.
+- Spostato l'accesso alla dashboard tester in un'icona dedicata accanto alle
+  Impostazioni nella dashboard.
+- Eseguito audit localizzazione: almeno 256 stringhe UI dirette, circa 250-350
+  chiavi finali stimate. Confermato `gen_l10n` come soluzione più leggera,
+  senza nuove dipendenze o database; dettagli in
+  `docs/localization-assessment.md`.
+
 ### Verifiche UX/tester
 
 - `flutter analyze`: nessun problema.
 - `flutter test`: 22 test superati.
-- Aggiunti test del gesto swipe, attesa di 10 secondi, annullamento e layout
+- Aggiunti test del gesto swipe, attesa configurabile, annullamento e layout
   mobile dei cinque form richiesti.
 - Typecheck Worker TypeScript superato.
 - Build web release completata.

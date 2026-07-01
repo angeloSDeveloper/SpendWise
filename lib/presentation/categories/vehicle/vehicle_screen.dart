@@ -15,6 +15,7 @@ import 'package:spendwise/domain/models/fuel_entry.dart';
 import 'package:spendwise/domain/models/vehicle.dart';
 import 'package:spendwise/domain/models/vehicle_maintenance.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
+import 'package:spendwise/presentation/shared/app_feedback.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
 import 'package:spendwise/presentation/shared/widgets/swipe_reveal_delete.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -376,9 +377,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Salvataggio non riuscito: $error')),
-        );
+        showAppMessage(context, 'Salvataggio non riuscito: $error');
       }
     } finally {
       if (mounted) setState(() => saving = false);
@@ -1204,9 +1203,7 @@ class _MaintenanceDetailPanel extends ConsumerWidget {
       if (context.mounted) Navigator.pop(context);
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Eliminazione non riuscita: $error')),
-        );
+        showAppMessage(context, 'Eliminazione non riuscita: $error');
       }
     }
   }
@@ -1657,9 +1654,7 @@ class _AddAccessoryScreenState extends ConsumerState<AddAccessoryScreen> {
       if (mounted) Navigator.pop(context, true);
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Salvataggio non riuscito: $error')),
-        );
+        showAppMessage(context, 'Salvataggio non riuscito: $error');
       }
     } finally {
       if (mounted) setState(() => saving = false);
@@ -2055,9 +2050,7 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
     if (!formKey.currentState!.validate()) return;
     if (number(total) <= 0 ||
         (detailed && (number(liters) <= 0 || number(price) <= 0))) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Completa i valori del rifornimento')),
-      );
+      showAppMessage(context, 'Completa i valori del rifornimento');
       return;
     }
     setState(() => saving = true);
@@ -2076,9 +2069,7 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
       if (mounted) context.pop();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Salvataggio non riuscito: $error')),
-        );
+        showAppMessage(context, 'Salvataggio non riuscito: $error');
       }
     } finally {
       if (mounted) setState(() => saving = false);
@@ -2793,29 +2784,22 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
               '${details.join(' · ')}${note.text.isEmpty ? '' : '\n${note.text}'}';
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Prodotto trovato: dati compilati automaticamente'),
-            ),
+          showAppMessage(
+            context,
+            'Prodotto trovato: dati compilati automaticamente',
           );
         }
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Codice letto, ma prodotto non presente nel catalogo pubblico',
-            ),
-          ),
+        showAppMessage(
+          context,
+          'Codice letto, ma prodotto non presente nel catalogo pubblico',
         );
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Codice letto. Catalogo non raggiungibile: completa i dati manualmente',
-            ),
-          ),
+        showAppMessage(
+          context,
+          'Codice letto. Catalogo non raggiungibile: completa i dati manualmente',
         );
       }
     } finally {
@@ -2888,9 +2872,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Salvataggio non riuscito: $error')),
-        );
+        showAppMessage(context, 'Salvataggio non riuscito: $error');
       }
     } finally {
       if (mounted) setState(() => saving = false);

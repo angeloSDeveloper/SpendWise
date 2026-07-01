@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
+import 'package:spendwise/presentation/shared/app_feedback.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -32,9 +33,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final state = ref.read(authStateProvider);
     if (state is Authenticated) context.go('/dashboard');
     if (state case AuthError(:final message)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppMessage(context, message);
     }
   }
 
@@ -105,14 +104,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () =>
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Recupero password disponibile prossimamente',
-                                  ),
-                                ),
-                              ),
+                          onPressed: () => showAppMessage(
+                            context,
+                            'Recupero password disponibile prossimamente',
+                          ),
                           child: const Text('Hai dimenticato la password?'),
                         ),
                       ),

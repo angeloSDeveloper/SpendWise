@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
+import 'package:spendwise/presentation/shared/app_feedback.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -28,9 +29,7 @@ class _RegisterState extends ConsumerState<RegisterScreen> {
   Future<void> submit() async {
     if (!key.currentState!.validate() || !accepted) {
       if (!accepted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Accetta termini e privacy')),
-        );
+        showAppMessage(context, 'Accetta termini e privacy');
       }
       return;
     }
@@ -45,9 +44,7 @@ class _RegisterState extends ConsumerState<RegisterScreen> {
       context.go('/dashboard');
     }
     if (state case AuthError(:final message)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppMessage(context, message);
     }
   }
 

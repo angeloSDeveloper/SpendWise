@@ -35,9 +35,9 @@ Legenda:
 
 - [-] Annullamento dell'ultima rata pagata implementato e verificato
   staticamente; endpoint Worker da pubblicare.
-- [-] Swipe a destra con cestino, eliminazione solo al click e annullamento per
-  10 secondi implementato sulle liste principali; test automatici superati,
-  da collaudare visivamente.
+- [-] Swipe configurabile con cestino, eliminazione solo al click e
+  annullamento per la durata scelta implementato sulle liste principali; test
+  automatici superati, da collaudare visivamente.
 - [x] Selezione della prossima data di pagamento.
 - [x] Ricorrenza settimanale, mensile e annuale.
 - [x] Ricorrenza ogni 1 mese, 3 mesi, 1 anno o numero personalizzato di mesi.
@@ -72,6 +72,9 @@ Legenda:
 - [-] Scelta lingua italiano, inglese, spagnolo e tedesco implementata per
   navigazione, componenti di sistema e testi localizzati principali; resta la
   conversione dei testi storici ancora hardcoded.
+- [-] Audit localizzazione completa: rilevate almeno 256 stringhe dirette.
+  Strategia senza dipendenze aggiuntive documentata in
+  `docs/localization-assessment.md`.
 - [x] Tooltip di sincronizzazione tradotto e localizzato.
 - [-] Ruolo `tester` e dashboard test riservata implementati; migrazione D1 e
   deploy non ancora eseguiti.
@@ -81,11 +84,20 @@ Legenda:
 ## UI mobile
 
 - [x] Nuova spesa: data e importo affiancati, testo categoria compatto.
-- [x] Nuovo abbonamento: periodicita/rinnovo e scadenza/fine contratto
-  affiancati; numero mesi selezionabile direttamente.
+- [x] Nuovo abbonamento: periodicita semplificata a settimanale, mensile,
+  annuale o personalizzata; scadenza/fine contratto affiancati.
 - [x] Nuovo piano rateale: numero rate e frequenza affiancati.
 - [x] Nuovo veicolo: alimentazione e capacita serbatoio affiancati.
 - [x] Nuovo accessorio: prezzo e montaggio resi leggibili su mobile.
+- [x] Navigazione inferiore compatta con etichetta `Spese`.
+- [x] Analisi: etichetta `1 mese` mantenuta su una sola riga.
+- [-] Swipe senza sfondo colorato, chiusura al tap esterno e direzione
+  configurabile; predefinito a sinistra, verificato automaticamente.
+- [-] Durata banner configurabile da 0 (disattivati) a 15 secondi e chiusura
+  al tap, verificata automaticamente.
+- [-] Dashboard tester spostata in un pulsante accanto alle Impostazioni;
+  visibile all'account di Angelo anche prima della migrazione, mentre il
+  salvataggio esiti richiede il deploy del Worker.
 - [x] Anteprima avatar compatta sempre visibile durante lo scorrimento dei
   controlli su mobile.
 - [x] Feature `feature/avatar-builder-profile`: nuovo builder avatar premium
