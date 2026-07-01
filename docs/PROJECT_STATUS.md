@@ -109,7 +109,7 @@ Per ogni intervento futuro:
 
 ## Ultima pubblicazione nota
 
-- Commit applicativo: `16b29de`
+- Commit applicativo: `56b7d0b`
 - Worker: `https://spendwise.lopreteangelo97.workers.dev`
-- Versione Worker: `f474aeb9-7722-41d7-90cc-574bd30a124e`
+- Versione Worker: `3f5939ef-d964-4af7-afa6-6b5b110ba970`
 - Database: `spendwise-db`

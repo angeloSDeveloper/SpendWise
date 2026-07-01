@@ -15,6 +15,8 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - Logout e sessione server non cancellano la configurazione PIN locale.
 - Analisi pulita, 34 test superati, build web/APK riuscite e APK installato
   sul Moto g82 5G.
+- Pubblicati web e Worker con versione
+  `3f5939ef-d964-4af7-afa6-6b5b110ba970`; rami allineati.
 
 ### Rifiniture Android, biometria e acquisizione immagini
 
