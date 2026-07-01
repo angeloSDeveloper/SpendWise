@@ -1,6 +1,6 @@
 # Stato corrente di SpendWise
 
-Ultimo aggiornamento: 1 luglio 2026
+Ultimo aggiornamento: 2 luglio 2026
 
 Questo file è la fonte principale per capire cosa funziona, cosa è parziale e
 cosa manca. `TODO.txt` contiene le attività operative; `CHANGELOG_WORK.md`
@@ -36,6 +36,12 @@ Per ogni intervento futuro:
 
 ## Funzioni completate
 
+- Nuova UI finance moderna approvata: onboarding, login responsive, sicurezza
+  iniziale e dashboard centrata con riepiloghi adattivi, scrollbar desktop e
+  widget persistenti 4x4/4x8.
+- Lo swipe mostra il cestino e cancella immediatamente senza annullamento.
+  Negli abbonamenti lista e totale si aggiornano in modo ottimistico, quindi
+  la coda local-first viene sincronizzata prima del refetch.
 - La cache local-first non blocca piu' le risposte API: le scritture
   IndexedDB vengono eseguite in background con timeout, evitando lo spinner
   infinito della dashboard web con richieste di rete gia' completate.
@@ -59,16 +65,12 @@ Per ogni intervento futuro:
 
 ## Funzioni parziali
 
-- Prototipo estetico `feature/hootz-inspired-ui`: nuova direzione grafica
-  originale ispirata ai pattern delle app finance moderne, onboarding
-  interattivo, login responsive, richiesta iniziale di sicurezza e dashboard
-  con widget persistenti riordinabili in formato 4x4/4x8. Il pulsante Google
-  e' predisposto a livello UI ma non autentica ancora: mancano Client ID OAuth,
-  verifica token e endpoint server. Il ramo non e' pubblicato in produzione.
+- Il pulsante Google e' predisposto a livello UI ma non autentica ancora:
+  mancano Client ID OAuth, verifica token e endpoint server.
 - Sicurezza locale: PIN applicativo derivato con sale casuale e SHA-256,
   biometria alternativa e schermata di sblocco all'avvio implementati. APK
   installato sul dispositivo fisico; resta il collaudo manuale.
-- Android mobile: eliminazione abbonamenti con totale immediato e undo,
+- Android mobile: eliminazione abbonamenti con totale immediato,
   sblocco biometrico della copia locale, OCR carburante on-device e foto
   manutenzioni disponibili nelle UI mobile. APK installato su Moto g82;
   resta il collaudo funzionale dell'utente.
@@ -89,8 +91,7 @@ Per ogni intervento futuro:
 - Dashboard tester: ruolo server-side, esiti persistenti e notifiche di
   sistema locali con nome, data e dettagli del record reale pronti. Non sono
   ancora vere push in background.
-- Preferenze UX locali: direzione swipe e durata banner da 0 a 15 secondi; il
-  banner di eliminazione viene chiuso anche al completamento dell'operazione.
+- Preferenze UX locali: direzione swipe e durata banner da 0 a 15 secondi.
 - Registro manutenzioni semplificato a data, intervento e prezzo: pubblicato,
   ma resta il collaudo visivo manuale completo.
 - Sessione desktop: la correzione del rinnovo token è pubblicata, ma va

@@ -158,11 +158,18 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardState extends ConsumerState<DashboardScreen> {
   static const _securityPromptKey = 'initial_security_prompt_seen_v1';
+  final _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _offerSecuritySetup());
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _offerSecuritySetup() async {
@@ -253,143 +260,151 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
             onRetry: () => ref.invalidate(dashboardDataProvider),
             onLogout: () => ref.read(authStateProvider.notifier).logout(),
           ),
-          data: (summary) => RefreshIndicator(
-            onRefresh: () => ref.refresh(dashboardDataProvider.future),
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1180),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 22, 20, 12),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Cruscotto',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineMedium
-                                        ?.copyWith(letterSpacing: -.8),
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        sync == SyncStatus.offline
-                                            ? Icons.cloud_off_rounded
-                                            : Icons.cloud_done_rounded,
-                                        size: 15,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        syncLabel,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
-                                      ),
-                                    ],
-                                  ),
-                                ],
+          data: (summary) => Scrollbar(
+            controller: _scrollController,
+            thumbVisibility: MediaQuery.sizeOf(context).width >= 600,
+            child: RefreshIndicator(
+              onRefresh: () => ref.refresh(dashboardDataProvider.future),
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1180),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 22, 20, 12),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Cruscotto',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium
+                                          ?.copyWith(letterSpacing: -.8),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          sync == SyncStatus.offline
+                                              ? Icons.cloud_off_rounded
+                                              : Icons.cloud_done_rounded,
+                                          size: 15,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          syncLabel,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            IconButton(
-                              tooltip: 'Sincronizza',
-                              onPressed: () =>
-                                  ref.read(syncServiceProvider).sync(),
-                              icon: Icon(
-                                sync == SyncStatus.syncing
-                                    ? Icons.sync_rounded
-                                    : Icons.refresh_rounded,
+                              IconButton(
+                                tooltip: 'Sincronizza',
+                                onPressed: () =>
+                                    ref.read(syncServiceProvider).sync(),
+                                icon: Icon(
+                                  sync == SyncStatus.syncing
+                                      ? Icons.sync_rounded
+                                      : Icons.refresh_rounded,
+                                ),
                               ),
-                            ),
-                            IconButton(
-                              tooltip: 'Analisi',
-                              onPressed: () => context.push('/analytics'),
-                              icon: const Icon(Icons.insights_rounded),
-                            ),
-                            const SizedBox(width: 4),
-                            Tooltip(
-                              message: 'Profilo e impostazioni',
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(99),
-                                onTap: () => context.push('/settings'),
-                                child: CircleAvatar(
-                                  radius: 23,
-                                  backgroundColor: const Color(0xFF0B2B55),
-                                  child: Text(
-                                    _initials(user?.displayName),
-                                    style: const TextStyle(
-                                      color: Color(0xFF42A5FF),
-                                      fontWeight: FontWeight.w800,
+                              IconButton(
+                                tooltip: 'Analisi',
+                                onPressed: () => context.push('/analytics'),
+                                icon: const Icon(Icons.insights_rounded),
+                              ),
+                              const SizedBox(width: 4),
+                              Tooltip(
+                                message: 'Profilo e impostazioni',
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(99),
+                                  onTap: () => context.push('/settings'),
+                                  child: CircleAvatar(
+                                    radius: 23,
+                                    backgroundColor: const Color(0xFF0B2B55),
+                                    child: Text(
+                                      _initials(user?.displayName),
+                                      style: const TextStyle(
+                                        color: Color(0xFF42A5FF),
+                                        fontWeight: FontWeight.w800,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                SliverToBoxAdapter(
-                  child: _OverviewCarousel(
-                    data: summary,
-                    modules: modules,
-                    onOpen: (path) => context.go(path),
+                  SliverToBoxAdapter(
+                    child: DashboardOverview(
+                      data: summary,
+                      modules: modules,
+                      onOpen: (path) => context.go(path),
+                    ),
                   ),
-                ),
-                SliverToBoxAdapter(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1180),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 22, 20, 12),
-                        child: Row(
-                          children: [
-                            Text(
-                              'Widget',
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                            const Spacer(),
-                            TextButton.icon(
-                              onPressed: () => _showWidgetEditor(context),
-                              icon: const Icon(Icons.tune_rounded),
-                              label: const Text('Modifica'),
-                            ),
-                          ],
+                  SliverToBoxAdapter(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1180),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 22, 20, 12),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Widget',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineSmall,
+                              ),
+                              const Spacer(),
+                              TextButton.icon(
+                                onPressed: () => _showWidgetEditor(context),
+                                icon: const Icon(Icons.tune_rounded),
+                                label: const Text('Modifica'),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                SliverToBoxAdapter(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1180),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) => _WidgetGrid(
-                          width: constraints.maxWidth,
-                          configs: layout
-                              .where((item) => item.visible)
-                              .toList(),
-                          builder: (config) =>
-                              _buildWidget(config.id, summary, modules),
+                  SliverToBoxAdapter(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1180),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) => _WidgetGrid(
+                            width: constraints.maxWidth,
+                            configs: layout
+                                .where((item) => item.visible)
+                                .toList(),
+                            builder: (config) =>
+                                _buildWidget(config.id, summary, modules),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 110)),
-              ],
+                  const SliverToBoxAdapter(child: SizedBox(height: 110)),
+                ],
+              ),
             ),
           ),
         ),
@@ -432,11 +447,12 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
   }
 }
 
-class _OverviewCarousel extends StatelessWidget {
-  const _OverviewCarousel({
+class DashboardOverview extends StatelessWidget {
+  const DashboardOverview({
     required this.data,
     required this.modules,
     required this.onOpen,
+    super.key,
   });
 
   final DashboardData data;
@@ -481,82 +497,129 @@ class _OverviewCarousel extends StatelessWidget {
           path: '/vehicle',
         ),
     ];
-    return SizedBox(
+    Widget buildCard(int index, double width) => SizedBox(
+      width: width,
       height: 176,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        scrollDirection: Axis.horizontal,
-        itemCount: cards.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final card = cards[index];
-          return SizedBox(
-            width: 260,
-            child: Material(
-              color: index == 0
-                  ? card.color
-                  : Theme.of(context).colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(26),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: () => onOpen(card.path),
-                child: Padding(
-                  padding: const EdgeInsets.all(22),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            index == 0
-                                ? Icons.account_balance_wallet_rounded
-                                : Icons.arrow_outward_rounded,
-                            size: 20,
-                            color: index == 0 ? Colors.white : card.color,
-                          ),
-                          const Spacer(),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            color: index == 0
-                                ? Colors.white70
-                                : Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Text(
-                        card.title,
-                        style: TextStyle(
-                          color: index == 0
-                              ? Colors.white
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _currency(card.value),
-                        style: TextStyle(
-                          color: index == 0
-                              ? Colors.white
-                              : Theme.of(context).colorScheme.onSurface,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -.8,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+      child: _OverviewCard(
+        data: cards[index],
+        primary: index == 0,
+        onTap: () => onOpen(cards[index].path),
       ),
     );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 600) {
+          return SizedBox(
+            height: 176,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              scrollDirection: Axis.horizontal,
+              itemCount: cards.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) => buildCard(index, 260),
+            ),
+          );
+        }
+        const gap = 12.0;
+        final available = math.min(constraints.maxWidth, 1180) - 40;
+        final columns = available >= 1050
+            ? cards.length
+            : available >= 720
+            ? 3
+            : 2;
+        final cardWidth = (available - gap * (columns - 1)) / columns;
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1180),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (var index = 0; index < cards.length; index++)
+                    buildCard(index, cardWidth),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
+}
+
+class _OverviewCard extends StatelessWidget {
+  const _OverviewCard({
+    required this.data,
+    required this.primary,
+    required this.onTap,
+  });
+
+  final ({String title, double value, Color color, String path}) data;
+  final bool primary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: primary
+        ? data.color
+        : Theme.of(context).colorScheme.surfaceContainer,
+    borderRadius: BorderRadius.circular(26),
+    clipBehavior: Clip.antiAlias,
+    child: InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  primary
+                      ? Icons.account_balance_wallet_rounded
+                      : Icons.arrow_outward_rounded,
+                  size: 20,
+                  color: primary ? Colors.white : data.color,
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: primary
+                      ? Colors.white70
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              data.title,
+              style: TextStyle(
+                color: primary
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _currency(data.value),
+              style: TextStyle(
+                color: primary
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.onSurface,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -.8,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _WidgetGrid extends StatelessWidget {

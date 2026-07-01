@@ -136,10 +136,14 @@ class SubscriptionsScreen extends ConsumerStatefulWidget {
 
 class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
   BillingCycle? filter;
+  final deletedIds = <String>{};
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(subscriptionsProvider);
-    final all = async.valueOrNull ?? const <Subscription>[];
+    final all = (async.valueOrNull ?? const <Subscription>[])
+        .where((item) => !deletedIds.contains(item.id))
+        .toList();
     final visible = filter == null
         ? all
         : all.where((item) => item.billingCycle == filter).toList();
@@ -256,16 +260,21 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                       key: ValueKey('subscription-${item.id}'),
                       deletedMessage: 'Abbonamento rimosso',
                       onDelete: () async {
-                        await ref
-                            .read(subscriptionsApiProvider)
-                            .delete(item.id);
-                        ref.invalidate(subscriptionsProvider);
-                      },
-                      onUndo: () async {
-                        await ref
-                            .read(subscriptionsApiProvider)
-                            .create(item.toJson());
-                        ref.invalidate(subscriptionsProvider);
+                        setState(() => deletedIds.add(item.id));
+                        try {
+                          await ref
+                              .read(subscriptionsApiProvider)
+                              .delete(item.id);
+                          final synced = await ref
+                              .read(syncServiceProvider)
+                              .sync();
+                          if (synced) ref.invalidate(subscriptionsProvider);
+                        } catch (_) {
+                          if (mounted) {
+                            setState(() => deletedIds.remove(item.id));
+                          }
+                          rethrow;
+                        }
                       },
                       child: Card(
                         child: ListTile(

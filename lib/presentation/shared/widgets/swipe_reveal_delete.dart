@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
@@ -9,14 +7,12 @@ class SwipeRevealDelete extends ConsumerStatefulWidget {
   const SwipeRevealDelete({
     required this.child,
     required this.onDelete,
-    this.onUndo,
     this.deletedMessage = 'Elemento eliminato',
     super.key,
   });
 
   final Widget child;
   final Future<void> Function() onDelete;
-  final Future<void> Function()? onUndo;
   final String deletedMessage;
 
   @override
@@ -30,7 +26,6 @@ class _SwipeRevealDeleteState extends ConsumerState<SwipeRevealDelete> {
   final _token = Object();
   double _offset = 0;
   bool _pendingDelete = false;
-  Timer? _timer;
 
   @override
   void initState() {
@@ -40,7 +35,6 @@ class _SwipeRevealDeleteState extends ConsumerState<SwipeRevealDelete> {
 
   @override
   void dispose() {
-    _timer?.cancel();
     _openItem.removeListener(_closeWhenAnotherOpens);
     if (identical(_openItem.value, _token)) _openItem.value = null;
     super.dispose();
@@ -82,6 +76,7 @@ class _SwipeRevealDeleteState extends ConsumerState<SwipeRevealDelete> {
     if (mounted) ScaffoldMessenger.of(context).hideCurrentSnackBar();
     try {
       await widget.onDelete();
+      if (mounted) showAppMessage(context, widget.deletedMessage);
     } catch (_) {
       if (!mounted) return;
       setState(() => _pendingDelete = false);
@@ -91,49 +86,12 @@ class _SwipeRevealDeleteState extends ConsumerState<SwipeRevealDelete> {
 
   void _requestDelete() {
     if (_pendingDelete) return;
-    final seconds = ref.read(settingsProvider).bannerDurationSeconds;
     setState(() {
       _pendingDelete = true;
       _offset = 0;
     });
     _openItem.value = null;
-    if (widget.onUndo != null) {
-      _commitDelete();
-      if (seconds == 0) return;
-      showAppMessage(
-        context,
-        widget.deletedMessage,
-        durationSeconds: seconds,
-        actionLabel: 'ANNULLA',
-        onAction: () async {
-          _timer?.cancel();
-          try {
-            await widget.onUndo!();
-            if (mounted) setState(() => _pendingDelete = false);
-          } catch (_) {
-            if (mounted) showAppMessage(context, 'Ripristino non riuscito');
-          }
-        },
-      );
-      return;
-    }
-    if (seconds == 0) {
-      _commitDelete();
-      return;
-    }
-    showAppMessage(
-      context,
-      '${widget.deletedMessage}. Eliminazione tra $seconds secondi.',
-      durationSeconds: seconds,
-      actionLabel: 'ANNULLA',
-      onAction: () {
-        _timer?.cancel();
-        if (mounted) setState(() => _pendingDelete = false);
-      },
-    );
-    _timer = Timer(Duration(seconds: seconds), () {
-      if (_pendingDelete) _commitDelete();
-    });
+    _commitDelete();
   }
 
   @override

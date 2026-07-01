@@ -108,7 +108,7 @@ class SyncService {
   final Dio dio;
   final FlutterSecureStorage storage;
   Timer? _timer;
-  Future<void> sync() async {
+  Future<bool> sync() async {
     final prefs = await SharedPreferences.getInstance();
     final backupEnabled = prefs.getBool('cloud_backup_enabled') ?? true;
     final userId =
@@ -118,12 +118,12 @@ class SyncService {
       ref.read(syncStatusProvider.notifier).state = pending > 0
           ? SyncStatus.pending
           : SyncStatus.synced;
-      return;
+      return true;
     }
     final connectivity = await Connectivity().checkConnectivity();
     if (connectivity.contains(ConnectivityResult.none)) {
       ref.read(syncStatusProvider.notifier).state = SyncStatus.offline;
-      return;
+      return false;
     }
     ref.read(syncStatusProvider.notifier).state = SyncStatus.syncing;
     try {
@@ -166,8 +166,10 @@ class SyncService {
         await database.removeSync(queue.map((e) => e.id));
       }
       ref.read(syncStatusProvider.notifier).state = SyncStatus.synced;
+      return true;
     } catch (_) {
       ref.read(syncStatusProvider.notifier).state = SyncStatus.error;
+      return false;
     }
   }
 

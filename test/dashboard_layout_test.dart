@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendwise/presentation/dashboard/dashboard_layout_provider.dart';
 import 'package:spendwise/presentation/dashboard/dashboard_screen.dart';
 import 'package:spendwise/presentation/onboarding/onboarding_screen.dart';
+import 'package:spendwise/domain/models/daily_expense.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -73,6 +74,42 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Personalizza cruscotto'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('riepiloghi dashboard si riposizionano su web compatto', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(820, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DashboardOverview(
+            data: const DashboardData(
+              categories: [10, 20, 30, 40],
+              months: [1, 2, 3, 4, 5, 6],
+              recent: <DailyExpense>[],
+            ),
+            modules: const {
+              'daily',
+              'subscriptions',
+              'installments',
+              'vehicle',
+            },
+            onOpen: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final firstY = tester.getTopLeft(find.text('Spese del mese')).dy;
+    final fourthY = tester.getTopLeft(find.text('Rate')).dy;
+    expect(fourthY, greaterThan(firstY));
     expect(tester.takeException(), isNull);
   });
 }

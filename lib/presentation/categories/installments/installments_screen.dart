@@ -151,7 +151,10 @@ class InstallmentsScreen extends ConsumerWidget {
                       deletedMessage: 'Piano rateale rimosso',
                       onDelete: () async {
                         await ref.read(installmentsApiProvider).delete(item.id);
-                        ref.invalidate(installmentsProvider);
+                        final synced = await ref
+                            .read(syncServiceProvider)
+                            .sync();
+                        if (synced) ref.invalidate(installmentsProvider);
                       },
                       child: Card(
                         child: ListTile(

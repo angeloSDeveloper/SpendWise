@@ -5,6 +5,31 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 2 luglio 2026
 
+### Eliminazione immediata e dashboard responsive approvate
+
+- Rimosso temporaneamente il flusso di annullamento delle eliminazioni:
+  lo swipe rivela il cestino e il click esegue subito la cancellazione.
+- L'eliminazione degli abbonamenti aggiorna immediatamente lista, numero di
+  elementi e totale mensile; in caso di errore il record viene ripristinato.
+- Dopo le eliminazioni local-first viene richiesta subito la sincronizzazione
+  remota; il provider viene ricaricato solo dopo sincronizzazione riuscita,
+  evitando che un record cancellato ricompaia dal server.
+- Applicato lo stesso invio immediato della coda a spese, rate, veicoli,
+  rifornimenti, manutenzioni e accessori eliminati tramite swipe.
+- Centrato il carosello dei riepiloghi sullo stesso contenitore da 1180 px
+  usato da intestazione e widget.
+- Da 600 px in su i riepiloghi si riposizionano automaticamente su piu' righe;
+  sotto 600 px conservano lo scorrimento orizzontale mobile.
+- Aggiunti scorrimento verticale esplicito e scrollbar visibile su web,
+  mantenendo spazio sufficiente sopra la navigazione inferiore.
+- Aggiunto test responsive a 820 px e aggiornati i test swipe per verificare
+  eliminazione immediata e assenza del comando `ANNULLA`.
+- `flutter analyze`: nessun problema.
+- `flutter test`: 38 test superati.
+- Build web release completata.
+- Nuova grafica approvata dall'utente; rami feature, `dev` e `main` allineati.
+- Nessun deploy Cloudflare eseguito in questo intervento.
+
 ### Fix caricamento infinito dashboard web
 
 - Verificati server locale, API Cloudflare, CORS e singoli endpoint: tutte le

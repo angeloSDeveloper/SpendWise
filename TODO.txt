@@ -15,11 +15,10 @@ Legenda:
 - [x] Corretto il blocco infinito della dashboard web: le risposte API erano
   gia' `200`, ma il salvataggio concorrente della cache IndexedDB tratteneva
   i Future. La cache viene ora aggiornata in background con timeout.
-- [-] Prototipo grafico ispirato ai pattern moderni di Hootz sul ramo
-  `feature/hootz-inspired-ui`: onboarding, login social predisposto, richiesta
-  iniziale di PIN/biometria e dashboard a widget 4x4/4x8 personalizzabile.
-  La logica dati SpendWise deve restare invariata; Google OAuth reale richiede
-  configurazione delle credenziali e relativo endpoint server.
+- [x] Nuova grafica finance moderna approvata: onboarding, richiesta iniziale
+  di PIN/biometria, dashboard responsive e widget 4x4/4x8 personalizzabili.
+- [-] Accesso Google predisposto nella UI; Google OAuth reale richiede
+  credenziali, verifica token ed endpoint server.
 - [-] PIN applicativo di almeno 4 cifre implementato con storage sicuro,
   schermata di sblocco e alternativa biometrica; APK installato, da collaudare.
 - [-] Rifiniture Android del 01/07 implementate: eliminazione abbonamenti
@@ -54,10 +53,9 @@ Legenda:
 
 - [-] Annullamento dell'ultima rata pagata implementato e verificato
   staticamente; endpoint Worker pubblicato.
-- [-] Swipe configurabile con cestino, eliminazione solo al click e
-  annullamento per la durata scelta implementato sulle liste principali; test
-  automatici superati, inclusa la rimozione automatica del banner; da
-  collaudare visivamente.
+- [x] Swipe configurabile con cestino ed eliminazione immediata al click,
+  senza annullamento. Abbonamenti rimossi subito anche dal totale; la coda
+  local-first viene sincronizzata prima del refetch.
 - [x] Selezione della prossima data di pagamento.
 - [x] Ricorrenza settimanale, mensile e annuale.
 - [x] Ricorrenza ogni 1 mese, 3 mesi, 1 anno o numero personalizzato di mesi.

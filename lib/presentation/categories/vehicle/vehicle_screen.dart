@@ -237,7 +237,10 @@ class _VehicleScreenState extends ConsumerState<VehicleScreen> {
                               await ref
                                   .read(vehiclesApiProvider)
                                   .delete(vehicle.id);
-                              ref.invalidate(vehiclesProvider);
+                              final synced = await ref
+                                  .read(syncServiceProvider)
+                                  .sync();
+                              if (synced) ref.invalidate(vehiclesProvider);
                             },
                             child: Card(
                               child: ListTile(
@@ -649,7 +652,8 @@ class _FuelTab extends ConsumerWidget {
                       await ref
                           .read(vehiclesApiProvider)
                           .deleteFuel(id, item.id);
-                      ref.invalidate(fuelEntriesProvider(id));
+                      final synced = await ref.read(syncServiceProvider).sync();
+                      if (synced) ref.invalidate(fuelEntriesProvider(id));
                     },
                     child: Card(
                       child: ListTile(
@@ -735,7 +739,12 @@ class _MaintenanceTab extends ConsumerWidget {
                         await ref
                             .read(vehiclesApiProvider)
                             .deleteMaintenance(id, item.id);
-                        ref.invalidate(maintenanceEntriesProvider(id));
+                        final synced = await ref
+                            .read(syncServiceProvider)
+                            .sync();
+                        if (synced) {
+                          ref.invalidate(maintenanceEntriesProvider(id));
+                        }
                       },
                       child: _MaintenanceCard(
                         item: item,
@@ -834,7 +843,10 @@ class _AccessoryCard extends ConsumerWidget {
         await ref
             .read(vehiclesApiProvider)
             .deleteAccessory(item.vehicleId, item.id);
-        ref.invalidate(accessoryEntriesProvider(item.vehicleId));
+        final synced = await ref.read(syncServiceProvider).sync();
+        if (synced) {
+          ref.invalidate(accessoryEntriesProvider(item.vehicleId));
+        }
       },
       child: Card(
         child: ListTile(
