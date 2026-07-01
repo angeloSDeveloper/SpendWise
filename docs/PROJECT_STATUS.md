@@ -62,8 +62,10 @@ Per ogni intervento futuro:
 - Audit localizzazione in `docs/localization-assessment.md`: circa 250-350
   chiavi da migrare usando `gen_l10n`, senza nuove librerie o tabelle database.
 - Dashboard tester: ruolo server-side, esiti persistenti e notifiche di
-  sistema locali pronti. Non sono ancora vere push in background.
-- Preferenze UX locali: direzione swipe e durata banner da 0 a 15 secondi.
+  sistema locali con nome, data e dettagli del record reale pronti. Non sono
+  ancora vere push in background.
+- Preferenze UX locali: direzione swipe e durata banner da 0 a 15 secondi; il
+  banner di eliminazione viene chiuso anche al completamento dell'operazione.
 - Registro manutenzioni semplificato a data, intervento e prezzo: pubblicato,
   ma resta il collaudo visivo manuale completo.
 - Sessione desktop: la correzione del rinnovo token è pubblicata, ma va

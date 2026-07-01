@@ -46,6 +46,12 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
   riga.
 - Spostato l'accesso alla dashboard tester in un'icona dedicata accanto alle
   Impostazioni nella dashboard.
+- Uniformati margini e area di pressione delle icone della dashboard; il
+  pulsante della dashboard tester e' ora l'ultimo a destra.
+- Garantita la chiusura automatica del banner quando l'eliminazione viene
+  completata, oltre alla chiusura al tap e all'annullamento gia' disponibili.
+- Resi parlanti i quattro test di notifica: nome, data, importo e avanzamento
+  vengono ricavati da rate e abbonamenti reali quando presenti.
 - Eseguito audit localizzazione: almeno 256 stringhe UI dirette, circa 250-350
   chiavi finali stimate. Confermato `gen_l10n` come soluzione più leggera,
   senza nuove dipendenze o database; dettagli in
@@ -54,9 +60,11 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 ### Verifiche UX/tester
 
 - `flutter analyze`: nessun problema.
-- `flutter test`: 22 test superati.
+- `flutter test`: 28 test superati.
 - Aggiunti test del gesto swipe, attesa configurabile, annullamento e layout
   mobile dei cinque form richiesti.
+- Verificata anche la scomparsa automatica del banner al completamento
+  dell'eliminazione.
 - Typecheck Worker TypeScript superato.
 - Build web release completata.
 - Migrazione D1 e deploy non eseguiti.

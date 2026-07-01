@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:spendwise/core/notifications/notification_test_service.dart';
 import 'package:spendwise/data/remote/api_client.dart';
+import 'package:spendwise/presentation/categories/installments/installments_screen.dart';
+import 'package:spendwise/presentation/categories/subscriptions/subscriptions_screen.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/shared/app_feedback.dart';
 
@@ -14,24 +17,61 @@ final testerResultsProvider = FutureProvider.autoDispose((ref) async {
   return {for (final row in rows) row.testKey: row.status};
 });
 
-const _notificationTests = <String, (String, String)>{
-  'installment_due': (
-    'Rata in scadenza',
-    'La tua rata Klarna scade tra pochi giorni.',
-  ),
-  'installment_overdue': (
-    'Rata scaduta',
-    'Una rata risulta scaduta e non ancora pagata.',
-  ),
-  'subscription_due': (
-    'Abbonamento in rinnovo',
-    'Un abbonamento verrà addebitato tra pochi giorni.',
-  ),
-  'subscription_ending': (
-    'Fine contratto',
-    'Un abbonamento sta raggiungendo la fine del contratto.',
-  ),
-};
+typedef _NotificationTest = ({String title, String body});
+
+Map<String, _NotificationTest> _notificationTests(WidgetRef ref) {
+  final plans = ref.watch(installmentsProvider).valueOrNull ?? const [];
+  final subscriptions =
+      ref.watch(subscriptionsProvider).valueOrNull ?? const [];
+  final plan = plans
+      .where((item) => item.isActive && item.nextDueDate != null)
+      .firstOrNull;
+  final subscription = subscriptions.where((item) => item.isActive).firstOrNull;
+  final ending = subscriptions
+      .where((item) => item.isActive && item.endDate != null)
+      .firstOrNull;
+  final formatter = DateFormat('dd/MM/yyyy');
+  final currency = NumberFormat.currency(locale: 'it_IT', symbol: '€');
+  final planName = plan?.name ?? 'Netflix';
+  final planDate =
+      plan?.nextDueDate?.toLocal() ??
+      DateTime.now().add(const Duration(days: 3));
+  final subscriptionName = subscription?.name ?? 'Netflix';
+  final renewalDate =
+      (subscription?.nextDueDate ?? subscription?.startDate)?.toLocal() ??
+      DateTime.now().add(const Duration(days: 5));
+  final endingName = ending?.name ?? subscriptionName;
+  final endingDate =
+      ending?.endDate?.toLocal() ??
+      DateTime.now().add(const Duration(days: 30));
+  return {
+    'installment_due': (
+      title: '$planName - rata in scadenza il ${formatter.format(planDate)}',
+      body: plan == null
+          ? 'Apri SpendWise per controllare il piano rateale.'
+          : 'Importo ${currency.format(plan.installmentAmount)} · '
+                '${plan.paidInstallments}/${plan.totalInstallments} pagate',
+    ),
+    'installment_overdue': (
+      title: '$planName - rata scaduta il ${formatter.format(planDate)}',
+      body: plan == null
+          ? 'La rata risulta ancora da pagare.'
+          : 'Importo ${currency.format(plan.installmentAmount)} ancora da pagare',
+    ),
+    'subscription_due': (
+      title:
+          '$subscriptionName - abbonamento in rinnovo il ${formatter.format(renewalDate)}',
+      body: subscription == null
+          ? 'Apri SpendWise per controllare il rinnovo.'
+          : 'Addebito previsto ${currency.format(subscription.amount)}',
+    ),
+    'subscription_ending': (
+      title:
+          '$endingName - contratto in scadenza il ${formatter.format(endingDate)}',
+      body: 'Controlla se rinnovare o disattivare il servizio.',
+    ),
+  };
+}
 
 class TesterDashboardScreen extends ConsumerWidget {
   const TesterDashboardScreen({super.key});
@@ -67,6 +107,7 @@ class TesterDashboardScreen extends ConsumerWidget {
     }
     final results = ref.watch(testerResultsProvider);
     final statuses = results.valueOrNull ?? const <String, String>{};
+    final notificationTests = _notificationTests(ref);
     return Scaffold(
       appBar: AppBar(title: const Text('Dashboard tester')),
       body: RefreshIndicator(
@@ -87,14 +128,17 @@ class TesterDashboardScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 12),
-            for (final entry in _notificationTests.entries)
+            for (final entry in notificationTests.entries)
               _TestCard(
                 testKey: entry.key,
-                title: entry.value.$1,
-                body: entry.value.$2,
+                title: entry.value.title,
+                body: entry.value.body,
                 status: statuses[entry.key] ?? 'pending',
-                onTest: () =>
-                    _testNotification(context, entry.value.$1, entry.value.$2),
+                onTest: () => _testNotification(
+                  context,
+                  entry.value.title,
+                  entry.value.body,
+                ),
                 onStatus: (status) async {
                   try {
                     await ref.read(testerApiProvider).setResult(entry.key, {

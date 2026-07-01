@@ -35,6 +35,10 @@ void main() {
   testWidgets('il cestino attende dieci secondi e consente annulla', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(800, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     var deletions = 0;
     await tester.pumpWidget(
       ProviderScope(
@@ -55,11 +59,12 @@ void main() {
     await tester.drag(find.text('Movimento'), const Offset(-100, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Elimina'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(deletions, 0);
     expect(find.text('ANNULLA'), findsOneWidget);
 
-    tester.widget<SnackBarAction>(find.byType(SnackBarAction)).onPressed();
+    await tester.tap(find.text('ANNULLA'));
+    await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 11));
     expect(deletions, 0);
 
@@ -67,7 +72,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Elimina'));
     await tester.pump(const Duration(seconds: 11));
+    await tester.pumpAndSettle();
     expect(deletions, 1);
+    expect(find.byType(SnackBar), findsNothing);
   });
 
   testWidgets('un tap su un altro elemento richiude lo swipe', (tester) async {

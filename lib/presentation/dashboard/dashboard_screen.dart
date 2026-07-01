@@ -173,9 +173,10 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
           ],
         ),
         actions: [
-          Tooltip(
-            message: syncLabel,
-            child: Icon(
+          IconButton(
+            tooltip: syncLabel,
+            onPressed: () => ref.read(syncServiceProvider).sync(),
+            icon: Icon(
               sync == SyncStatus.offline
                   ? Icons.cloud_off
                   : sync == SyncStatus.syncing
@@ -193,6 +194,11 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
             onPressed: () => context.push('/manual'),
             icon: const Icon(Icons.help_outline),
           ),
+          IconButton(
+            tooltip: 'Impostazioni',
+            onPressed: () => context.push('/settings'),
+            icon: const Icon(Icons.settings),
+          ),
           if (user != null &&
               ({'tester', 'admin'}.contains(user.role) ||
                   user.email == 'acampione97@gmail.com'))
@@ -201,11 +207,6 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
               onPressed: () => context.push('/tester'),
               icon: const Icon(Icons.science_outlined),
             ),
-          IconButton(
-            tooltip: 'Impostazioni',
-            onPressed: () => context.push('/settings'),
-            icon: const Icon(Icons.settings),
-          ),
         ],
       ),
       body: RefreshIndicator(

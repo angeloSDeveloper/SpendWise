@@ -77,6 +77,7 @@ class _SwipeRevealDeleteState extends ConsumerState<SwipeRevealDelete> {
   }
 
   Future<void> _commitDelete() async {
+    if (mounted) ScaffoldMessenger.of(context).hideCurrentSnackBar();
     try {
       await widget.onDelete();
     } catch (_) {
