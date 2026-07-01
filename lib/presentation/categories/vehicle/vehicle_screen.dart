@@ -16,6 +16,7 @@ import 'package:spendwise/domain/models/vehicle.dart';
 import 'package:spendwise/domain/models/vehicle_maintenance.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
+import 'package:spendwise/presentation/shared/widgets/swipe_reveal_delete.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 final vehiclesApiProvider = Provider(
@@ -225,57 +226,68 @@ class _VehicleScreenState extends ConsumerState<VehicleScreen> {
                               vehicle.model!,
                             if (vehicle.year != null) '${vehicle.year}',
                           ];
-                          return Card(
-                            child: ListTile(
-                              leading: const CircleAvatar(
-                                child: Icon(Icons.directions_car),
-                              ),
-                              title: Text(vehicle.name),
-                              subtitle: details.isEmpty
-                                  ? null
-                                  : Text(details.join(' · ')),
-                              trailing: PopupMenuButton<String>(
-                                onSelected: (action) async {
-                                  if (action == 'open') {
-                                    context.push('/vehicle/${vehicle.id}');
-                                  } else if (action == 'edit') {
-                                    await Navigator.of(context).push<bool>(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            AddVehicleScreen(existing: vehicle),
-                                      ),
-                                    );
-                                  } else if (action == 'archive') {
-                                    await _archiveVehicle(vehicle);
-                                  } else if (action == 'delete') {
-                                    await _deleteVehicle(vehicle);
-                                  }
-                                },
-                                itemBuilder: (_) => [
-                                  const PopupMenuItem(
-                                    value: 'open',
-                                    child: Text('Apri dettaglio'),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'edit',
-                                    child: Text('Modifica'),
-                                  ),
-                                  PopupMenuItem(
-                                    value: 'archive',
-                                    child: Text(
-                                      vehicle.isArchived
-                                          ? 'Ripristina'
-                                          : 'Archivia',
+                          return SwipeRevealDelete(
+                            key: ValueKey('vehicle-${vehicle.id}'),
+                            deletedMessage: 'Veicolo rimosso',
+                            onDelete: () async {
+                              await ref
+                                  .read(vehiclesApiProvider)
+                                  .delete(vehicle.id);
+                              ref.invalidate(vehiclesProvider);
+                            },
+                            child: Card(
+                              child: ListTile(
+                                leading: const CircleAvatar(
+                                  child: Icon(Icons.directions_car),
+                                ),
+                                title: Text(vehicle.name),
+                                subtitle: details.isEmpty
+                                    ? null
+                                    : Text(details.join(' · ')),
+                                trailing: PopupMenuButton<String>(
+                                  onSelected: (action) async {
+                                    if (action == 'open') {
+                                      context.push('/vehicle/${vehicle.id}');
+                                    } else if (action == 'edit') {
+                                      await Navigator.of(context).push<bool>(
+                                        MaterialPageRoute(
+                                          builder: (_) => AddVehicleScreen(
+                                            existing: vehicle,
+                                          ),
+                                        ),
+                                      );
+                                    } else if (action == 'archive') {
+                                      await _archiveVehicle(vehicle);
+                                    } else if (action == 'delete') {
+                                      await _deleteVehicle(vehicle);
+                                    }
+                                  },
+                                  itemBuilder: (_) => [
+                                    const PopupMenuItem(
+                                      value: 'open',
+                                      child: Text('Apri dettaglio'),
                                     ),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'delete',
-                                    child: Text('Elimina'),
-                                  ),
-                                ],
+                                    const PopupMenuItem(
+                                      value: 'edit',
+                                      child: Text('Modifica'),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'archive',
+                                      child: Text(
+                                        vehicle.isArchived
+                                            ? 'Ripristina'
+                                            : 'Archivia',
+                                      ),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text('Elimina'),
+                                    ),
+                                  ],
+                                ),
+                                onTap: () =>
+                                    context.push('/vehicle/${vehicle.id}'),
                               ),
-                              onTap: () =>
-                                  context.push('/vehicle/${vehicle.id}'),
                             ),
                           );
                         },
@@ -427,41 +439,53 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
             },
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: fuelType,
-            decoration: const InputDecoration(labelText: 'Alimentazione'),
-            items:
-                const {
-                      'gasoline': 'Benzina',
-                      'diesel': 'Diesel',
-                      'electric': 'Elettrica',
-                      'hybrid': 'Ibrida',
-                      'lpg': 'GPL',
-                    }.entries
-                    .map(
-                      (entry) => DropdownMenuItem(
-                        value: entry.key,
-                        child: Text(entry.value),
-                      ),
-                    )
-                    .toList(),
-            onChanged: (value) => fuelType = value!,
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: tankCapacity,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Capacità serbatoio (litri)',
-              hintText: 'Es. 45',
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) return null;
-              final parsed = double.tryParse(value.replaceAll(',', '.'));
-              return parsed == null || parsed <= 0 || parsed > 1000
-                  ? 'Inserisci una capacità valida (massimo 1000 litri)'
-                  : null;
-            },
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: fuelType,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Alimentazione'),
+                  items:
+                      const {
+                            'gasoline': 'Benzina',
+                            'diesel': 'Diesel',
+                            'electric': 'Elettrica',
+                            'hybrid': 'Ibrida',
+                            'lpg': 'GPL',
+                          }.entries
+                          .map(
+                            (entry) => DropdownMenuItem(
+                              value: entry.key,
+                              child: Text(entry.value),
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (value) => fuelType = value!,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: tankCapacity,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Capacità serbatoio',
+                    suffixText: 'L',
+                    hintText: 'Es. 45',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return null;
+                    final parsed = double.tryParse(value.replaceAll(',', '.'));
+                    return parsed == null || parsed <= 0 || parsed > 1000
+                        ? 'Valore non valido'
+                        : null;
+                  },
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
@@ -616,25 +640,38 @@ class _FuelTab extends ConsumerWidget {
                     ),
                   ),
                 for (final item in items)
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.local_gas_station),
-                      title: Text(
-                        item.liters > 0
-                            ? '${item.liters.toStringAsFixed(2)} L · ${_money(item.totalCost)}'
-                            : 'Rifornimento · ${_money(item.totalCost)}',
+                  SwipeRevealDelete(
+                    key: ValueKey('fuel-${item.id}'),
+                    deletedMessage: 'Rifornimento rimosso',
+                    onDelete: () async {
+                      await ref
+                          .read(vehiclesApiProvider)
+                          .deleteFuel(id, item.id);
+                      ref.invalidate(fuelEntriesProvider(id));
+                    },
+                    child: Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.local_gas_station),
+                        title: Text(
+                          item.liters > 0
+                              ? '${item.liters.toStringAsFixed(2)} L · ${_money(item.totalCost)}'
+                              : 'Rifornimento · ${_money(item.totalCost)}',
+                        ),
+                        subtitle: Text(
+                          [
+                            _date(item.date),
+                            if (item.stationName?.isNotEmpty == true)
+                              item.stationName!,
+                            if (item.kmOdometer != null)
+                              '${item.kmOdometer} km',
+                          ].join(' · '),
+                        ),
+                        trailing: item.pricePerLiter > 0
+                            ? Text(
+                                '${item.pricePerLiter.toStringAsFixed(3)} €/L',
+                              )
+                            : const Text('Semplificato'),
                       ),
-                      subtitle: Text(
-                        [
-                          _date(item.date),
-                          if (item.stationName?.isNotEmpty == true)
-                            item.stationName!,
-                          if (item.kmOdometer != null) '${item.kmOdometer} km',
-                        ].join(' · '),
-                      ),
-                      trailing: item.pricePerLiter > 0
-                          ? Text('${item.pricePerLiter.toStringAsFixed(3)} €/L')
-                          : const Text('Semplificato'),
                     ),
                   ),
               ],
@@ -689,9 +726,19 @@ class _MaintenanceTab extends ConsumerWidget {
                   )
                 else
                   for (final item in items)
-                    _MaintenanceCard(
-                      item: item,
-                      onOpen: () => _showMaintenanceDetails(context, item),
+                    SwipeRevealDelete(
+                      key: ValueKey('maintenance-${item.id}'),
+                      deletedMessage: 'Manutenzione rimossa',
+                      onDelete: () async {
+                        await ref
+                            .read(vehiclesApiProvider)
+                            .deleteMaintenance(id, item.id);
+                        ref.invalidate(maintenanceEntriesProvider(id));
+                      },
+                      child: _MaintenanceCard(
+                        item: item,
+                        onOpen: () => _showMaintenanceDetails(context, item),
+                      ),
                     ),
               ],
             ],
@@ -778,23 +825,33 @@ class _AccessoryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final meta = _accessoryMeta(item);
-    return Card(
-      child: ListTile(
-        leading: _maintenanceImage(item.receiptUrl),
-        title: Text(item.itemName),
-        subtitle: Text(
-          [
-            _accessoryCategoryLabel(meta['accessoryCategory'] as String?),
-            _date(item.date),
-            _accessoryStatusLabel(meta['status'] as String?),
-            if (item.shopName?.isNotEmpty == true) item.shopName!,
-          ].join(' · '),
+    return SwipeRevealDelete(
+      key: ValueKey('accessory-${item.id}'),
+      deletedMessage: 'Accessorio rimosso',
+      onDelete: () async {
+        await ref
+            .read(vehiclesApiProvider)
+            .deleteAccessory(item.vehicleId, item.id);
+        ref.invalidate(accessoryEntriesProvider(item.vehicleId));
+      },
+      child: Card(
+        child: ListTile(
+          leading: _maintenanceImage(item.receiptUrl),
+          title: Text(item.itemName),
+          subtitle: Text(
+            [
+              _accessoryCategoryLabel(meta['accessoryCategory'] as String?),
+              _date(item.date),
+              _accessoryStatusLabel(meta['status'] as String?),
+              if (item.shopName?.isNotEmpty == true) item.shopName!,
+            ].join(' · '),
+          ),
+          trailing: Text(
+            _money(item.totalCost),
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          onTap: () => _showAccessoryDetails(context, ref, item),
         ),
-        trailing: Text(
-          _money(item.totalCost),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        onTap: () => _showAccessoryDetails(context, ref, item),
       ),
     );
   }
@@ -1657,6 +1714,7 @@ class _AddAccessoryScreenState extends ConsumerState<AddAccessoryScreen> {
               Expanded(
                 child: DropdownButtonFormField<String>(
                   initialValue: category,
+                  isExpanded: true,
                   decoration: const InputDecoration(labelText: 'Categoria'),
                   items:
                       const {
@@ -1682,6 +1740,7 @@ class _AddAccessoryScreenState extends ConsumerState<AddAccessoryScreen> {
               Expanded(
                 child: DropdownButtonFormField<String>(
                   initialValue: status,
+                  isExpanded: true,
                   decoration: const InputDecoration(labelText: 'Stato'),
                   items:
                       const {
@@ -1755,7 +1814,8 @@ class _AddAccessoryScreenState extends ConsumerState<AddAccessoryScreen> {
                     decimal: true,
                   ),
                   decoration: const InputDecoration(
-                    labelText: 'Prezzo unitario (€) *',
+                    labelText: 'Prezzo (€) *',
+                    hintText: '0,00',
                   ),
                   validator: (value) =>
                       double.tryParse((value ?? '').replaceAll(',', '.')) ==
@@ -1771,7 +1831,10 @@ class _AddAccessoryScreenState extends ConsumerState<AddAccessoryScreen> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(labelText: 'Montaggio (€)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Montaggio (€)',
+                    hintText: '0,00',
+                  ),
                 ),
               ),
             ],

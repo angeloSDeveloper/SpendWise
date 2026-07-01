@@ -204,6 +204,82 @@ app.post('/api/installments/:id/pay-installment', async (c) => {
   return c.json({ data: { paidInstallments: paid }, error: null });
 });
 
+app.post('/api/installments/:id/unpay-installment', async (c) => {
+  const userId = c.get('userId'); const id = c.req.param('id');
+  const plan = await c.env.DB.prepare(
+    'SELECT * FROM installment_plans WHERE id = ? AND user_id = ?',
+  ).bind(id, userId).first<Record<string, unknown>>();
+  if (!plan) return c.json({ data: null, error: 'Piano non trovato' }, 404);
+  const currentPaid = Number(plan.paid_installments);
+  if (currentPaid < 1) {
+    return c.json({ data: null, error: 'Nessuna rata pagata da annullare' }, 409);
+  }
+  const paid = currentPaid - 1;
+  const nextDue = paid === Number(plan.total_installments) - 1 && plan.end_date != null
+    ? Number(plan.end_date)
+    : installmentDueAt(Number(plan.start_date), String(plan.frequency), paid);
+  const payment = await c.env.DB.prepare(
+    'SELECT id FROM installment_payments WHERE plan_id = ? AND user_id = ? ORDER BY installment_number DESC LIMIT 1',
+  ).bind(id, userId).first<{ id: string }>();
+  const statements: D1PreparedStatement[] = [
+    c.env.DB.prepare(
+      'UPDATE installment_plans SET paid_installments = ?, next_due_date = ?, is_active = 1, updated_at = ? WHERE id = ? AND user_id = ?',
+    ).bind(paid, nextDue, Date.now(), id, userId),
+  ];
+  if (payment) {
+    statements.unshift(
+      c.env.DB.prepare(
+        'DELETE FROM installment_payments WHERE id = ? AND plan_id = ? AND user_id = ?',
+      ).bind(payment.id, id, userId),
+    );
+  }
+  await c.env.DB.batch(statements);
+  return c.json({ data: { paidInstallments: paid, nextDueDate: nextDue }, error: null });
+});
+
+const isTester = async (c: {
+  env: Env;
+  get: (key: 'userId') => string;
+}) => {
+  const user = await c.env.DB.prepare(
+    'SELECT role FROM users WHERE id = ?',
+  ).bind(c.get('userId')).first<{ role: string }>();
+  return user?.role === 'tester' || user?.role === 'admin';
+};
+
+app.get('/api/tester/tests', async (c) => {
+  if (!await isTester(c)) {
+    return c.json({ data: null, error: 'Accesso riservato ai tester' }, 403);
+  }
+  const rows = await c.env.DB.prepare(
+    'SELECT test_key,status,updated_at FROM notification_test_results WHERE user_id = ? ORDER BY test_key',
+  ).bind(c.get('userId')).all<Record<string, unknown>>();
+  return c.json({ data: rows.results.map(serialize), error: null });
+});
+
+app.put('/api/tester/tests/:key', async (c) => {
+  if (!await isTester(c)) {
+    return c.json({ data: null, error: 'Accesso riservato ai tester' }, 403);
+  }
+  const body = await c.req.json<{ status?: string }>()
+    .catch(() => ({} as { status?: string }));
+  if (!['pending','passed','partial','ko'].includes(body.status || '')) {
+    return c.json({ data: null, error: 'Stato test non valido' }, 400);
+  }
+  const key = c.req.param('key');
+  const now = Date.now();
+  await c.env.DB.prepare(
+    `INSERT INTO notification_test_results (user_id,test_key,status,updated_at)
+     VALUES (?,?,?,?)
+     ON CONFLICT(user_id,test_key)
+     DO UPDATE SET status = excluded.status, updated_at = excluded.updated_at`,
+  ).bind(c.get('userId'), key, body.status, now).run();
+  return c.json({
+    data: { testKey: key, status: body.status, updatedAt: new Date(now).toISOString() },
+    error: null,
+  });
+});
+
 app.post('/api/sync/push', async (c) => {
   type Operation = { table?: string; recordId?: string; operation?: string; payload?: string | Record<string, unknown> };
   const body = await c.req.json<{ operations?: Operation[] }>().catch(() => ({} as { operations?: Operation[] }));

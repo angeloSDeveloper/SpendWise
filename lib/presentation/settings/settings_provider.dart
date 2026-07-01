@@ -20,6 +20,7 @@ class SettingsState {
     this.visibleModules = appModules,
     this.notificationsEnabled = false,
     this.notificationDaysBefore = 3,
+    this.localeCode = 'it',
   });
   final ThemeMode themeMode;
   final String? avatarData;
@@ -29,6 +30,7 @@ class SettingsState {
   final bool biometricsEnabled, notificationsEnabled;
   final Set<String> visibleModules;
   final int notificationDaysBefore;
+  final String localeCode;
 
   SettingsState copyWith({
     ThemeMode? themeMode,
@@ -46,6 +48,7 @@ class SettingsState {
     Set<String>? visibleModules,
     bool? notificationsEnabled,
     int? notificationDaysBefore,
+    String? localeCode,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     avatarData: clearAvatar ? null : avatarData ?? this.avatarData,
@@ -62,6 +65,7 @@ class SettingsState {
     notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
     notificationDaysBefore:
         notificationDaysBefore ?? this.notificationDaysBefore,
+    localeCode: localeCode ?? this.localeCode,
   );
 }
 
@@ -93,6 +97,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           prefs.getStringList('visible_modules')?.toSet() ?? appModules,
       notificationsEnabled: prefs.getBool('notifications_enabled') ?? false,
       notificationDaysBefore: prefs.getInt('notification_days_before') ?? 3,
+      localeCode: prefs.getString('locale_code') ?? 'it',
     );
   }
 
@@ -195,6 +200,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       'notification_days_before',
       value,
     );
+  }
+
+  Future<void> setLocale(String value) async {
+    state = state.copyWith(localeCode: value);
+    (await SharedPreferences.getInstance()).setString('locale_code', value);
   }
 }
 

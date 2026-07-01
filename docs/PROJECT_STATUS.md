@@ -52,6 +52,15 @@ Per ogni intervento futuro:
 
 ## Funzioni parziali
 
+- Ramo `feature/mobile-ux-tester-dashboard`: annullamento pagamento rate,
+  swipe con cestino e undo, form mobile compatti, quattro lingue principali e
+  dashboard tester implementati e verificati localmente, non ancora
+  pubblicati.
+- Localizzazione: navigazione, componenti di sistema e testi principali sono
+  disponibili in italiano, inglese, spagnolo e tedesco; molti testi storici
+  delle singole schermate sono ancora hardcoded in italiano.
+- Dashboard tester: ruolo server-side, esiti persistenti e notifiche di
+  sistema locali pronti. Non sono ancora vere push in background.
 - Registro manutenzioni semplificato a data, intervento e prezzo: pubblicato,
   ma resta il collaudo visivo manuale completo.
 - Sessione desktop: la correzione del rinnovo token è pubblicata, ma va

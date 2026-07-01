@@ -9,6 +9,7 @@ import 'package:spendwise/domain/models/enums.dart';
 import 'package:spendwise/domain/models/installment_plan.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
+import 'package:spendwise/presentation/shared/widgets/swipe_reveal_delete.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
 
 final installmentsApiProvider = Provider(
@@ -144,17 +145,25 @@ class InstallmentsScreen extends ConsumerWidget {
                   itemCount: items.length,
                   itemBuilder: (_, index) {
                     final item = items[index];
-                    return Card(
-                      child: ListTile(
-                        leading: const CircleAvatar(
-                          child: Icon(Icons.credit_card),
+                    return SwipeRevealDelete(
+                      key: ValueKey('installment-${item.id}'),
+                      deletedMessage: 'Piano rateale rimosso',
+                      onDelete: () async {
+                        await ref.read(installmentsApiProvider).delete(item.id);
+                        ref.invalidate(installmentsProvider);
+                      },
+                      child: Card(
+                        child: ListTile(
+                          leading: const CircleAvatar(
+                            child: Icon(Icons.credit_card),
+                          ),
+                          title: Text(item.name),
+                          subtitle: Text(
+                            '${item.paidInstallments}/${item.totalInstallments} rate · prossima ${item.nextDueDate == null ? 'non indicata' : DateFormat('dd/MM/yyyy').format(item.nextDueDate!.toLocal())}',
+                          ),
+                          trailing: Text(_money(item.installmentAmount)),
+                          onTap: () => _showPlan(context, ref, item),
                         ),
-                        title: Text(item.name),
-                        subtitle: Text(
-                          '${item.paidInstallments}/${item.totalInstallments} rate · prossima ${item.nextDueDate == null ? 'non indicata' : DateFormat('dd/MM/yyyy').format(item.nextDueDate!.toLocal())}',
-                        ),
-                        trailing: Text(_money(item.installmentAmount)),
-                        onTap: () => _showPlan(context, ref, item),
                       ),
                     );
                   },
@@ -279,6 +288,18 @@ Future<void> _showPlan(
               icon: const Icon(Icons.check),
               label: const Text('SEGNA UNA RATA COME PAGATA'),
             ),
+          if (item.paidInstallments > 0) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () async {
+                await ref.read(installmentsApiProvider).unpay(item.id);
+                ref.invalidate(installmentsProvider);
+                if (sheetContext.mounted) Navigator.pop(sheetContext);
+              },
+              icon: const Icon(Icons.undo),
+              label: const Text('ANNULLA ULTIMO PAGAMENTO'),
+            ),
+          ],
         ],
       ),
     ),
@@ -507,16 +528,8 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
         if (widget.existing == null) ...[
           SegmentedButton<bool>(
             segments: const [
-              ButtonSegment(
-                value: false,
-                icon: Icon(Icons.shopping_bag_outlined),
-                label: Text('Un acquisto'),
-              ),
-              ButtonSegment(
-                value: true,
-                icon: Icon(Icons.inventory_2_outlined),
-                label: Text('Più acquisti'),
-              ),
+              ButtonSegment(value: false, label: Text('Un acquisto')),
+              ButtonSegment(value: true, label: Text('Più acquisti')),
             ],
             selected: {multiple},
             onSelectionChanged: (value) => _setMultiple(value.first),
@@ -541,29 +554,38 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
           ),
           const SizedBox(height: 12),
         ],
-        TextField(
-          controller: count,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Numero rate *'),
-          onChanged: (_) => setState(() {}),
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<InstallmentFrequency>(
-          initialValue: frequency,
-          decoration: const InputDecoration(labelText: 'Frequenza'),
-          items: InstallmentFrequency.values
-              .map(
-                (value) => DropdownMenuItem(
-                  value: value,
-                  child: Text(switch (value) {
-                    InstallmentFrequency.weekly => 'Settimanale',
-                    InstallmentFrequency.biweekly => 'Ogni 2 settimane',
-                    InstallmentFrequency.monthly => 'Mensile',
-                  }),
-                ),
-              )
-              .toList(),
-          onChanged: (value) => setState(() => frequency = value!),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: count,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Numero rate *'),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: DropdownButtonFormField<InstallmentFrequency>(
+                initialValue: frequency,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Frequenza'),
+                items: InstallmentFrequency.values
+                    .map(
+                      (value) => DropdownMenuItem(
+                        value: value,
+                        child: Text(switch (value) {
+                          InstallmentFrequency.weekly => 'Settimanale',
+                          InstallmentFrequency.biweekly => 'Ogni 2 settimane',
+                          InstallmentFrequency.monthly => 'Mensile',
+                        }),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) => setState(() => frequency = value!),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         InkWell(

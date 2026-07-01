@@ -6,7 +6,12 @@ import 'package:spendwise/app/app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('it');
+  await Future.wait([
+    initializeDateFormatting('it'),
+    initializeDateFormatting('en'),
+    initializeDateFormatting('es'),
+    initializeDateFormatting('de'),
+  ]);
   Intl.defaultLocale = 'it';
   runApp(const ProviderScope(child: SpendWiseApp()));
 }

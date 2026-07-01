@@ -225,6 +225,8 @@ abstract class InstallmentsApiClient {
   Future<void> delete(@Path() String id);
   @POST('/installments/{id}/pay-installment')
   Future<dynamic> pay(@Path() String id);
+  @POST('/installments/{id}/unpay-installment')
+  Future<dynamic> unpay(@Path() String id);
 }
 
 @RestApi()
@@ -245,6 +247,8 @@ abstract class VehiclesApiClient {
     @Path() String id,
     @Body() Map<String, dynamic> body,
   );
+  @DELETE('/vehicles/{id}/fuel/{entryId}')
+  Future<void> deleteFuel(@Path() String id, @Path() String entryId);
   @GET('/vehicles/{id}/maintenance')
   Future<List<VehicleMaintenance>> maintenance(@Path() String id);
   @POST('/vehicles/{id}/maintenance')
@@ -284,4 +288,27 @@ abstract class SyncApiClient {
   Future<dynamic> push(@Body() Map<String, dynamic> body);
   @GET('/sync/pull')
   Future<dynamic> pull(@Query('since') int since);
+}
+
+@freezed
+abstract class TesterResult with _$TesterResult {
+  const factory TesterResult({
+    required String testKey,
+    required String status,
+    DateTime? updatedAt,
+  }) = _TesterResult;
+  factory TesterResult.fromJson(Map<String, dynamic> json) =>
+      _$TesterResultFromJson(json);
+}
+
+@RestApi()
+abstract class TesterApiClient {
+  factory TesterApiClient(Dio dio, {String? baseUrl}) = _TesterApiClient;
+  @GET('/tester/tests')
+  Future<List<TesterResult>> getResults();
+  @PUT('/tester/tests/{key}')
+  Future<TesterResult> setResult(
+    @Path() String key,
+    @Body() Map<String, dynamic> body,
+  );
 }

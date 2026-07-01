@@ -5,6 +5,39 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 1 luglio 2026
 
+### UX mobile, eliminazione sicura e area tester
+
+- Aggiunto annullamento dell'ultima rata segnata come pagata, con ripristino
+  del conteggio, dello stato attivo e della prossima scadenza.
+- Creato un componente swipe riutilizzabile: lo swipe a destra mostra soltanto
+  il cestino; l'eliminazione parte al click dopo 10 secondi ed è annullabile.
+- Applicato il componente a spese, abbonamenti, rate, veicoli, rifornimenti,
+  manutenzioni e accessori nelle rispettive liste mobile.
+- Aggiunta eliminazione API dei rifornimenti.
+- Compattati i form mobile richiesti e corretti gli overflow rilevati dai test
+  a 390 px.
+- Sostituito il campo extra del rinnovo personalizzato con una selezione
+  diretta da 1 a 36 mesi.
+- Aggiunta selezione lingua italiano, inglese, spagnolo e tedesco; localizzati
+  navigazione, componenti Material e stato sincronizzazione. La traduzione
+  completa dei testi storici resta parziale.
+- Aggiunto ruolo D1 `tester`, assegnato dalla migrazione all'account di Angelo,
+  e dashboard riservata con quattro casi di notifica e stato persistente
+  `da testare`, `superato`, `parziale` o `KO`.
+- I test notifiche usano la notifica di sistema del dispositivo/browser
+  corrente. Non sono push in background: Web Push/FCM e registrazione
+  dispositivi restano da implementare con le relative credenziali.
+
+### Verifiche UX/tester
+
+- `flutter analyze`: nessun problema.
+- `flutter test`: 22 test superati.
+- Aggiunti test del gesto swipe, attesa di 10 secondi, annullamento e layout
+  mobile dei cinque form richiesti.
+- Typecheck Worker TypeScript superato.
+- Build web release completata.
+- Migrazione D1 e deploy non eseguiti.
+
 ### Completamento handoff rate, manutenzioni e carburante
 
 - Corretto il Worker per distinguere i campi assenti dai campi presenti con

@@ -8,6 +8,7 @@ abstract class User with _$User {
     required String id,
     required String email,
     String? displayName,
+    @Default('user') String role,
     required DateTime createdAt,
   }) = _User;
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);

@@ -8,6 +8,7 @@ import 'package:spendwise/domain/models/enums.dart';
 import 'package:spendwise/domain/models/subscription.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
+import 'package:spendwise/presentation/shared/widgets/swipe_reveal_delete.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
 
 final subscriptionsApiProvider = Provider(
@@ -250,22 +251,34 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                   itemCount: visible.length,
                   itemBuilder: (_, index) {
                     final item = visible[index];
-                    return Card(
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          child: Text(item.name.characters.first.toUpperCase()),
+                    return SwipeRevealDelete(
+                      key: ValueKey('subscription-${item.id}'),
+                      deletedMessage: 'Abbonamento rimosso',
+                      onDelete: () async {
+                        await ref
+                            .read(subscriptionsApiProvider)
+                            .delete(item.id);
+                        ref.invalidate(subscriptionsProvider);
+                      },
+                      child: Card(
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            child: Text(
+                              item.name.characters.first.toUpperCase(),
+                            ),
+                          ),
+                          title: Text(item.name),
+                          subtitle: Text(
+                            '${_cycleLabel(item.billingCycle)} · dal ${DateFormat('dd/MM/yyyy').format(item.startDate.toLocal())}${item.endDate == null ? '' : ' al ${DateFormat('dd/MM/yyyy').format(item.endDate!.toLocal())}'}',
+                          ),
+                          trailing: Text(
+                            NumberFormat.currency(
+                              locale: 'it_IT',
+                              symbol: '€',
+                            ).format(item.amount),
+                          ),
+                          onTap: () => _showSubscription(context, ref, item),
                         ),
-                        title: Text(item.name),
-                        subtitle: Text(
-                          '${_cycleLabel(item.billingCycle)} · dal ${DateFormat('dd/MM/yyyy').format(item.startDate.toLocal())}${item.endDate == null ? '' : ' al ${DateFormat('dd/MM/yyyy').format(item.endDate!.toLocal())}'}',
-                        ),
-                        trailing: Text(
-                          NumberFormat.currency(
-                            locale: 'it_IT',
-                            symbol: '€',
-                          ).format(item.amount),
-                        ),
-                        onTap: () => _showSubscription(context, ref, item),
                       ),
                     );
                   },
@@ -422,7 +435,6 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
   final formKey = GlobalKey<FormState>();
   final name = TextEditingController(),
       amount = TextEditingController(),
-      customMonths = TextEditingController(),
       url = TextEditingController(),
       note = TextEditingController();
   BillingCycle cycle = BillingCycle.monthly;
@@ -447,16 +459,12 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
           (item.billingCycle == BillingCycle.yearly ? 12 : 1);
       nextDueDate = item.nextDueDate?.toLocal() ?? item.startDate.toLocal();
       endDate = item.endDate?.toLocal();
-      if (![1, 3, 12].contains(recurrence)) {
-        customMonths.text = '$recurrence';
-        recurrence = -1;
-      }
     }
   }
 
   @override
   void dispose() {
-    for (final c in [name, amount, customMonths, url, note]) {
+    for (final c in [name, amount, url, note]) {
       c.dispose();
     }
     super.dispose();
@@ -472,11 +480,7 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
     setState(() => saving = true);
     try {
       final start = DateTime.now();
-      final recurrenceMonths = cycle == BillingCycle.weekly
-          ? null
-          : recurrence == -1
-          ? int.tryParse(customMonths.text)
-          : recurrence;
+      final recurrenceMonths = cycle == BillingCycle.weekly ? null : recurrence;
       final body = {
         'name': name.text.trim(),
         'amount': double.parse(amount.text.replaceAll(',', '.')),
@@ -543,91 +547,98 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
                 : null,
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<BillingCycle>(
-            initialValue: cycle,
-            decoration: const InputDecoration(labelText: 'Periodicità'),
-            items: BillingCycle.values
-                .map(
-                  (x) =>
-                      DropdownMenuItem(value: x, child: Text(_cycleLabel(x))),
-                )
-                .toList(),
-            onChanged: (x) => setState(() {
-              cycle = x!;
-              if (cycle == BillingCycle.yearly) recurrence = 12;
-              if (cycle == BillingCycle.monthly && recurrence == 12) {
-                recurrence = 1;
-              }
-            }),
-          ),
-          const SizedBox(height: 12),
-          if (cycle != BillingCycle.weekly)
-            DropdownButtonFormField<int>(
-              initialValue: recurrence,
-              decoration: const InputDecoration(
-                labelText: 'Rinnovo / addebito',
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<BillingCycle>(
+                  initialValue: cycle,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Periodicità'),
+                  items: BillingCycle.values
+                      .map(
+                        (x) => DropdownMenuItem(
+                          value: x,
+                          child: Text(_cycleLabel(x)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (x) => setState(() {
+                    cycle = x!;
+                    if (cycle == BillingCycle.yearly) recurrence = 12;
+                    if (cycle == BillingCycle.monthly && recurrence == 12) {
+                      recurrence = 1;
+                    }
+                  }),
+                ),
               ),
-              items: const [
-                DropdownMenuItem(value: 1, child: Text('Ogni 1 mese')),
-                DropdownMenuItem(value: 3, child: Text('Ogni 3 mesi')),
-                DropdownMenuItem(value: 12, child: Text('Ogni 1 anno')),
-                DropdownMenuItem(value: -1, child: Text('Personalizzato')),
+              if (cycle != BillingCycle.weekly) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    initialValue: recurrence,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Rinnovo / addebito',
+                    ),
+                    items: [
+                      for (var months = 1; months <= 36; months++)
+                        DropdownMenuItem(
+                          value: months,
+                          child: Text(
+                            months == 12
+                                ? 'Ogni 1 anno'
+                                : 'Ogni $months ${months == 1 ? 'mese' : 'mesi'}',
+                          ),
+                        ),
+                    ],
+                    onChanged: (x) => setState(() => recurrence = x!),
+                  ),
+                ),
               ],
-              onChanged: (x) => setState(() => recurrence = x!),
-            ),
-          if (cycle != BillingCycle.weekly && recurrence == -1) ...[
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: customMonths,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Numero di mesi *',
-                hintText: 'Es. 7 oppure 8',
-              ),
-              validator: (value) =>
-                  recurrence == -1 && (int.tryParse(value ?? '') ?? 0) < 1
-                  ? 'Inserisci almeno 1 mese'
-                  : null,
-            ),
-          ],
-          const SizedBox(height: 12),
-          _SubscriptionDateField(
-            label: 'Prossima scadenza / pagamento *',
-            date: nextDueDate,
-            onTap: () async {
-              final value = await showDatePicker(
-                context: context,
-                locale: const Locale('it', 'IT'),
-                initialDate: nextDueDate,
-                firstDate: DateTime.now().subtract(const Duration(days: 3650)),
-                lastDate: DateTime.now().add(const Duration(days: 3650)),
-                helpText: 'SELEZIONA LA PROSSIMA SCADENZA',
-                cancelText: 'ANNULLA',
-                confirmText: 'CONFERMA',
-              );
-              if (value != null) setState(() => nextDueDate = value);
-            },
+            ],
           ),
           const SizedBox(height: 12),
-          _SubscriptionDateField(
-            label: 'Fine contratto (opzionale)',
-            date: endDate,
-            onTap: () async {
-              final value = await showDatePicker(
-                context: context,
-                locale: const Locale('it', 'IT'),
-                initialDate: endDate ?? nextDueDate,
-                firstDate: nextDueDate,
-                lastDate: DateTime.now().add(const Duration(days: 36500)),
-                helpText: 'SELEZIONA LA FINE DEL CONTRATTO',
-                cancelText: 'ANNULLA',
-                confirmText: 'CONFERMA',
-              );
-              if (value != null) setState(() => endDate = value);
-            },
-            onClear: endDate == null
-                ? null
-                : () => setState(() => endDate = null),
+          Row(
+            children: [
+              Expanded(
+                child: _SubscriptionDateField(
+                  label: 'Prossima scadenza *',
+                  date: nextDueDate,
+                  onTap: () async {
+                    final value = await showDatePicker(
+                      context: context,
+                      locale: const Locale('it', 'IT'),
+                      initialDate: nextDueDate,
+                      firstDate: DateTime.now().subtract(
+                        const Duration(days: 3650),
+                      ),
+                      lastDate: DateTime.now().add(const Duration(days: 3650)),
+                    );
+                    if (value != null) setState(() => nextDueDate = value);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _SubscriptionDateField(
+                  label: 'Fine contratto',
+                  date: endDate,
+                  onTap: () async {
+                    final value = await showDatePicker(
+                      context: context,
+                      locale: const Locale('it', 'IT'),
+                      initialDate: endDate ?? nextDueDate,
+                      firstDate: nextDueDate,
+                      lastDate: DateTime.now().add(const Duration(days: 36500)),
+                    );
+                    if (value != null) setState(() => endDate = value);
+                  },
+                  onClear: endDate == null
+                      ? null
+                      : () => setState(() => endDate = null),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           TextFormField(

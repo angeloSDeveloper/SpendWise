@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
@@ -83,6 +84,7 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     ref.watch(avatarBuilderRevisionProvider);
     final avatar = settings.avatarData;
+    final user = ref.watch(currentUserProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Impostazioni')),
       body: ListView(
@@ -189,6 +191,24 @@ class SettingsScreen extends ConsumerWidget {
                 ref.read(settingsProvider.notifier).setTheme(v.first),
           ),
           const SizedBox(height: 20),
+          Text('Lingua', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: settings.localeCode,
+            decoration: const InputDecoration(
+              labelText: 'Lingua dell’applicazione',
+              prefixIcon: Icon(Icons.language),
+            ),
+            items: const [
+              DropdownMenuItem(value: 'it', child: Text('Italiano')),
+              DropdownMenuItem(value: 'en', child: Text('English')),
+              DropdownMenuItem(value: 'es', child: Text('Español')),
+              DropdownMenuItem(value: 'de', child: Text('Deutsch')),
+            ],
+            onChanged: (value) =>
+                ref.read(settingsProvider.notifier).setLocale(value!),
+          ),
+          const SizedBox(height: 20),
           Text(
             'Sezioni visibili',
             style: Theme.of(context).textTheme.titleLarge,
@@ -237,6 +257,20 @@ class SettingsScreen extends ConsumerWidget {
                   .read(settingsProvider.notifier)
                   .setNotificationDays(value!),
             ),
+          if (user != null && {'tester', 'admin'}.contains(user.role)) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.science_outlined),
+                title: const Text('Dashboard tester'),
+                subtitle: const Text(
+                  'Invia test notifiche e registra esito, parziale o KO.',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/tester'),
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
           Text('Sicurezza', style: Theme.of(context).textTheme.titleLarge),
           SwitchListTile(

@@ -7,6 +7,7 @@ import 'package:spendwise/data/remote/api_client.dart';
 import 'package:spendwise/domain/models/daily_expense.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
+import 'package:spendwise/presentation/shared/widgets/swipe_reveal_delete.dart';
 
 final expensesApiProvider = Provider(
   (ref) => ExpensesApiClient(ref.watch(dioClientProvider).dio),
@@ -142,24 +143,34 @@ class _State extends ConsumerState<DailyExpensesScreen> {
                         category =
                             expenseCategories[key] ??
                             expenseCategories['altro']!;
-                    return Card(
-                      child: ListTile(
-                        leading: CircleAvatar(child: Icon(category.$2)),
-                        title: Text(
-                          item.description?.isNotEmpty == true
-                              ? item.description!
-                              : category.$1,
+                    return SwipeRevealDelete(
+                      key: ValueKey('expense-${item.id}'),
+                      deletedMessage: 'Spesa rimossa',
+                      onDelete: () async {
+                        await ref
+                            .read(expensesApiProvider)
+                            .deleteExpense(item.id);
+                        ref.invalidate(dailyExpensesProvider);
+                      },
+                      child: Card(
+                        child: ListTile(
+                          leading: CircleAvatar(child: Icon(category.$2)),
+                          title: Text(
+                            item.description?.isNotEmpty == true
+                                ? item.description!
+                                : category.$1,
+                          ),
+                          subtitle: Text(
+                            '${category.$1} · ${DateFormat('dd/MM/yyyy').format(item.date.toLocal())}',
+                          ),
+                          trailing: Text(
+                            NumberFormat.currency(
+                              locale: 'it_IT',
+                              symbol: '€',
+                            ).format(item.amount),
+                          ),
+                          onTap: () => _showExpense(context, ref, item),
                         ),
-                        subtitle: Text(
-                          '${category.$1} · ${DateFormat('dd/MM/yyyy').format(item.date.toLocal())}',
-                        ),
-                        trailing: Text(
-                          NumberFormat.currency(
-                            locale: 'it_IT',
-                            symbol: '€',
-                          ).format(item.amount),
-                        ),
-                        onTap: () => _showExpense(context, ref, item),
                       ),
                     );
                   },
@@ -355,35 +366,47 @@ class _AddDailyExpenseState extends ConsumerState<AddDailyExpenseScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        InkWell(
-          onTap: () async {
-            final selected = await showDatePicker(
-              context: context,
-              locale: const Locale('it', 'IT'),
-              initialDate: date,
-              firstDate: DateTime(1900),
-              lastDate: DateTime.now().add(const Duration(days: 365)),
-            );
-            if (selected != null) setState(() => date = selected);
-          },
-          child: InputDecorator(
-            decoration: const InputDecoration(
-              labelText: 'Data',
-              prefixIcon: Icon(Icons.calendar_month),
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: () async {
+                  final selected = await showDatePicker(
+                    context: context,
+                    locale: const Locale('it', 'IT'),
+                    initialDate: date,
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (selected != null) setState(() => date = selected);
+                },
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Data'),
+                  child: Text(DateFormat('dd/MM/yyyy').format(date)),
+                ),
+              ),
             ),
-            child: Text(DateFormat('dd/MM/yyyy').format(date)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: amount,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Importo *'),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: amount,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(labelText: 'Importo *'),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         SwitchListTile(
+          contentPadding: EdgeInsets.zero,
           value: automatic,
-          title: const Text('Riconosci automaticamente la categoria'),
+          title: const Text(
+            'Riconosci categoria automaticamente',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           subtitle: Text('Rilevata: ${expenseCategories[category]!.$1}'),
           onChanged: (v) => setState(() {
             automatic = v;
@@ -392,6 +415,7 @@ class _AddDailyExpenseState extends ConsumerState<AddDailyExpenseScreen> {
         ),
         DropdownButtonFormField<String>(
           initialValue: category,
+          isExpanded: true,
           decoration: const InputDecoration(labelText: 'Categoria'),
           items: expenseCategories.entries
               .map(
@@ -401,7 +425,13 @@ class _AddDailyExpenseState extends ConsumerState<AddDailyExpenseScreen> {
                     children: [
                       Icon(e.value.$2),
                       const SizedBox(width: 10),
-                      Text(e.value.$1),
+                      Expanded(
+                        child: Text(
+                          e.value.$1,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   ),
                 ),

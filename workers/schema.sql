@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   display_name TEXT,
+  role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user','tester','admin')),
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
@@ -207,6 +208,16 @@ CREATE TABLE IF NOT EXISTS sync_queue (
   payload TEXT NOT NULL,
   created_at INTEGER NOT NULL,
   attempts INTEGER DEFAULT 0,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS notification_test_results (
+  user_id TEXT NOT NULL,
+  test_key TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK(status IN ('pending','passed','partial','ko')),
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, test_key),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

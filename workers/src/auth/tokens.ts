@@ -45,7 +45,7 @@ export async function refresh(c: Context<{ Bindings: Env }>) {
       .bind(hash, Date.now()).first<{ id: string }>();
     if (!stored) return jsonError(c, 'Refresh token non valido', 401);
     await c.env.DB.prepare('DELETE FROM refresh_tokens WHERE id = ?').bind(stored.id).run();
-    const user = await c.env.DB.prepare('SELECT id,email,display_name,created_at FROM users WHERE id = ?')
+    const user = await c.env.DB.prepare('SELECT id,email,display_name,role,created_at FROM users WHERE id = ?')
       .bind(payload.sub).first<Record<string, unknown>>();
     if (!user) return jsonError(c, 'Utente non trovato', 401);
     return c.json({ data: { user: publicUser(user), tokens: await createSession(c.env, payload.sub!) }, error: null });
@@ -58,7 +58,7 @@ export async function logout(c: Context<{ Bindings: Env; Variables: { userId: st
 }
 
 export const publicUser = (row: Record<string, unknown>) => ({
-  id: row.id, email: row.email, displayName: row.display_name, createdAt: new Date(Number(row.created_at)).toISOString(),
+  id: row.id, email: row.email, displayName: row.display_name, role: row.role || 'user', createdAt: new Date(Number(row.created_at)).toISOString(),
 });
 export const jsonError = (c: Context, error: string, status: 400 | 401 | 403 | 404 | 409 | 500) =>
   c.json({ data: null, error }, status);

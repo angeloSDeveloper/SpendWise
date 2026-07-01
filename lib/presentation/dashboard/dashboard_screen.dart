@@ -9,6 +9,7 @@ import 'package:spendwise/domain/models/daily_expense.dart';
 import 'package:spendwise/domain/models/enums.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
+import 'package:spendwise/l10n/app_localizations.dart';
 
 class DashboardData {
   const DashboardData({
@@ -151,6 +152,14 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
     final sync = ref.watch(syncStatusProvider);
     final data = ref.watch(dashboardDataProvider);
     final modules = ref.watch(settingsProvider).visibleModules;
+    final strings = AppLocalizations.of(context)!;
+    final syncLabel = switch (sync) {
+      SyncStatus.synced => strings.syncSynced,
+      SyncStatus.pending => strings.syncPending,
+      SyncStatus.syncing => strings.syncInProgress,
+      SyncStatus.offline => strings.syncOffline,
+      SyncStatus.error => strings.syncError,
+    };
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -165,7 +174,7 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
         ),
         actions: [
           Tooltip(
-            message: sync.name,
+            message: syncLabel,
             child: Icon(
               sync == SyncStatus.offline
                   ? Icons.cloud_off

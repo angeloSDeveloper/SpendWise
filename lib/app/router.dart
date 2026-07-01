@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spendwise/presentation/analytics/analytics_screen.dart';
+import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/presentation/auth/login/login_screen.dart';
 import 'package:spendwise/presentation/auth/register/register_screen.dart';
 import 'package:spendwise/presentation/categories/daily/daily_expenses_screen.dart';
@@ -12,6 +13,7 @@ import 'package:spendwise/presentation/dashboard/dashboard_screen.dart';
 import 'package:spendwise/presentation/manual/manual_screen.dart';
 import 'package:spendwise/presentation/settings/settings_screen.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
+import 'package:spendwise/presentation/tester/tester_dashboard_screen.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 
 final routerProvider = Provider<GoRouter>(
@@ -137,6 +139,10 @@ final routerProvider = Provider<GoRouter>(
           ),
           GoRoute(path: '/manual', builder: (c, s) => const ManualScreen()),
           GoRoute(path: '/settings', builder: (c, s) => const SettingsScreen()),
+          GoRoute(
+            path: '/tester',
+            builder: (c, s) => const TesterDashboardScreen(),
+          ),
         ],
       ),
     ],
@@ -159,7 +165,6 @@ class NavigationShell extends ConsumerWidget {
     '/installments',
     '/vehicle',
   ];
-  static const labels = ['Home', 'Spese', 'Abbonamenti', 'Rate', 'Veicolo'];
   static const icons = [
     Icons.home_outlined,
     Icons.receipt_long_outlined,
@@ -183,6 +188,14 @@ class NavigationShell extends ConsumerWidget {
         .indexOf(absoluteIndex)
         .clamp(0, visibleIndexes.length - 1);
     final wide = MediaQuery.sizeOf(context).width > 1024;
+    final strings = AppLocalizations.of(context)!;
+    final labels = [
+      strings.dashboard,
+      strings.dailyExpenses,
+      strings.subscriptions,
+      strings.installments,
+      strings.vehicle,
+    ];
     final nav = NavigationRail(
       selectedIndex: index,
       onDestinationSelected: (i) => context.go(paths[visibleIndexes[i]]),

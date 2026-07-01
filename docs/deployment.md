@@ -38,6 +38,8 @@ wrangler d1 execute spendwise-db --remote \
   --file=migrations/2026-06-29_vehicle_tank_capacity.sql
 wrangler d1 execute spendwise-db --remote \
   --file=migrations/2026-07-01_installment_end_date.sql
+wrangler d1 execute spendwise-db --remote \
+  --file=migrations/2026-07-01_tester_dashboard.sql
 ```
 
 ### 5. Configura i secrets

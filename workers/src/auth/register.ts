@@ -21,6 +21,6 @@ export async function register(c: Context<{ Bindings: Env }>) {
   await c.env.DB.prepare(
     'INSERT INTO users (id,email,password_hash,display_name,created_at,updated_at) VALUES (?,?,?,?,?,?)',
   ).bind(id, email, hash, body.name?.trim() || null, now, now).run();
-  const user = { id, email, display_name: body.name?.trim() || null, created_at: now };
+  const user = { id, email, display_name: body.name?.trim() || null, role: 'user', created_at: now };
   return c.json({ data: { user: publicUser(user), tokens: await createSession(c.env, id) }, error: null }, 201);
 }

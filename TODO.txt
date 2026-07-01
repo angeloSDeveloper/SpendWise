@@ -12,6 +12,9 @@ Legenda:
 
 ## Problemi prioritari
 
+- [-] Intervento UI/tester del 01/07 implementato e verificato localmente sul
+  ramo `feature/mobile-ux-tester-dashboard`. Restano collaudo visivo,
+  migrazione/deploy e integrazione push Web Push/FCM reale.
 - [-] Pacchetto handoff del 29/06 implementato e verificato automaticamente:
   fine contratto abbonamenti nullable, piani rateali multipli atomici, scadenza
   finale persistita, registro manutenzioni semplificato e capacita serbatoio.
@@ -30,6 +33,11 @@ Legenda:
 
 ## Abbonamenti e rate
 
+- [-] Annullamento dell'ultima rata pagata implementato e verificato
+  staticamente; endpoint Worker da pubblicare.
+- [-] Swipe a destra con cestino, eliminazione solo al click e annullamento per
+  10 secondi implementato sulle liste principali; test automatici superati,
+  da collaudare visivamente.
 - [x] Selezione della prossima data di pagamento.
 - [x] Ricorrenza settimanale, mensile e annuale.
 - [x] Ricorrenza ogni 1 mese, 3 mesi, 1 anno o numero personalizzato di mesi.
@@ -61,6 +69,23 @@ Legenda:
 
 ## Impostazioni e personalizzazione
 
+- [-] Scelta lingua italiano, inglese, spagnolo e tedesco implementata per
+  navigazione, componenti di sistema e testi localizzati principali; resta la
+  conversione dei testi storici ancora hardcoded.
+- [x] Tooltip di sincronizzazione tradotto e localizzato.
+- [-] Ruolo `tester` e dashboard test riservata implementati; migrazione D1 e
+  deploy non ancora eseguiti.
+- [-] Trigger di test locali per rate e abbonamenti con esito
+  superato/parziale/KO implementati. Vere push in background ancora mancanti.
+
+## UI mobile
+
+- [x] Nuova spesa: data e importo affiancati, testo categoria compatto.
+- [x] Nuovo abbonamento: periodicita/rinnovo e scadenza/fine contratto
+  affiancati; numero mesi selezionabile direttamente.
+- [x] Nuovo piano rateale: numero rate e frequenza affiancati.
+- [x] Nuovo veicolo: alimentazione e capacita serbatoio affiancati.
+- [x] Nuovo accessorio: prezzo e montaggio resi leggibili su mobile.
 - [x] Anteprima avatar compatta sempre visibile durante lo scorrimento dei
   controlli su mobile.
 - [x] Feature `feature/avatar-builder-profile`: nuovo builder avatar premium
