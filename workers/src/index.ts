@@ -191,7 +191,9 @@ app.post('/api/installments/:id/pay-installment', async (c) => {
   if (paid > Number(plan.total_installments)) return c.json({ data: null, error: 'Piano già completato' }, 409);
   const active = paid < Number(plan.total_installments);
   const nextDue = active
-    ? installmentDueAt(Number(plan.start_date), String(plan.frequency), paid)
+    ? paid === Number(plan.total_installments) - 1 && plan.end_date != null
+      ? Number(plan.end_date)
+      : installmentDueAt(Number(plan.start_date), String(plan.frequency), paid)
     : null;
   await c.env.DB.batch([
     c.env.DB.prepare('INSERT INTO installment_payments (id,plan_id,user_id,installment_number,amount,due_date,paid_date,status) VALUES (?,?,?,?,?,?,?,?)')
