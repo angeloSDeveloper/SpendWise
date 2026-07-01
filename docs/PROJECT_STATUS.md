@@ -40,6 +40,10 @@ Per ogni intervento futuro:
 - Piani rateali con prossima scadenza e registrazione della rata pagata.
 - Form piani rateali con data iniziale/prima rata e scadenza finale calcolata
   automaticamente in base a frequenza e numero rate.
+- Creazione atomica di piani rateali multipli e persistenza della scadenza
+  finale.
+- Capacità serbatoio del veicolo e precompilazione dei litri per il pieno
+  completo.
 - CRUD per spese quotidiane, abbonamenti, rate, manutenzioni e accessori.
 - Menu principali configurabili dalle impostazioni.
 - Preferenze locali per tema, avatar, biometria e promemoria.
@@ -48,11 +52,8 @@ Per ogni intervento futuro:
 
 ## Funzioni parziali
 
-- Pacchetto handoff del 29 giugno implementato e verificato localmente:
-  aggiornamento nullable della fine contratto, batch atomico dei piani
-  rateali, scadenza finale persistita, registro manutenzioni semplificato e
-  capacita serbatoio. Manca il deploy con le due migrazioni D1 e il collaudo
-  visivo manuale.
+- Registro manutenzioni semplificato a data, intervento e prezzo: pubblicato,
+  ma resta il collaudo visivo manuale completo.
 - Sessione desktop: la correzione del rinnovo token è pubblicata, ma va
   confermata sul browser che mostrava il problema.
 - Avatar fotografico: gestione degli errori aggiunta, ma manca il collaudo
@@ -74,6 +75,7 @@ Per ogni intervento futuro:
 
 ## Ultima pubblicazione nota
 
-- Commit precedente: `5e353a4`
+- Commit applicativo: `5028940`
 - Worker: `https://spendwise.lopreteangelo97.workers.dev`
+- Versione Worker: `ca19fb30-8ec6-48e8-8275-41fa04e99227`
 - Database: `spendwise-db`

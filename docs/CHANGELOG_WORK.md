@@ -35,10 +35,26 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
   completo.
 - Typecheck Worker TypeScript superato.
 - Build web release completata con API di produzione configurata.
-- Il collaudo visivo nel browser in-app non è stato possibile per
-  indisponibilità del browser nella sessione e resta da eseguire.
-- Migrazioni D1 e deploy Cloudflare non eseguiti: il nuovo endpoint batch e le
-  nuove colonne non sono ancora attivi in produzione.
+- Il collaudo visivo completo resta da concludere sul browser dell'utente.
+
+### Pubblicazione e inserimento Klarna
+
+- Creato un backup D1 prima dell'intervento.
+- Applicate in produzione le migrazioni per `tank_capacity_liters` ed
+  `end_date`.
+- Pubblicati app web e Worker Cloudflare `spendwise`.
+- Versione Worker pubblicata:
+  `ca19fb30-8ec6-48e8-8275-41fa04e99227`.
+- Verificati endpoint health e presenza dell'endpoint batch protetto.
+- Corretto l'avanzamento dell'ultima rata affinché usi la scadenza finale
+  persistita, utile per il calendario Klarna 16 luglio / 15 agosto.
+- Inseriti nell'account dell'utente tre piani eBay/Klarna da 3 rate, con una
+  rata già pagata, importi rata `7,76`, `4,61` e `31,66` euro, prossima
+  scadenza 16 luglio 2026 e scadenza finale 15 agosto 2026.
+- Rimossa e verificata nel database la fine contratto di Amazon Prime, come
+  richiesto durante il collaudo.
+- Riavviata l'app locale su `http://localhost:52100` collegata alla nuova API
+  di produzione.
 
 ## 29 giugno 2026
 
