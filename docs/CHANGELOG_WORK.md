@@ -29,6 +29,8 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
   di circa 81 MB.
 - APK installato e avviato realmente su emulatore Pixel 7; verificata la
   schermata login mobile e il processo applicativo.
+- APK installato via USB e avviato con successo anche su dispositivo fisico
+  Moto g82 5G con Android 13.
 - `flutter analyze`: nessun problema.
 - `flutter test`: 31 test superati, inclusi cache per utente, mutazioni locali
   e ordine della coda.

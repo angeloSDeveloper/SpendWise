@@ -59,8 +59,9 @@ Per ogni intervento futuro:
 - Local-first e Android sul ramo `feature/local-first-android`: dati API
   memorizzati in IndexedDB/SQLite, operazioni offline accodate, backup profilo
   disattivabile e sessione offline predisposti. APK release generato,
-  installato e avviato su Pixel 7 emulato. Restano accesso completamente
-  anonimo, conflitti multi-dispositivo e collaudo autenticato su telefono.
+  installato e avviato su Pixel 7 emulato e Moto g82 5G fisico. Restano
+  accesso completamente anonimo, conflitti multi-dispositivo e collaudo
+  autenticato/offline su telefono.
 - Pacchetto UI/tester: annullamento pagamento rate, swipe con cestino e undo,
   form mobile compatti, quattro lingue principali e dashboard tester
   implementati, verificati e pubblicati. Resta il collaudo visivo completo.
