@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -75,11 +76,19 @@ class OfflineInterceptor extends Interceptor {
     ResponseInterceptorHandler handler,
   ) async {
     final options = response.requestOptions;
-    if (_isDataPath(options.path) && options.extra['offlineReplay'] != true) {
-      final userId = await _userId();
-      if (options.method == 'GET') {
-        await store.cache(userId, _uri(options), response.data);
-      }
+    if (_isDataPath(options.path) &&
+        options.method == 'GET' &&
+        options.extra['offlineReplay'] != true &&
+        response.extra['localOnly'] != true &&
+        response.extra['offline'] != true) {
+      // La cache e' accessoria: una scrittura IndexedDB lenta o concorrente
+      // non deve trattenere una risposta di rete gia' completata.
+      unawaited(
+        (() async {
+          final userId = await _userId();
+          await store.cache(userId, _uri(options), response.data);
+        })().timeout(const Duration(seconds: 3)).catchError((_) {}),
+      );
     }
     handler.next(response);
   }

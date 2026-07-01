@@ -3,6 +3,22 @@
 Questo documento conserva lo storico delle modifiche, delle verifiche e delle
 attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
+## 2 luglio 2026
+
+### Fix caricamento infinito dashboard web
+
+- Verificati server locale, API Cloudflare, CORS e singoli endpoint: tutte le
+  richieste rispondevano correttamente con HTTP `200` in circa 55-70 ms.
+- Individuato il blocco nell'interceptor local-first: dopo la risposta di rete
+  attendeva quattro scritture IndexedDB concorrenti prima di completare i
+  Future della dashboard.
+- Reso il salvataggio della cache asincrono e non bloccante, con timeout di
+  sicurezza a 3 secondi e isolamento degli errori della sola cache.
+- Escluse dal nuovo salvataggio le risposte gia' provenienti da cache locale o
+  replay offline.
+- `flutter analyze`: nessun problema.
+- `flutter test`: 37 test superati.
+
 ## 1 luglio 2026
 
 ### Prototipo UI finance moderna e cruscotto personalizzabile

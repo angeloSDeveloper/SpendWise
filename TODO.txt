@@ -12,6 +12,9 @@ Legenda:
 
 ## Problemi prioritari
 
+- [x] Corretto il blocco infinito della dashboard web: le risposte API erano
+  gia' `200`, ma il salvataggio concorrente della cache IndexedDB tratteneva
+  i Future. La cache viene ora aggiornata in background con timeout.
 - [-] Prototipo grafico ispirato ai pattern moderni di Hootz sul ramo
   `feature/hootz-inspired-ui`: onboarding, login social predisposto, richiesta
   iniziale di PIN/biometria e dashboard a widget 4x4/4x8 personalizzabile.

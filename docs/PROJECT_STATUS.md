@@ -36,6 +36,9 @@ Per ogni intervento futuro:
 
 ## Funzioni completate
 
+- La cache local-first non blocca piu' le risposte API: le scritture
+  IndexedDB vengono eseguite in background con timeout, evitando lo spinner
+  infinito della dashboard web con richieste di rete gia' completate.
 - Builder avatar premium con anteprima live, preset, randomizzazione, forme,
   iniziali, icone, colori, gradiente, bordo e dimensioni.
 - Registro veicoli con manutenzioni e accessori.
