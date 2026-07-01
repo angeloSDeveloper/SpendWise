@@ -52,10 +52,9 @@ Per ogni intervento futuro:
 
 ## Funzioni parziali
 
-- Ramo `feature/mobile-ux-tester-dashboard`: annullamento pagamento rate,
-  swipe con cestino e undo, form mobile compatti, quattro lingue principali e
-  dashboard tester implementati e verificati localmente, non ancora
-  pubblicati.
+- Pacchetto UI/tester: annullamento pagamento rate, swipe con cestino e undo,
+  form mobile compatti, quattro lingue principali e dashboard tester
+  implementati, verificati e pubblicati. Resta il collaudo visivo completo.
 - Localizzazione: navigazione, componenti di sistema e testi principali sono
   disponibili in italiano, inglese, spagnolo e tedesco; molti testi storici
   delle singole schermate sono ancora hardcoded in italiano.
@@ -89,7 +88,7 @@ Per ogni intervento futuro:
 
 ## Ultima pubblicazione nota
 
-- Commit applicativo: `5028940`
+- Commit applicativo: `4bcd59b`
 - Worker: `https://spendwise.lopreteangelo97.workers.dev`
-- Versione Worker: `ca19fb30-8ec6-48e8-8275-41fa04e99227`
+- Versione Worker: `83b4fffe-b930-42fc-9e81-ec6a9f5043ab`
 - Database: `spendwise-db`

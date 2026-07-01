@@ -1,6 +1,6 @@
 # SpendWise — Guida al Deployment
 
-> Stato aggiornato al 25/06/2026: SpendWise viene pubblicato come Worker con
+> Stato aggiornato al 01/07/2026: SpendWise viene pubblicato come Worker con
 > asset Flutter integrati, non come progetto Cloudflare Pages separato.
 
 ## Setup iniziale Cloudflare

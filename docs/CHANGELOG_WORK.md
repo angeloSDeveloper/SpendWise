@@ -67,7 +67,22 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
   dell'eliminazione.
 - Typecheck Worker TypeScript superato.
 - Build web release completata.
-- Migrazione D1 e deploy non eseguiti.
+- Migrazione D1 e deploy inizialmente non eseguiti durante lo sviluppo.
+
+### Pubblicazione UX/tester
+
+- Promossi con fast-forward i commit del ramo
+  `feature/mobile-ux-tester-dashboard` su `dev` e `main`.
+- Applicata al database D1 `spendwise-db` la migrazione
+  `2026-07-01_tester_dashboard.sql`: 3 query completate con successo.
+- Ricostruiti gli asset Flutter web release con API di produzione.
+- Pubblicati Worker e sito SpendWise su Cloudflare.
+- Versione Worker pubblicata:
+  `83b4fffe-b930-42fc-9e81-ec6a9f5043ab`.
+- Verificati dopo il deploy il sito pubblico (`HTTP 200`) e
+  `/api/health` (`HTTP 200`, stato `ok`).
+- Restano esplicitamente fuori da questo rilascio le vere notifiche push in
+  background Web Push/FCM.
 
 ### Completamento handoff rate, manutenzioni e carburante
 

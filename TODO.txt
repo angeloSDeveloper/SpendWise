@@ -12,9 +12,8 @@ Legenda:
 
 ## Problemi prioritari
 
-- [-] Intervento UI/tester del 01/07 implementato e verificato localmente sul
-  ramo `feature/mobile-ux-tester-dashboard`. Restano collaudo visivo,
-  migrazione/deploy e integrazione push Web Push/FCM reale.
+- [-] Intervento UI/tester del 01/07 implementato, verificato e pubblicato.
+  Restano il collaudo visivo completo e l'integrazione push Web Push/FCM reale.
 - [-] Pacchetto handoff del 29/06 implementato e verificato automaticamente:
   fine contratto abbonamenti nullable, piani rateali multipli atomici, scadenza
   finale persistita, registro manutenzioni semplificato e capacita serbatoio.
@@ -34,7 +33,7 @@ Legenda:
 ## Abbonamenti e rate
 
 - [-] Annullamento dell'ultima rata pagata implementato e verificato
-  staticamente; endpoint Worker da pubblicare.
+  staticamente; endpoint Worker pubblicato.
 - [-] Swipe configurabile con cestino, eliminazione solo al click e
   annullamento per la durata scelta implementato sulle liste principali; test
   automatici superati, inclusa la rimozione automatica del banner; da
@@ -77,8 +76,7 @@ Legenda:
   Strategia senza dipendenze aggiuntive documentata in
   `docs/localization-assessment.md`.
 - [x] Tooltip di sincronizzazione tradotto e localizzato.
-- [-] Ruolo `tester` e dashboard test riservata implementati; migrazione D1 e
-  deploy non ancora eseguiti.
+- [x] Ruolo `tester`, migrazione D1 e dashboard test riservata pubblicati.
 - [-] Trigger di test locali per rate e abbonamenti con esito
   superato/parziale/KO implementati con nome, data, importo e stato ricavati
   dai dati reali quando disponibili. Vere push in background ancora mancanti.
