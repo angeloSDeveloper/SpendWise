@@ -5,6 +5,8 @@ import 'package:spendwise/presentation/analytics/analytics_screen.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/presentation/auth/login/login_screen.dart';
 import 'package:spendwise/presentation/auth/register/register_screen.dart';
+import 'package:spendwise/presentation/auth/local_unlock_provider.dart';
+import 'package:spendwise/presentation/auth/pin_unlock_screen.dart';
 import 'package:spendwise/presentation/categories/daily/daily_expenses_screen.dart';
 import 'package:spendwise/presentation/categories/installments/installments_screen.dart';
 import 'package:spendwise/presentation/categories/subscriptions/subscriptions_screen.dart';
@@ -22,7 +24,9 @@ final routerProvider = Provider<GoRouter>(
     refreshListenable: _RouterRefresh(ref),
     redirect: (context, state) {
       final auth = ref.read(authStateProvider);
+      final lock = ref.read(localUnlockProvider);
       final signedIn = auth is Authenticated;
+      final unlockRoute = state.matchedLocation == '/unlock';
       final authRoute =
           state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
@@ -32,6 +36,14 @@ final routerProvider = Provider<GoRouter>(
       if (!signedIn && !authRoute) {
         return '/login';
       }
+      if (signedIn &&
+          !lock.loading &&
+          lock.protectionEnabled &&
+          !lock.unlocked &&
+          !unlockRoute) {
+        return '/unlock';
+      }
+      if (signedIn && unlockRoute && lock.unlocked) return '/dashboard';
       if (signedIn && (authRoute || state.matchedLocation == '/')) {
         return '/dashboard';
       }
@@ -45,6 +57,7 @@ final routerProvider = Provider<GoRouter>(
       ),
       GoRoute(path: '/login', builder: (c, s) => const LoginScreen()),
       GoRoute(path: '/register', builder: (c, s) => const RegisterScreen()),
+      GoRoute(path: '/unlock', builder: (c, s) => const PinUnlockScreen()),
       ShellRoute(
         builder: (c, s, child) => NavigationShell(child: child),
         routes: [
@@ -152,6 +165,7 @@ final routerProvider = Provider<GoRouter>(
 class _RouterRefresh extends ChangeNotifier {
   _RouterRefresh(Ref ref) {
     ref.listen(authStateProvider, (_, __) => notifyListeners());
+    ref.listen(localUnlockProvider, (_, __) => notifyListeners());
   }
 }
 

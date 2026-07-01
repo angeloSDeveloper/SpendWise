@@ -9,6 +9,7 @@ import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_co
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_preview.dart';
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_screen.dart';
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_storage.dart';
+import 'package:spendwise/presentation/auth/local_unlock_provider.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/shared/app_feedback.dart';
@@ -51,6 +52,7 @@ class SettingsScreen extends ConsumerWidget {
   ) async {
     if (!value) {
       await ref.read(settingsProvider.notifier).setBiometrics(false);
+      await ref.read(localUnlockProvider.notifier).load();
       return;
     }
     try {
@@ -62,6 +64,7 @@ class SettingsScreen extends ConsumerWidget {
       );
       if (verified) {
         await ref.read(settingsProvider.notifier).setBiometrics(true);
+        await ref.read(localUnlockProvider.notifier).load();
       }
     } catch (_) {
       if (context.mounted) {
@@ -73,9 +76,68 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
+  Future<String?> askPin(
+    BuildContext context, {
+    required String title,
+    bool confirm = false,
+  }) async {
+    final first = TextEditingController();
+    final second = TextEditingController();
+    String? error;
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: first,
+                obscureText: true,
+                keyboardType: TextInputType.number,
+                maxLength: 12,
+                decoration: InputDecoration(labelText: 'PIN', errorText: error),
+              ),
+              if (confirm)
+                TextField(
+                  controller: second,
+                  obscureText: true,
+                  keyboardType: TextInputType.number,
+                  maxLength: 12,
+                  decoration: const InputDecoration(labelText: 'Conferma PIN'),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('ANNULLA'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (!RegExp(r'^\d{4,}$').hasMatch(first.text)) {
+                  setState(() => error = 'Inserisci almeno 4 cifre');
+                  return;
+                }
+                if (confirm && first.text != second.text) {
+                  setState(() => error = 'I PIN non coincidono');
+                  return;
+                }
+                Navigator.pop(dialogContext, first.text);
+              },
+              child: const Text('CONFERMA'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    final localLock = ref.watch(localUnlockProvider);
     ref.watch(avatarBuilderRevisionProvider);
     final avatar = settings.avatarData;
     return Scaffold(
@@ -330,6 +392,44 @@ class SettingsScreen extends ConsumerWidget {
             value: settings.biometricsEnabled,
             onChanged: (value) => toggleBiometrics(context, ref, value),
           ),
+          ListTile(
+            leading: const Icon(Icons.pin_outlined),
+            title: Text(localLock.pinEnabled ? 'Modifica PIN' : 'Imposta PIN'),
+            subtitle: const Text('Almeno 4 cifre, salvato in modo sicuro'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              final value = await askPin(
+                context,
+                title: localLock.pinEnabled ? 'Nuovo PIN' : 'Imposta PIN',
+                confirm: true,
+              );
+              if (value != null) {
+                await ref.read(localUnlockProvider.notifier).setPin(value);
+                if (context.mounted) showAppMessage(context, 'PIN salvato');
+              }
+            },
+          ),
+          if (localLock.pinEnabled)
+            ListTile(
+              leading: const Icon(Icons.lock_open_outlined),
+              title: const Text('Disattiva PIN'),
+              onTap: () async {
+                final value = await askPin(
+                  context,
+                  title: 'Inserisci il PIN attuale',
+                );
+                if (value == null) return;
+                try {
+                  await ref
+                      .read(localUnlockProvider.notifier)
+                      .disablePin(value);
+                } catch (_) {
+                  if (context.mounted) {
+                    showAppMessage(context, 'PIN non corretto');
+                  }
+                }
+              },
+            ),
           const Divider(),
           const ListTile(
             leading: Icon(Icons.info_outline),

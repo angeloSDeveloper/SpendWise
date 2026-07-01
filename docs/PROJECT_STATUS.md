@@ -56,6 +56,9 @@ Per ogni intervento futuro:
 
 ## Funzioni parziali
 
+- Sicurezza locale: PIN applicativo derivato con sale casuale e SHA-256,
+  biometria alternativa e schermata di sblocco all'avvio implementati. APK
+  installato sul dispositivo fisico; resta il collaudo manuale.
 - Android mobile: eliminazione abbonamenti con totale immediato e undo,
   sblocco biometrico della copia locale, OCR carburante on-device e foto
   manutenzioni disponibili nelle UI mobile. APK installato su Moto g82;

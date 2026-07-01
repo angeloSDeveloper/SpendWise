@@ -31,6 +31,7 @@ dependencies:
   # Serialization
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
+  crypto: ^3.0.6
 
   # Secure storage
   flutter_secure_storage: ^9.0.0

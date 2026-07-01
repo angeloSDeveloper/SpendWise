@@ -5,6 +5,17 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 1 luglio 2026
 
+### PIN applicativo
+
+- Aggiunta in Sicurezza la configurazione di un PIN numerico di almeno 4
+  cifre, con conferma, modifica e disattivazione previa verifica.
+- Il PIN non viene conservato in chiaro: sale casuale e hash SHA-256 sono
+  salvati nello storage sicuro del dispositivo.
+- Aggiunta schermata di sblocco all'avvio con PIN oppure biometria.
+- Logout e sessione server non cancellano la configurazione PIN locale.
+- Analisi pulita, 34 test superati, build web/APK riuscite e APK installato
+  sul Moto g82 5G.
+
 ### Rifiniture Android, biometria e acquisizione immagini
 
 - Gli abbonamenti con undo vengono rimossi subito dalla lista e dal totale;

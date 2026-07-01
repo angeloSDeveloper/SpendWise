@@ -12,6 +12,8 @@ Legenda:
 
 ## Problemi prioritari
 
+- [-] PIN applicativo di almeno 4 cifre implementato con storage sicuro,
+  schermata di sblocco e alternativa biometrica; APK installato, da collaudare.
 - [-] Rifiniture Android del 01/07 implementate: eliminazione abbonamenti
   ottimistica, biometria locale, OCR rifornimenti e foto manutenzioni mobile.
   APK installato; resta collaudo manuale completo sul telefono.

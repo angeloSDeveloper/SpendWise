@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
 import 'package:spendwise/data/remote/api_client.dart';
@@ -50,19 +49,8 @@ class AuthRepositoryImpl implements AuthRepository {
     if (raw == null || refreshToken == null) return null;
     final prefs = await SharedPreferences.getInstance();
     final biometrics = prefs.getBool('biometrics_enabled') ?? false;
-    if (biometrics) {
-      try {
-        final unlocked = await LocalAuthentication().authenticate(
-          localizedReason:
-              'Sblocca SpendWise con impronta o riconoscimento biometrico',
-          biometricOnly: true,
-          persistAcrossBackgrounding: true,
-        );
-        if (!unlocked) return null;
-      } catch (_) {
-        return null;
-      }
-    }
+    final pinEnabled = await storage.containsKey(key: 'app_pin_hash');
+    final localProtection = biometrics || pinEnabled;
     try {
       final response = await client.refreshToken({
         'refreshToken': refreshToken,
@@ -77,14 +65,14 @@ class AuthRepositoryImpl implements AuthRepository {
         await prefs.setBool('local_unlock_active', true);
         return User.fromJson(Map<String, dynamic>.from(jsonDecode(raw) as Map));
       }
-      if (biometrics) {
+      if (localProtection) {
         await prefs.setBool('local_unlock_active', true);
         return User.fromJson(Map<String, dynamic>.from(jsonDecode(raw) as Map));
       }
-      await storage.deleteAll();
+      await _clearSession();
       return null;
     } catch (_) {
-      await storage.deleteAll();
+      await _clearSession();
       return null;
     }
   }
@@ -98,7 +86,14 @@ class AuthRepositoryImpl implements AuthRepository {
         'local_unlock_active',
         false,
       );
-      await storage.deleteAll();
+      await _clearSession();
     }
+  }
+
+  Future<void> _clearSession() async {
+    await storage.delete(key: AppConstants.kAccessTokenKey);
+    await storage.delete(key: AppConstants.kRefreshTokenKey);
+    await storage.delete(key: AppConstants.kUserIdKey);
+    await storage.delete(key: _userKey);
   }
 }
