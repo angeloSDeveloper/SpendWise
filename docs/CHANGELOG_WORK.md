@@ -18,6 +18,9 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
   mobile; nessuna immagine OCR viene inviata a servizi esterni.
 - `flutter analyze` pulito, 32 test superati, build web e APK release riuscite.
 - APK aggiornato installato e avviato su Moto g82 5G.
+- Promossi con fast-forward ramo feature, `dev` e `main`; web app e Worker
+  pubblicati in produzione con versione
+  `f474aeb9-7722-41d7-90cc-574bd30a124e`.
 
 ### Prima base local-first e Android
 
