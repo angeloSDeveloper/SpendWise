@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
 import 'package:spendwise/data/local/database.dart';
@@ -93,7 +95,8 @@ enum SyncStatus { synced, pending, syncing, offline, error }
 final syncStatusProvider = StateProvider((ref) => SyncStatus.synced);
 
 class SyncService {
-  SyncService(this.ref, this.database, this.api) {
+  SyncService(this.ref, this.database, this.api, this.dio, this.storage) {
+    scheduleMicrotask(sync);
     _timer = Timer.periodic(
       const Duration(seconds: AppConstants.syncIntervalSeconds),
       (_) => sync(),
@@ -102,8 +105,21 @@ class SyncService {
   final Ref ref;
   final AppDatabase database;
   final SyncApiClient api;
+  final Dio dio;
+  final FlutterSecureStorage storage;
   Timer? _timer;
   Future<void> sync() async {
+    final prefs = await SharedPreferences.getInstance();
+    final backupEnabled = prefs.getBool('cloud_backup_enabled') ?? true;
+    final userId =
+        await storage.read(key: AppConstants.kUserIdKey) ?? 'local-device';
+    if (!backupEnabled) {
+      final pending = await database.offlineRequestCount(userId);
+      ref.read(syncStatusProvider.notifier).state = pending > 0
+          ? SyncStatus.pending
+          : SyncStatus.synced;
+      return;
+    }
     final connectivity = await Connectivity().checkConnectivity();
     if (connectivity.contains(ConnectivityResult.none)) {
       ref.read(syncStatusProvider.notifier).state = SyncStatus.offline;
@@ -111,6 +127,27 @@ class SyncService {
     }
     ref.read(syncStatusProvider.notifier).state = SyncStatus.syncing;
     try {
+      final requests = await database.pendingOfflineRequests(userId);
+      for (final request in requests) {
+        try {
+          final query = Map<String, dynamic>.from(
+            jsonDecode(request.query) as Map,
+          );
+          await dio.request<dynamic>(
+            request.path,
+            data: request.payload == null ? null : jsonDecode(request.payload!),
+            queryParameters: query,
+            options: Options(
+              method: request.method,
+              extra: const {'offlineReplay': true},
+            ),
+          );
+          await database.removeOfflineRequest(request.id);
+        } catch (_) {
+          await database.incrementOfflineAttempts(request.id);
+          rethrow;
+        }
+      }
       final queue = await database.pendingSync();
       if (queue.isNotEmpty) {
         await api.push({
@@ -138,10 +175,14 @@ class SyncService {
 }
 
 final syncServiceProvider = Provider((ref) {
+  final dioClient = ref.watch(dioClientProvider);
+  final storage = ref.watch(secureStorageProvider);
   final service = SyncService(
     ref,
     ref.watch(databaseProvider),
-    SyncApiClient(ref.watch(dioClientProvider).dio),
+    SyncApiClient(dioClient.dio),
+    dioClient.dio,
+    storage,
   );
   ref.onDispose(service.dispose);
   return service;

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
 import 'package:spendwise/data/remote/api_client.dart';
@@ -24,6 +25,7 @@ class AuthRepositoryImpl implements AuthRepository {
       key: _userKey,
       value: jsonEncode(response.user.toJson()),
     );
+    await storage.write(key: AppConstants.kUserIdKey, value: response.user.id);
     return response.user;
   }
 
@@ -48,6 +50,15 @@ class AuthRepositoryImpl implements AuthRepository {
       });
       await _save(Future.value(response));
       return response.user;
+    } on DioException catch (error) {
+      if (error.type == DioExceptionType.connectionError ||
+          error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.sendTimeout) {
+        return User.fromJson(Map<String, dynamic>.from(jsonDecode(raw) as Map));
+      }
+      await storage.deleteAll();
+      return null;
     } catch (_) {
       await storage.deleteAll();
       return null;

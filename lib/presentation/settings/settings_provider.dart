@@ -24,6 +24,7 @@ class SettingsState {
     this.localeCode = 'it',
     this.swipeDirection = 'left',
     this.bannerDurationSeconds = 10,
+    this.cloudBackupEnabled = true,
   });
   final ThemeMode themeMode;
   final String? avatarData;
@@ -36,6 +37,7 @@ class SettingsState {
   final String localeCode;
   final String swipeDirection;
   final int bannerDurationSeconds;
+  final bool cloudBackupEnabled;
 
   SettingsState copyWith({
     ThemeMode? themeMode,
@@ -56,6 +58,7 @@ class SettingsState {
     String? localeCode,
     String? swipeDirection,
     int? bannerDurationSeconds,
+    bool? cloudBackupEnabled,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     avatarData: clearAvatar ? null : avatarData ?? this.avatarData,
@@ -75,6 +78,7 @@ class SettingsState {
     localeCode: localeCode ?? this.localeCode,
     swipeDirection: swipeDirection ?? this.swipeDirection,
     bannerDurationSeconds: bannerDurationSeconds ?? this.bannerDurationSeconds,
+    cloudBackupEnabled: cloudBackupEnabled ?? this.cloudBackupEnabled,
   );
 }
 
@@ -111,6 +115,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       localeCode: prefs.getString('locale_code') ?? 'it',
       swipeDirection: prefs.getString('swipe_direction') ?? 'left',
       bannerDurationSeconds: bannerDurationSeconds,
+      cloudBackupEnabled: prefs.getBool('cloud_backup_enabled') ?? true,
     );
   }
 
@@ -230,6 +235,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     state = state.copyWith(bannerDurationSeconds: value);
     (await SharedPreferences.getInstance()).setInt(
       'banner_duration_seconds',
+      value,
+    );
+  }
+
+  Future<void> setCloudBackup(bool value) async {
+    state = state.copyWith(cloudBackupEnabled: value);
+    (await SharedPreferences.getInstance()).setBool(
+      'cloud_backup_enabled',
       value,
     );
   }

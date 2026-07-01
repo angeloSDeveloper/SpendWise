@@ -268,6 +268,31 @@ class SettingsScreen extends ConsumerWidget {
                   .setModule(module.key, value),
             ),
           const SizedBox(height: 20),
+          Text('Dati e backup', style: Theme.of(context).textTheme.titleLarge),
+          SwitchListTile(
+            secondary: const Icon(Icons.cloud_sync_outlined),
+            title: const Text('Backup sul profilo'),
+            subtitle: Text(
+              settings.cloudBackupEnabled
+                  ? 'I dati restano sul dispositivo e vengono copiati online'
+                  : 'Solo dispositivo: le modifiche restano in attesa',
+            ),
+            value: settings.cloudBackupEnabled,
+            onChanged: (value) async {
+              await ref.read(settingsProvider.notifier).setCloudBackup(value);
+              if (value) {
+                await ref.read(syncServiceProvider).sync();
+              }
+            },
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'SpendWise salva sempre una copia locale. Attivando il backup '
+              'puoi ripristinare i dati con il tuo account e usarli su più dispositivi.',
+            ),
+          ),
+          const SizedBox(height: 20),
           Text('Notifiche', style: Theme.of(context).textTheme.titleLarge),
           SwitchListTile(
             secondary: const Icon(Icons.notifications_active_outlined),

@@ -149,6 +149,7 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
+    ref.watch(syncServiceProvider);
     final sync = ref.watch(syncStatusProvider);
     final data = ref.watch(dashboardDataProvider);
     final modules = ref.watch(settingsProvider).visibleModules;

@@ -52,6 +52,11 @@ Per ogni intervento futuro:
 
 ## Funzioni parziali
 
+- Local-first e Android sul ramo `feature/local-first-android`: dati API
+  memorizzati in IndexedDB/SQLite, operazioni offline accodate, backup profilo
+  disattivabile e sessione offline predisposti. APK release generato,
+  installato e avviato su Pixel 7 emulato. Restano accesso completamente
+  anonimo, conflitti multi-dispositivo e collaudo autenticato su telefono.
 - Pacchetto UI/tester: annullamento pagamento rate, swipe con cestino e undo,
   form mobile compatti, quattro lingue principali e dashboard tester
   implementati, verificati e pubblicati. Resta il collaudo visivo completo.
@@ -80,6 +85,10 @@ Per ogni intervento futuro:
 
 ## Funzioni mancanti
 
+- Modalità locale senza aver mai creato un account e procedura successiva per
+  collegare il database del dispositivo a un indirizzo email.
+- Risoluzione guidata dei conflitti tra modifiche concorrenti da più
+  dispositivi.
 - CRUD dei rifornimenti.
 - Notifiche Web Push/FCM reali.
 - Test end-to-end e copertura widget delle nuove funzioni.

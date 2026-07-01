@@ -4,6 +4,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:retrofit/retrofit.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
+import 'package:spendwise/data/local/database.dart';
+import 'package:spendwise/data/local/offline_store.dart';
+import 'package:spendwise/data/remote/offline_interceptor.dart';
 import 'package:spendwise/domain/models/auth_tokens.dart';
 import 'package:spendwise/domain/models/daily_expense.dart';
 import 'package:spendwise/domain/models/fuel_entry.dart';
@@ -53,8 +56,9 @@ abstract class AuthResponse with _$AuthResponse {
 }
 
 class DioClient {
-  DioClient({FlutterSecureStorage? storage})
-    : storage = storage ?? const FlutterSecureStorage() {
+  DioClient({FlutterSecureStorage? storage, OfflineStore? offlineStore})
+    : storage = storage ?? const FlutterSecureStorage(),
+      offlineStore = offlineStore ?? OfflineStore(AppDatabase.instance) {
     dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.apiBaseUrl,
@@ -69,6 +73,9 @@ class DioClient {
         onError: _refreshAndRetry,
       ),
     );
+    dio.interceptors.add(
+      OfflineInterceptor(store: this.offlineStore, storage: this.storage),
+    );
     if (kDebugMode) {
       dio.interceptors.add(
         LogInterceptor(requestBody: true, responseBody: true),
@@ -77,6 +84,7 @@ class DioClient {
   }
   late final Dio dio;
   final FlutterSecureStorage storage;
+  final OfflineStore offlineStore;
   Future<String>? _refreshFuture;
   Future<void> _authorize(
     RequestOptions options,

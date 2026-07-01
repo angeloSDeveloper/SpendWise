@@ -191,6 +191,33 @@ class SyncQueueTable extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+class ApiCacheTable extends Table {
+  @override
+  String get tableName => 'api_cache';
+  TextColumn get cacheKey => text()();
+  TextColumn get userId => text()();
+  TextColumn get path => text()();
+  TextColumn get payload => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+  @override
+  Set<Column<Object>> get primaryKey => {cacheKey};
+}
+
+class OfflineRequestsTable extends Table {
+  @override
+  String get tableName => 'offline_requests';
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get method => text()();
+  TextColumn get path => text()();
+  TextColumn get query => text()();
+  TextColumn get payload => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     CategoriesTable,
@@ -203,13 +230,16 @@ class SyncQueueTable extends Table {
     FuelEntriesTable,
     VehicleMaintenanceTable,
     SyncQueueTable,
+    ApiCacheTable,
+    OfflineRequestsTable,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase._() : super(openDatabase());
+  AppDatabase.forTesting(super.executor);
   static final AppDatabase instance = AppDatabase._();
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (migrator) => migrator.createAll(),
@@ -231,6 +261,10 @@ class AppDatabase extends _$AppDatabase {
           installmentPlansTable,
           installmentPlansTable.endDate,
         );
+      }
+      if (from < 5) {
+        await migrator.createTable(apiCacheTable);
+        await migrator.createTable(offlineRequestsTable);
       }
     },
   );
@@ -260,6 +294,59 @@ class AppDatabase extends _$AppDatabase {
   )..orderBy([(row) => OrderingTerm.asc(row.createdAt)])).get();
   Future<void> removeSync(Iterable<String> ids) =>
       (delete(syncQueueTable)..where((row) => row.id.isIn(ids))).go();
+
+  Future<ApiCacheTableData?> cachedResponse(String key) => (select(
+    apiCacheTable,
+  )..where((row) => row.cacheKey.equals(key))).getSingleOrNull();
+
+  Future<void> cacheResponse({
+    required String key,
+    required String userId,
+    required String path,
+    required String payload,
+  }) => into(apiCacheTable).insertOnConflictUpdate(
+    ApiCacheTableCompanion.insert(
+      cacheKey: key,
+      userId: userId,
+      path: path,
+      payload: payload,
+      updatedAt: DateTime.now(),
+    ),
+  );
+
+  Future<List<ApiCacheTableData>> cachedPath(String userId, String path) =>
+      (select(apiCacheTable)
+            ..where((row) => row.userId.equals(userId) & row.path.equals(path)))
+          .get();
+
+  Future<void> enqueueOfflineRequest(OfflineRequestsTableCompanion request) =>
+      into(offlineRequestsTable).insert(request);
+
+  Future<List<OfflineRequestsTableData>> pendingOfflineRequests(
+    String userId,
+  ) =>
+      (select(offlineRequestsTable)
+            ..where((row) => row.userId.equals(userId))
+            ..orderBy([(row) => OrderingTerm.asc(row.createdAt)]))
+          .get();
+
+  Future<void> removeOfflineRequest(String id) =>
+      (delete(offlineRequestsTable)..where((row) => row.id.equals(id))).go();
+
+  Future<void> incrementOfflineAttempts(String id) async {
+    await customStatement(
+      'UPDATE offline_requests SET attempts = attempts + 1 WHERE id = ?',
+      [id],
+    );
+  }
+
+  Future<int> offlineRequestCount(String userId) async {
+    final count = offlineRequestsTable.id.count();
+    final query = selectOnly(offlineRequestsTable)
+      ..addColumns([count])
+      ..where(offlineRequestsTable.userId.equals(userId));
+    return (await query.getSingle()).read(count) ?? 0;
+  }
 }
 
 final databaseProvider = Provider<AppDatabase>((ref) => AppDatabase.instance);

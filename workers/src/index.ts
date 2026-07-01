@@ -102,7 +102,7 @@ for (const kind of ['fuel','maintenance','accessories'] as const) {
     const owns = await c.env.DB.prepare('SELECT id FROM vehicles WHERE id = ? AND user_id = ?').bind(c.req.param('id'), c.get('userId')).first();
     if (!owns) return c.json({ data: null, error: 'Veicolo non trovato' }, 404);
     const body = await c.req.json<Record<string, unknown>>().catch(() => ({} as Record<string, unknown>));
-    const id = crypto.randomUUID(); const now = Date.now();
+    const id = typeof body.id === 'string' ? body.id : crypto.randomUUID(); const now = Date.now();
     await c.env.DB.prepare(`INSERT INTO ${config.table} (id,vehicle_id,user_id,${config.fields.join(',')},created_at) VALUES (${Array(config.fields.length + 4).fill('?').join(',')})`)
       .bind(id, c.req.param('id'), c.get('userId'), ...config.fields.map((field) => bodyValue(body, field)), now).run();
     const row = await c.env.DB.prepare(`SELECT * FROM ${config.table} WHERE id = ?`).bind(id).first<Record<string, unknown>>();

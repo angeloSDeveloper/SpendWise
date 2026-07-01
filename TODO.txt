@@ -12,6 +12,11 @@ Legenda:
 
 ## Problemi prioritari
 
+- [-] Architettura local-first e Android implementata sul ramo
+  `feature/local-first-android`: cache locale, coda offline, backup account
+  opzionale e APK installato/avviato su emulatore. Restano collaudo autenticato
+  su telefono, deploy Worker, modalità senza account e risoluzione conflitti
+  multi-dispositivo.
 - [-] Intervento UI/tester del 01/07 implementato, verificato e pubblicato.
   Restano il collaudo visivo completo e l'integrazione push Web Push/FCM reale.
 - [-] Pacchetto handoff del 29/06 implementato e verificato automaticamente:

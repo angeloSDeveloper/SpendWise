@@ -5,6 +5,37 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 1 luglio 2026
 
+### Prima base local-first e Android
+
+- Creato il ramo isolato `feature/local-first-android`; produzione, `main` e
+  `dev` non sono stati modificati.
+- Aggiunte in Drift le tabelle persistenti `api_cache` e
+  `offline_requests`, disponibili in IndexedDB sul web e SQLite su Android.
+- Le letture dei moduli principali usano la cache quando la rete non è
+  disponibile; le scritture aggiornano subito la copia locale e vengono
+  accodate in ordine.
+- Aggiunta in Impostazioni l'opzione `Backup sul profilo`: disattivandola i
+  dati restano sul dispositivo, riattivandola parte l'invio della coda.
+- Le scritture vengono confermate sul dispositivo prima dell'invio; il backup
+  tenta la coda all'apertura della dashboard e ogni 30 secondi.
+- Separati cache e operazioni pendenti per utente.
+- Predisposto il Worker ad accettare gli id locali dei registri veicolo. La
+  modifica server resta da pubblicare quando il ramo verrà approvato.
+- Conservata una sessione già valida quando l'app viene riaperta senza rete.
+- Creato il progetto Android con application id
+  `it.lopreteangelo.spendwise`, permessi Internet/notifiche, supporto
+  biometrico e configurazione notifiche locali.
+- Generato `app-release.apk` con API di produzione, firma di test e dimensione
+  di circa 81 MB.
+- APK installato e avviato realmente su emulatore Pixel 7; verificata la
+  schermata login mobile e il processo applicativo.
+- `flutter analyze`: nessun problema.
+- `flutter test`: 31 test superati, inclusi cache per utente, mutazioni locali
+  e ordine della coda.
+- Build web release e build APK release completate.
+- Restano parziali la modalità completamente anonima, la gestione visuale dei
+  conflitti multi-dispositivo e il collaudo autenticato/offline su telefono.
+
 ### UX mobile, eliminazione sicura e area tester
 
 - Aggiunto annullamento dell'ultima rata segnata come pagata, con ripristino
