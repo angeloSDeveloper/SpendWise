@@ -7,7 +7,7 @@ dipendere dalla cronologia della chat locale.
 
 - Git
 - Node.js 20 o superiore
-- Accesso al repository GitHub `angeloSDeveloper/SpendWise`
+- Accesso al repository GitHub del progetto
 
 Flutter non deve essere installato globalmente: lo script di bootstrap lo
 scarica nella cartella locale `.tooling`, che non viene versionata su GitHub.
@@ -17,7 +17,7 @@ scarica nella cartella locale `.tooling`, che non viene versionata su GitHub.
 Clona il repository:
 
 ```powershell
-git clone https://github.com/angeloSDeveloper/SpendWise.git
+git clone <repository-url>
 cd SpendWise
 ```
 

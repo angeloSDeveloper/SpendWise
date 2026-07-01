@@ -96,10 +96,7 @@ class TesterDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
-    final allowed =
-        user != null &&
-        ({'tester', 'admin'}.contains(user.role) ||
-            user.email == 'acampione97@gmail.com');
+    final allowed = user != null && {'tester', 'admin'}.contains(user.role);
     if (!allowed) {
       return const Scaffold(
         body: Center(child: Text('Area riservata ai tester')),

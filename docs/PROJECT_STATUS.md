@@ -29,6 +29,10 @@ Per ogni intervento futuro:
   `docs/deployment.md`.
 - La cronologia di una chat locale Codex non deve essere considerata l'unica
   fonte di contesto.
+- Identità del proprietario: nessun nome, cognome o indirizzo email deve
+  comparire nel codice o nella UI. Package e dati dimostrativi devono essere
+  neutri; gli URL infrastrutturali attuali saranno migrati al dominio
+  ufficiale quando disponibile.
 
 ## Funzioni completate
 

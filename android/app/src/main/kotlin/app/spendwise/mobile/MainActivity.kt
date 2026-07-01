@@ -1,4 +1,4 @@
-package it.lopreteangelo.spendwise
+package app.spendwise.mobile
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

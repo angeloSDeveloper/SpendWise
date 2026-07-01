@@ -22,8 +22,8 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - Predisposto il Worker ad accettare gli id locali dei registri veicolo. La
   modifica server resta da pubblicare quando il ramo verrà approvato.
 - Conservata una sessione già valida quando l'app viene riaperta senza rete.
-- Creato il progetto Android con application id
-  `it.lopreteangelo.spendwise`, permessi Internet/notifiche, supporto
+- Creato il progetto Android con application id neutro
+  `app.spendwise.mobile`, permessi Internet/notifiche, supporto
   biometrico e configurazione notifiche locali.
 - Generato `app-release.apk` con API di produzione, firma di test e dimensione
   di circa 81 MB.
@@ -35,6 +35,17 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - Build web release e build APK release completate.
 - Restano parziali la modalità completamente anonima, la gestione visuale dei
   conflitti multi-dispositivo e il collaudo autenticato/offline su telefono.
+
+### Identità neutra del progetto
+
+- Stabilito che web e Android restano un unico progetto Flutter; Android
+  Studio è uno strumento complementare per SDK, emulatori, log e firma.
+- Sostituito il package Android personale con `app.spendwise.mobile` prima di
+  qualsiasi pubblicazione sul Play Store.
+- Rimossi email, nomi personali e fallback account dall'autorizzazione tester,
+  dagli esempi UI e dalla migrazione riproducibile.
+- Aggiunta in `AGENTS.md` la regola permanente che vieta nuovi riferimenti
+  personali e richiede la migrazione degli URL temporanei al futuro dominio.
 
 ### UX mobile, eliminazione sicura e area tester
 
@@ -52,7 +63,7 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - Aggiunta selezione lingua italiano, inglese, spagnolo e tedesco; localizzati
   navigazione, componenti Material e stato sincronizzazione. La traduzione
   completa dei testi storici resta parziale.
-- Aggiunto ruolo D1 `tester`, assegnato dalla migrazione all'account di Angelo,
+- Aggiunto ruolo D1 `tester`, assegnato all'account amministrativo,
   e dashboard riservata con quattro casi di notifica e stato persistente
   `da testare`, `superato`, `parziale` o `KO`.
 - I test notifiche usano la notifica di sistema del dispositivo/browser

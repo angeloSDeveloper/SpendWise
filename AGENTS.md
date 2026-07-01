@@ -22,7 +22,7 @@ una funzione se in questi file risulta parziale, da verificare o mancante.
 - L'app si chiama SpendWise.
 - La versione attuale e' `1.0.0`.
 - Non cambiare versione in `pubspec.yaml` o in `AppConstants.appVersion`
-  finche' Angelo non lo chiede esplicitamente.
+  finche' il proprietario del progetto non lo chiede esplicitamente.
 - Mantieni l'app in italiano.
 - Mantieni l'API base con suffisso `/api`:
   `https://spendwise.lopreteangelo97.workers.dev/api`.
@@ -86,7 +86,7 @@ Per Cloudflare usa `npx.cmd` su Windows:
 & 'C:\Program Files\nodejs\npx.cmd' wrangler deploy --env production
 ```
 
-Il deploy va eseguito dalla cartella `workers` e solo quando Angelo chiede di
+Il deploy va eseguito dalla cartella `workers` e solo quando l'utente chiede di
 rilasciare/pubblicare.
 
 ## Setup su nuovo PC
@@ -111,9 +111,20 @@ powershell -ExecutionPolicy Bypass -File .\tools\bootstrap_windows.ps1
 - Mantieni il codice pulito, leggibile e coerente con lo stile esistente.
 - Evita dipendenze inutili.
 
-## Preferenze operative di Angelo
+## Identita e riferimenti personali
 
-- Angelo preferisce avanzamenti pratici, con spiegazioni brevi e chiare.
+- Non aggiungere nel codice, nell'interfaccia, nei package id, nei dati di
+  test o nella documentazione nomi, cognomi o email personali del proprietario.
+- Usa ruoli (`admin`, `tester`), nomi neutri e configurazione esterna.
+- L'endpoint Cloudflare e il repository GitHub attuali sono riferimenti
+  infrastrutturali temporanei: quando sara disponibile il dominio ufficiale,
+  migrarli e rimuovere dal repository ogni identificativo personale residuo.
+- Il package Android deve restare neutro e non derivare dal nome del
+  proprietario.
+
+## Preferenze operative del proprietario
+
+- Sono preferiti avanzamenti pratici, con spiegazioni brevi e chiare.
 - Per modifiche grosse crea un ramo separato, cosi' si puo' tornare facilmente
   alla versione stabile.
 - Se qualcosa e' incompleto, dichiaralo esplicitamente invece di considerarlo

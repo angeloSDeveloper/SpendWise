@@ -39,7 +39,7 @@ web e SQLite su Android.
 
 ## Android
 
-- Application id: `it.lopreteangelo.spendwise`.
+- Application id provvisorio neutro: `app.spendwise.mobile`.
 - Internet e notifiche Android 13+ sono dichiarati nel manifest.
 - L'activity usa `FlutterFragmentActivity` per la biometria.
 - Il progetto Android abilita il desugaring richiesto dalle notifiche locali.

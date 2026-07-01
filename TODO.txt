@@ -12,6 +12,8 @@ Legenda:
 
 ## Problemi prioritari
 
+- [ ] Quando sarà acquistato il dominio ufficiale, migrare URL API, Worker,
+  documentazione e repository eliminando ogni riferimento personale residuo.
 - [-] Architettura local-first e Android implementata sul ramo
   `feature/local-first-android`: cache locale, coda offline, backup account
   opzionale e APK installato/avviato su emulatore. Restano collaudo autenticato
@@ -101,9 +103,8 @@ Legenda:
 - [-] Durata banner configurabile da 0 (disattivati) a 15 secondi e chiusura
   al tap, verificata automaticamente.
 - [-] Dashboard tester spostata in un pulsante accanto alle Impostazioni;
-  icone uniformate e pulsante test posizionato per ultimo a destra. Visibile
-  all'account di Angelo anche prima della migrazione, mentre il salvataggio
-  esiti richiede il deploy del Worker.
+  icone uniformate e pulsante test posizionato per ultimo a destra. Accesso
+  regolato esclusivamente dai ruoli `tester` e `admin`.
 - [x] Anteprima avatar compatta sempre visibile durante lo scorrimento dei
   controlli su mobile.
 - [x] Feature `feature/avatar-builder-profile`: nuovo builder avatar premium

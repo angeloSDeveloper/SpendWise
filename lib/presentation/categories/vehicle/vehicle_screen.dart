@@ -418,7 +418,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          _requiredField(name, 'Nome / descrizione', 'Es. Auto di Angelo'),
+          _requiredField(name, 'Nome / descrizione', 'Es. Auto principale'),
           _field(brand, 'Marca', hint: 'Es. Fiat'),
           _field(model, 'Modello e allestimento', hint: 'Es. Panda 1.2 Lounge'),
           TextFormField(
