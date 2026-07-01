@@ -1,6 +1,6 @@
 # TODO SpendWise
 
-Ultimo audit: 29/06/2026
+Ultimo audit: 01/07/2026
 Storico: `docs/CHANGELOG_WORK.md`
 Stato corrente: `docs/PROJECT_STATUS.md`
 
@@ -12,6 +12,10 @@ Legenda:
 
 ## Problemi prioritari
 
+- [-] Pacchetto handoff del 29/06 implementato e verificato automaticamente:
+  fine contratto abbonamenti nullable, piani rateali multipli atomici, scadenza
+  finale persistita, registro manutenzioni semplificato e capacita serbatoio.
+  Restano migrazioni/deploy Cloudflare e collaudo visivo manuale.
 - [-] Verificare sul browser desktop dell'utente che il rinnovo automatico
   della sessione abbia eliminato definitivamente gli errori `401`. Migliorata
   la gestione del salvataggio rate: se la sessione scade viene mostrato un
@@ -35,6 +39,10 @@ Legenda:
 - [x] Avanzamento automatico della prossima rata quando viene segnata pagata.
 - [x] Nel form rate, data iniziale/prima rata e scadenza finale calcolata in
   automatico in base a frequenza e numero rate.
+- [-] Creazione atomica di due o piu piani con gestore, calendario e numero
+  rate comuni; verificata localmente, da pubblicare sul Worker.
+- [-] Scadenza finale persistita e visibile nel dettaglio; verificata
+  localmente, da migrare e pubblicare in produzione.
 - [-] Promemoria visivi interni all'app in base ai giorni configurati.
 - [ ] Notifiche push reali anche quando SpendWise non è aperto.
 
@@ -45,6 +53,10 @@ Legenda:
 - [x] Archiviazione, elenco separato, ripristino.
 - [x] Dettaglio/modifica/eliminazione manutenzioni.
 - [x] Dettaglio/modifica/eliminazione accessori.
+- [-] Registro manutenzioni ridotto a data, intervento e prezzo; dettaglio
+  completo conservato, da collaudare visivamente.
+- [-] Capacita serbatoio in creazione/modifica veicolo e precompilazione litri
+  con pieno completo; verificata automaticamente, da pubblicare.
 - [ ] Dettaglio/modifica/eliminazione rifornimenti.
 
 ## Impostazioni e personalizzazione

@@ -86,6 +86,7 @@ class InstallmentPlansTable extends Table {
   TextColumn get frequency => text()();
   DateTimeColumn get startDate => dateTime()();
   DateTimeColumn get nextDueDate => dateTime().nullable()();
+  DateTimeColumn get endDate => dateTime().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   TextColumn get note => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
@@ -121,6 +122,7 @@ class VehiclesTable extends Table {
   TextColumn get model => text().nullable()();
   IntColumn get year => integer().nullable()();
   TextColumn get fuelType => text().nullable()();
+  RealColumn get tankCapacityLiters => real().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -207,7 +209,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase._() : super(openDatabase());
   static final AppDatabase instance = AppDatabase._();
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (migrator) => migrator.createAll(),
@@ -216,6 +218,18 @@ class AppDatabase extends _$AppDatabase {
         await migrator.addColumn(
           vehicleMaintenanceTable,
           vehicleMaintenanceTable.itemsJson,
+        );
+      }
+      if (from < 3) {
+        await migrator.addColumn(
+          vehiclesTable,
+          vehiclesTable.tankCapacityLiters,
+        );
+      }
+      if (from < 4) {
+        await migrator.addColumn(
+          installmentPlansTable,
+          installmentPlansTable.endDate,
         );
       }
     },

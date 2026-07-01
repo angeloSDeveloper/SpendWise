@@ -23,13 +23,19 @@ app.post('/api/auth/logout', logout);
 const resources = {
   expenses: { table: 'daily_expenses', fields: ['category_id','amount','description','date','note'] },
   subscriptions: { table: 'subscriptions', fields: ['name','amount','currency','billing_cycle','billing_day','start_date','end_date','next_due_date','recurrence_months','url','icon','color','is_active','note'] },
-  installments: { table: 'installment_plans', fields: ['name','provider','total_amount','installment_amount','total_installments','paid_installments','frequency','start_date','next_due_date','is_active','note'] },
-  vehicles: { table: 'vehicles', fields: ['name','plate','brand','model','year','fuel_type','is_archived'] },
+  installments: { table: 'installment_plans', fields: ['name','provider','total_amount','installment_amount','total_installments','paid_installments','frequency','start_date','next_due_date','end_date','is_active','note'] },
+  vehicles: { table: 'vehicles', fields: ['name','plate','brand','model','year','fuel_type','tank_capacity_liters','is_archived'] },
 } as const;
 
+const camelKey = (snake: string) =>
+  snake.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase());
+const hasBodyValue = (body: Record<string, unknown>, snake: string) =>
+  Object.prototype.hasOwnProperty.call(body, snake)
+  || Object.prototype.hasOwnProperty.call(body, camelKey(snake));
 const bodyValue = (body: Record<string, unknown>, snake: string) => {
-  const camel = snake.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase());
-  return body[snake] ?? body[camel] ?? null;
+  if (Object.prototype.hasOwnProperty.call(body, snake)) return body[snake];
+  const camel = camelKey(snake);
+  return Object.prototype.hasOwnProperty.call(body, camel) ? body[camel] : null;
 };
 const serialize = (row: Record<string, unknown>) => Object.fromEntries(Object.entries(row).map(([key, value]) => [
   key.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase()),
@@ -66,7 +72,7 @@ for (const [path, config] of Object.entries(resources)) {
   });
   app.put(`/api/${path}/:id`, async (c) => {
     const body = await c.req.json<Record<string, unknown>>().catch(() => ({} as Record<string, unknown>));
-    const fields = config.fields.filter((field) => bodyValue(body, field) !== null);
+    const fields = config.fields.filter((field) => hasBodyValue(body, field));
     if (!fields.length) return c.json({ data: null, error: 'Nessun campo da aggiornare' }, 400);
     const set = fields.map((field) => `${field} = ?`);
     if (config.table !== 'vehicles') set.push('updated_at = ?');
@@ -104,7 +110,7 @@ for (const kind of ['fuel','maintenance','accessories'] as const) {
   });
   app.put(`/api/vehicles/:id/${kind}/:childId`, async (c) => {
     const body = await c.req.json<Record<string, unknown>>().catch(() => ({} as Record<string, unknown>));
-    const fields = config.fields.filter((field) => bodyValue(body, field) !== null);
+    const fields = config.fields.filter((field) => hasBodyValue(body, field));
     if (!fields.length) return c.json({ data: null, error: 'Nessun campo da aggiornare' }, 400);
     const result = await c.env.DB.prepare(`UPDATE ${config.table} SET ${fields.map((f) => `${f} = ?`).join(',')} WHERE id = ? AND vehicle_id = ? AND user_id = ?`)
       .bind(...fields.map((field) => bodyValue(body, field)), c.req.param('childId'), c.req.param('id'), c.get('userId')).run();
@@ -117,23 +123,81 @@ for (const kind of ['fuel','maintenance','accessories'] as const) {
   });
 }
 
+const installmentDueAt = (
+  startTimestamp: number,
+  frequency: string,
+  installmentIndex: number,
+) => {
+  const start = new Date(startTimestamp);
+  if (frequency === 'weekly') return startTimestamp + 7 * installmentIndex * 86400000;
+  if (frequency === 'biweekly') return startTimestamp + 14 * installmentIndex * 86400000;
+  const calendarDate = new Date(start.getTime() + 12 * 60 * 60 * 1000);
+  const year = calendarDate.getUTCFullYear();
+  const zeroBasedMonth = calendarDate.getUTCMonth() + installmentIndex;
+  const targetYear = year + Math.floor(zeroBasedMonth / 12);
+  const targetMonth = ((zeroBasedMonth % 12) + 12) % 12;
+  const lastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+  return Date.UTC(
+    targetYear,
+    targetMonth,
+    Math.min(calendarDate.getUTCDate(), lastDay),
+  );
+};
+
+app.post('/api/installments/batch', async (c) => {
+  const body = await c.req.json<{ plans?: Record<string, unknown>[] }>()
+    .catch(() => ({} as { plans?: Record<string, unknown>[] }));
+  const plans = body.plans;
+  if (!Array.isArray(plans) || plans.length < 2) {
+    return c.json({ data: null, error: 'Inserisci almeno due acquisti' }, 400);
+  }
+  const required = ['name','total_amount','installment_amount','total_installments','frequency','start_date'];
+  if (plans.some((plan) => required.some((field) => bodyValue(plan, field) == null))) {
+    return c.json({ data: null, error: 'Campi obbligatori mancanti' }, 400);
+  }
+  const invalidPlan = plans.some((plan) =>
+    Number(bodyValue(plan, 'total_amount')) <= 0
+    || Number(bodyValue(plan, 'installment_amount')) <= 0
+    || !Number.isInteger(Number(bodyValue(plan, 'total_installments')))
+    || Number(bodyValue(plan, 'total_installments')) < 1
+    || !['weekly','biweekly','monthly'].includes(String(bodyValue(plan, 'frequency'))),
+  );
+  if (invalidPlan) {
+    return c.json({ data: null, error: 'Dati del piano non validi' }, 400);
+  }
+  const fields = [...resources.installments.fields];
+  const now = Date.now();
+  const rows = plans.map((plan) => {
+    const id = typeof plan.id === 'string' ? plan.id : crypto.randomUUID();
+    return {
+      id,
+      statement: c.env.DB.prepare(
+        `INSERT INTO installment_plans (id,user_id,${fields.join(',')},created_at,updated_at) VALUES (${Array(fields.length + 4).fill('?').join(',')})`,
+      ).bind(id, c.get('userId'), ...fields.map((field) => bodyValue(plan, field)), now, now),
+    };
+  });
+  await c.env.DB.batch(rows.map((row) => row.statement));
+  const created = await c.env.DB.prepare(
+    `SELECT * FROM installment_plans WHERE user_id = ? AND id IN (${rows.map(() => '?').join(',')})`,
+  ).bind(c.get('userId'), ...rows.map((row) => row.id)).all<Record<string, unknown>>();
+  return c.json({ data: created.results.map(serialize), error: null }, 201);
+});
+
 app.post('/api/installments/:id/pay-installment', async (c) => {
   const userId = c.get('userId'); const id = c.req.param('id');
   const plan = await c.env.DB.prepare('SELECT * FROM installment_plans WHERE id = ? AND user_id = ?').bind(id, userId).first<Record<string, unknown>>();
   if (!plan) return c.json({ data: null, error: 'Piano non trovato' }, 404);
   const paid = Number(plan.paid_installments) + 1;
   if (paid > Number(plan.total_installments)) return c.json({ data: null, error: 'Piano già completato' }, 409);
-  const currentDue = new Date(Number(plan.next_due_date || Date.now()));
-  const nextDue = String(plan.frequency) === 'weekly'
-    ? currentDue.getTime() + 7 * 86400000
-    : String(plan.frequency) === 'biweekly'
-      ? currentDue.getTime() + 14 * 86400000
-      : new Date(currentDue.getFullYear(), currentDue.getMonth() + 1, currentDue.getDate()).getTime();
+  const active = paid < Number(plan.total_installments);
+  const nextDue = active
+    ? installmentDueAt(Number(plan.start_date), String(plan.frequency), paid)
+    : null;
   await c.env.DB.batch([
     c.env.DB.prepare('INSERT INTO installment_payments (id,plan_id,user_id,installment_number,amount,due_date,paid_date,status) VALUES (?,?,?,?,?,?,?,?)')
       .bind(crypto.randomUUID(), id, userId, paid, plan.installment_amount, plan.next_due_date || Date.now(), Date.now(), 'paid'),
     c.env.DB.prepare('UPDATE installment_plans SET paid_installments = ?, next_due_date = ?, is_active = ?, updated_at = ? WHERE id = ?')
-      .bind(paid, nextDue, paid < Number(plan.total_installments) ? 1 : 0, Date.now(), id),
+      .bind(paid, nextDue, active ? 1 : 0, Date.now(), id),
   ]);
   return c.json({ data: { paidInstallments: paid }, error: null });
 });
@@ -160,7 +224,7 @@ app.post('/api/sync/push', async (c) => {
     let payload: Record<string, unknown>;
     try { payload = typeof operation.payload === 'string' ? JSON.parse(operation.payload) as Record<string, unknown> : operation.payload || {}; }
     catch { return c.json({ data: null, error: 'Payload di sincronizzazione non valido' }, 400); }
-    const fields = config.fields.filter((field) => bodyValue(payload, field) !== null);
+    const fields = config.fields.filter((field) => hasBodyValue(payload, field));
     if (operation.operation === 'insert') {
       const now = Date.now(); const timestampFields = operation.table === 'vehicles' || operation.table === 'fuel_entries' || operation.table === 'vehicle_maintenance' || operation.table === 'vehicle_accessories' ? ['created_at'] : ['created_at','updated_at'];
       const columns = ['id','user_id',...fields,...timestampFields];

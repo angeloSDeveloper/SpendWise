@@ -253,6 +253,22 @@ Future<void> _showPlan(
                 DateFormat('dd/MM/yyyy').format(item.nextDueDate!.toLocal()),
               ),
             ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.flag),
+            title: const Text('Scadenza finale'),
+            trailing: Text(
+              DateFormat('dd/MM/yyyy').format(
+                (item.endDate ??
+                        installmentFinalDueDate(
+                          item.startDate,
+                          item.frequency,
+                          item.totalInstallments,
+                        ))
+                    .toLocal(),
+              ),
+            ),
+          ),
           if (item.isActive)
             FilledButton.icon(
               onPressed: () async {
@@ -276,26 +292,40 @@ class AddInstallmentScreen extends ConsumerStatefulWidget {
   ConsumerState<AddInstallmentScreen> createState() => _AddInstallmentState();
 }
 
+class _InstallmentDraft {
+  _InstallmentDraft();
+
+  final name = TextEditingController();
+  final total = TextEditingController();
+  final installment = TextEditingController();
+
+  void dispose() {
+    name.dispose();
+    total.dispose();
+    installment.dispose();
+  }
+}
+
 class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
-  final name = TextEditingController(),
-      provider = TextEditingController(),
-      total = TextEditingController(),
-      installment = TextEditingController(),
+  final provider = TextEditingController(),
       count = TextEditingController(),
       note = TextEditingController();
+  final drafts = <_InstallmentDraft>[];
   InstallmentFrequency frequency = InstallmentFrequency.monthly;
   DateTime startDate = DateTime.now();
-  bool saving = false;
+  bool saving = false, multiple = false;
 
   @override
   void initState() {
     super.initState();
     final item = widget.existing;
+    final first = _InstallmentDraft();
+    drafts.add(first);
     if (item != null) {
-      name.text = item.name;
+      first.name.text = item.name;
       provider.text = item.provider ?? '';
-      total.text = item.totalAmount.toStringAsFixed(2);
-      installment.text = item.installmentAmount.toStringAsFixed(2);
+      first.total.text = item.totalAmount.toStringAsFixed(2);
+      first.installment.text = item.installmentAmount.toStringAsFixed(2);
       count.text = '${item.totalInstallments}';
       note.text = item.note ?? '';
       frequency = item.frequency;
@@ -316,15 +346,33 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
     _countValue < 1 ? 1 : _countValue,
   );
 
+  double _number(TextEditingController controller) =>
+      double.tryParse(controller.text.replaceAll(',', '.')) ?? 0;
+
+  Map<String, dynamic> _bodyFor(_InstallmentDraft draft, int countValue) => {
+    'name': draft.name.text.trim(),
+    'provider': provider.text.trim(),
+    'totalAmount': _number(draft.total),
+    'installmentAmount': _number(draft.installment),
+    'totalInstallments': countValue,
+    'paidInstallments': _paidInstallments,
+    'frequency': frequency.name,
+    'startDate': _dateOnly(startDate).millisecondsSinceEpoch,
+    'nextDueDate': _nextDue.millisecondsSinceEpoch,
+    'endDate': _finalDue.millisecondsSinceEpoch,
+    'isActive': _paidInstallments < countValue ? 1 : 0,
+    'note': note.text.trim(),
+  };
+
   Future<void> save() async {
-    final totalValue = double.tryParse(total.text.replaceAll(',', '.')) ?? 0;
-    final installmentValue =
-        double.tryParse(installment.text.replaceAll(',', '.')) ?? 0;
     final countValue = int.tryParse(count.text) ?? 0;
-    if (name.text.trim().isEmpty ||
-        totalValue <= 0 ||
-        installmentValue <= 0 ||
-        countValue < 1) {
+    final invalidDraft = drafts.any(
+      (draft) =>
+          draft.name.text.trim().isEmpty ||
+          _number(draft.total) <= 0 ||
+          _number(draft.installment) <= 0,
+    );
+    if (invalidDraft || countValue < 1 || (multiple && drafts.length < 2)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Completa tutti i dati obbligatori')),
       );
@@ -332,23 +380,17 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
     }
     setState(() => saving = true);
     try {
-      final body = {
-        'name': name.text.trim(),
-        'provider': provider.text.trim(),
-        'totalAmount': totalValue,
-        'installmentAmount': installmentValue,
-        'totalInstallments': countValue,
-        'paidInstallments': widget.existing?.paidInstallments ?? 0,
-        'frequency': frequency.name,
-        'startDate': _dateOnly(startDate).millisecondsSinceEpoch,
-        'nextDueDate': _nextDue.millisecondsSinceEpoch,
-        'isActive': _paidInstallments < countValue ? 1 : 0,
-        'note': note.text.trim(),
-      };
       final api = ref.read(installmentsApiProvider);
-      widget.existing == null
-          ? await api.create(body)
-          : await api.update(widget.existing!.id, body);
+      if (multiple) {
+        await api.createBatch({
+          'plans': drafts.map((draft) => _bodyFor(draft, countValue)).toList(),
+        });
+      } else {
+        final body = _bodyFor(drafts.single, countValue);
+        widget.existing == null
+            ? await api.create(body)
+            : await api.update(widget.existing!.id, body);
+      }
       ref.invalidate(installmentsProvider);
       if (mounted) Navigator.pop(context, true);
     } catch (error) {
@@ -367,18 +409,90 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
 
   @override
   void dispose() {
-    for (final controller in [
-      name,
-      provider,
-      total,
-      installment,
-      count,
-      note,
-    ]) {
+    for (final draft in drafts) {
+      draft.dispose();
+    }
+    for (final controller in [provider, count, note]) {
       controller.dispose();
     }
     super.dispose();
   }
+
+  void _setMultiple(bool value) {
+    if (multiple == value) return;
+    setState(() {
+      multiple = value;
+      if (multiple && drafts.length == 1) {
+        drafts.add(_InstallmentDraft());
+      } else if (!multiple) {
+        for (final draft in drafts.skip(1)) {
+          draft.dispose();
+        }
+        drafts.removeRange(1, drafts.length);
+      }
+    });
+  }
+
+  Widget _draftFields(_InstallmentDraft draft, int index) => Card(
+    margin: const EdgeInsets.only(bottom: 12),
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  multiple ? 'Acquisto ${index + 1}' : 'Dati acquisto',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              if (multiple && drafts.length > 2)
+                IconButton(
+                  tooltip: 'Rimuovi acquisto',
+                  onPressed: () => setState(() {
+                    drafts.removeAt(index).dispose();
+                  }),
+                  icon: const Icon(Icons.delete_outline),
+                ),
+            ],
+          ),
+          TextField(
+            controller: draft.name,
+            decoration: const InputDecoration(
+              labelText: 'Prodotto / negozio *',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: draft.total,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(labelText: 'Totale *'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: draft.installment,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Importo rata *',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -390,47 +504,48 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
     body: ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        TextField(
-          controller: name,
-          decoration: const InputDecoration(labelText: 'Nome *'),
-        ),
-        const SizedBox(height: 12),
+        if (widget.existing == null) ...[
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(
+                value: false,
+                icon: Icon(Icons.shopping_bag_outlined),
+                label: Text('Un acquisto'),
+              ),
+              ButtonSegment(
+                value: true,
+                icon: Icon(Icons.inventory_2_outlined),
+                label: Text('Più acquisti'),
+              ),
+            ],
+            selected: {multiple},
+            onSelectionChanged: (value) => _setMultiple(value.first),
+          ),
+          const SizedBox(height: 16),
+        ],
         TextField(
           controller: provider,
-          decoration: const InputDecoration(labelText: 'Fornitore'),
+          decoration: const InputDecoration(
+            labelText: 'Gestore rateale',
+            hintText: 'Es. Klarna',
+          ),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: total,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(labelText: 'Totale *'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: installment,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(labelText: 'Importo rata *'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: count,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Numero rate *'),
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-          ],
+        for (var index = 0; index < drafts.length; index++)
+          _draftFields(drafts[index], index),
+        if (multiple) ...[
+          OutlinedButton.icon(
+            onPressed: () => setState(() => drafts.add(_InstallmentDraft())),
+            icon: const Icon(Icons.add),
+            label: const Text('AGGIUNGI ACQUISTO'),
+          ),
+          const SizedBox(height: 12),
+        ],
+        TextField(
+          controller: count,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Numero rate *'),
+          onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<InstallmentFrequency>(
@@ -503,8 +618,13 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
         const SizedBox(height: 24),
         FilledButton.icon(
           onPressed: saving ? null : save,
-          icon: const Icon(Icons.save),
-          label: const Text('SALVA PIANO'),
+          icon: saving
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.save),
+          label: Text(multiple ? 'SALVA TUTTI I PIANI' : 'SALVA PIANO'),
         ),
       ],
     ),

@@ -1,6 +1,6 @@
 # Stato corrente di SpendWise
 
-Ultimo aggiornamento: 29 giugno 2026
+Ultimo aggiornamento: 1 luglio 2026
 
 Questo file è la fonte principale per capire cosa funziona, cosa è parziale e
 cosa manca. `TODO.txt` contiene le attività operative; `CHANGELOG_WORK.md`
@@ -48,6 +48,11 @@ Per ogni intervento futuro:
 
 ## Funzioni parziali
 
+- Pacchetto handoff del 29 giugno implementato e verificato localmente:
+  aggiornamento nullable della fine contratto, batch atomico dei piani
+  rateali, scadenza finale persistita, registro manutenzioni semplificato e
+  capacita serbatoio. Manca il deploy con le due migrazioni D1 e il collaudo
+  visivo manuale.
 - Sessione desktop: la correzione del rinnovo token è pubblicata, ma va
   confermata sul browser che mostrava il problema.
 - Avatar fotografico: gestione degli errori aggiunta, ma manca il collaudo
@@ -69,6 +74,6 @@ Per ogni intervento futuro:
 
 ## Ultima pubblicazione nota
 
-- Commit precedente: `a86592c`
+- Commit precedente: `5e353a4`
 - Worker: `https://spendwise.lopreteangelo97.workers.dev`
 - Database: `spendwise-db`

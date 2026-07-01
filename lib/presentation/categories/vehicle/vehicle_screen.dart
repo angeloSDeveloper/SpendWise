@@ -308,6 +308,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
   final brand = TextEditingController();
   final model = TextEditingController();
   final year = TextEditingController();
+  final tankCapacity = TextEditingController();
   String fuelType = 'gasoline';
   bool saving = false;
 
@@ -321,13 +322,14 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
       brand.text = vehicle.brand ?? '';
       model.text = vehicle.model ?? '';
       year.text = vehicle.year?.toString() ?? '';
+      tankCapacity.text = vehicle.tankCapacityLiters?.toString() ?? '';
       fuelType = vehicle.fuelType?.name ?? 'gasoline';
     }
   }
 
   @override
   void dispose() {
-    for (final controller in [name, plate, brand, model, year]) {
+    for (final controller in [name, plate, brand, model, year, tankCapacity]) {
       controller.dispose();
     }
     super.dispose();
@@ -344,6 +346,9 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
         'model': model.text.trim(),
         'year': int.tryParse(year.text),
         'fuelType': fuelType,
+        'tankCapacityLiters': tankCapacity.text.trim().isEmpty
+            ? null
+            : double.tryParse(tankCapacity.text.replaceAll(',', '.')),
       };
       final api = ref.read(vehiclesApiProvider);
       final vehicle = widget.existing == null
@@ -441,6 +446,22 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                     )
                     .toList(),
             onChanged: (value) => fuelType = value!,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: tankCapacity,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Capacità serbatoio (litri)',
+              hintText: 'Es. 45',
+            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) return null;
+              final parsed = double.tryParse(value.replaceAll(',', '.'));
+              return parsed == null || parsed <= 0 || parsed > 1000
+                  ? 'Inserisci una capacità valida (massimo 1000 litri)'
+                  : null;
+            },
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
@@ -919,17 +940,12 @@ class _MaintenanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Card(
     child: ListTile(
-      leading: _maintenanceImage(item.receiptUrl),
       title: Text(item.itemName),
-      subtitle: Text(
-        [
-          _date(item.date),
-          if (item.kmAtService != null) '${item.kmAtService} km',
-          if (item.partCode?.isNotEmpty == true) 'Cod. ${item.partCode}',
-          if (item.shopName?.isNotEmpty == true) item.shopName!,
-        ].join(' · '),
+      subtitle: Text(_date(item.date)),
+      trailing: Text(
+        _money(item.totalCost),
+        style: const TextStyle(fontWeight: FontWeight.bold),
       ),
-      trailing: Text(_money(item.totalCost)),
       onTap: onOpen,
     ),
   );
@@ -956,60 +972,31 @@ class _MaintenanceRegister extends StatelessWidget {
                 'Registro manutenzione',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              const Spacer(),
-              const Text('Scorri orizzontalmente e seleziona una riga'),
             ],
           ),
         ),
-        _DesktopHorizontalScroll(
-          child: DataTable(
-            showCheckboxColumn: false,
-            headingRowColor: WidgetStatePropertyAll(
-              Theme.of(context).colorScheme.surfaceContainerHighest,
-            ),
-            columns: const [
-              DataColumn(label: Text('DATA')),
-              DataColumn(label: Text('KM')),
-              DataColumn(label: Text('INTERVENTO')),
-              DataColumn(label: Text('VENDITORE / NEGOZIO')),
-              DataColumn(label: Text('MANODOPERA / OFFICINA')),
-              DataColumn(label: Text('OLIO')),
-              DataColumn(label: Text('FILTRI / RICAMBI')),
-              DataColumn(label: Text('DISTRIBUZIONE')),
-              DataColumn(label: Text('FRENI')),
-              DataColumn(label: Text('ALTRO / NOTE')),
-              DataColumn(label: Text('TOTALE')),
-            ],
-            rows: items.map((item) {
-              final details = _MaintenanceDetails.from(item);
-              DataCell cell(String value, {double width = 150}) => DataCell(
-                SizedBox(
-                  width: width,
-                  child: Text(
-                    value.isEmpty ? '—' : value,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              );
-              return DataRow(
-                onSelectChanged: (_) => onOpen(item),
-                cells: [
-                  cell(_date(item.date), width: 82),
-                  cell(item.kmAtService?.toString() ?? '', width: 72),
-                  cell(item.itemName, width: 190),
-                  cell(details.seller, width: 160),
-                  cell(details.labor, width: 180),
-                  cell(details.oil, width: 180),
-                  cell(details.filters, width: 220),
-                  cell(details.distribution, width: 220),
-                  cell(details.brakes, width: 220),
-                  cell(details.other, width: 220),
-                  cell(_money(item.totalCost), width: 90),
-                ],
-              );
-            }).toList(),
+        DataTable(
+          showCheckboxColumn: false,
+          headingRowColor: WidgetStatePropertyAll(
+            Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
+          columns: const [
+            DataColumn(label: Text('DATA')),
+            DataColumn(label: Text('INTERVENTO')),
+            DataColumn(label: Text('PREZZO'), numeric: true),
+          ],
+          rows: items
+              .map(
+                (item) => DataRow(
+                  onSelectChanged: (_) => onOpen(item),
+                  cells: [
+                    DataCell(Text(_date(item.date))),
+                    DataCell(Text(item.itemName)),
+                    DataCell(Text(_money(item.totalCost))),
+                  ],
+                ),
+              )
+              .toList(),
         ),
       ],
     ),
@@ -1937,7 +1924,7 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
       station = TextEditingController(),
       km = TextEditingController(),
       note = TextEditingController();
-  bool fullTank = true, saving = false, detailed = false, calculating = false;
+  bool fullTank = false, saving = false, detailed = false, calculating = false;
   String calculateField = 'total';
   double number(TextEditingController value) =>
       double.tryParse(value.text.replaceAll(',', '.')) ?? 0;
@@ -1970,6 +1957,27 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
     if (target.text != text) target.text = text;
     calculating = false;
     setState(() {});
+  }
+
+  Future<void> setFullTank(bool value) async {
+    setState(() => fullTank = value);
+    if (!value) return;
+    final vehicles =
+        ref.read(vehiclesProvider).valueOrNull ??
+        await ref.read(vehiclesProvider.future) ??
+        const <Vehicle>[];
+    final capacity = vehicles
+        .where((vehicle) => vehicle.id == widget.vehicleId)
+        .firstOrNull
+        ?.tankCapacityLiters;
+    if (!mounted || capacity == null) return;
+    setState(() {
+      detailed = true;
+      calculateField = 'total';
+      liters.text = capacity.toStringAsFixed(
+        capacity == capacity.roundToDouble() ? 0 : 2,
+      );
+    });
   }
 
   @override
@@ -2081,8 +2089,11 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
           _field(km, 'Chilometraggio', keyboard: TextInputType.number),
           SwitchListTile(
             value: fullTank,
-            onChanged: (value) => setState(() => fullTank = value),
+            onChanged: setFullTank,
             title: const Text('Pieno completo'),
+            subtitle: const Text(
+              'Usa automaticamente la capacità indicata nel veicolo',
+            ),
           ),
           _field(note, 'Note'),
           const SizedBox(height: 16),

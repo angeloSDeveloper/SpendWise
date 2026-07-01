@@ -3,6 +3,43 @@
 Questo documento conserva lo storico delle modifiche, delle verifiche e delle
 attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
+## 1 luglio 2026
+
+### Completamento handoff rate, manutenzioni e carburante
+
+- Corretto il Worker per distinguere i campi assenti dai campi presenti con
+  valore `null`: la fine contratto opzionale degli abbonamenti può ora essere
+  aggiunta, modificata e rimossa.
+- Aggiunta la modalità `Un acquisto` / `Più acquisti` ai piani rateali.
+  Gestore, numero rate, frequenza e date sono comuni; prodotto, totale e
+  importo rata restano indipendenti.
+- Aggiunto `POST /api/installments/batch` con validazione preventiva e
+  `DB.batch(...)`, così il salvataggio multiplo è atomico.
+- Persistita `endDate` sui piani rateali e mostrata nel dettaglio, con calcolo
+  di compatibilità per i piani precedenti.
+- Corretto l'avanzamento delle scadenze mensili a partire dalla data iniziale
+  originale e rimossa la prossima scadenza attiva alla rata conclusiva.
+- Ridotto il registro manutenzioni a data, intervento e prezzo su desktop e
+  mobile, conservando il dettaglio completo.
+- Aggiunta la capacità serbatoio opzionale ai veicoli. Il flag `Pieno
+  completo`, inizialmente disattivato, precompila i litri solo quando la
+  capacità è disponibile.
+- Aggiunte migrazioni D1 separate per capacità serbatoio e scadenza finale.
+
+### Verifiche
+
+- Rigenerati Freezed, Retrofit e Drift.
+- `flutter analyze`: nessun problema.
+- `flutter test`: 15 test superati, inclusi calendario settimanale,
+  bisettimanale, mensile/fine mese e workflow widget singolo, multiplo e pieno
+  completo.
+- Typecheck Worker TypeScript superato.
+- Build web release completata con API di produzione configurata.
+- Il collaudo visivo nel browser in-app non è stato possibile per
+  indisponibilità del browser nella sessione e resta da eseguire.
+- Migrazioni D1 e deploy Cloudflare non eseguiti: il nuovo endpoint batch e le
+  nuove colonne non sono ancora attivi in produzione.
+
 ## 29 giugno 2026
 
 ### Rate e sessione scaduta

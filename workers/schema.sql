@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS installment_plans (
   frequency TEXT NOT NULL CHECK(frequency IN ('weekly','biweekly','monthly')),
   start_date INTEGER NOT NULL,
   next_due_date INTEGER,
+  end_date INTEGER,
   is_active INTEGER DEFAULT 1,
   note TEXT,
   created_at INTEGER NOT NULL,
@@ -121,6 +122,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
   model TEXT,
   year INTEGER,
   fuel_type TEXT CHECK(fuel_type IN ('gasoline','diesel','electric','hybrid','lpg')),
+  tank_capacity_liters REAL,
   is_archived INTEGER DEFAULT 0,
   created_at INTEGER NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

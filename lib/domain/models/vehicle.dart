@@ -14,6 +14,7 @@ abstract class Vehicle with _$Vehicle {
     String? model,
     int? year,
     FuelType? fuelType,
+    double? tankCapacityLiters,
     @Default(false) bool isArchived,
     required DateTime createdAt,
   }) = _Vehicle;

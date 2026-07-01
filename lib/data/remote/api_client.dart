@@ -214,6 +214,8 @@ abstract class InstallmentsApiClient {
   Future<List<InstallmentPlan>> getAll();
   @POST('/installments')
   Future<InstallmentPlan> create(@Body() Map<String, dynamic> body);
+  @POST('/installments/batch')
+  Future<List<InstallmentPlan>> createBatch(@Body() Map<String, dynamic> body);
   @PUT('/installments/{id}')
   Future<InstallmentPlan> update(
     @Path() String id,

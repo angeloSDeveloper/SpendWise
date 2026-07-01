@@ -22,6 +22,39 @@ void main() {
       );
     });
 
+    test('calcola la scadenza finale settimanale', () {
+      expect(
+        installmentFinalDueDate(
+          DateTime(2026, 7, 16),
+          InstallmentFrequency.weekly,
+          3,
+        ),
+        DateTime(2026, 7, 30),
+      );
+    });
+
+    test('calcola la scadenza finale bisettimanale', () {
+      expect(
+        installmentFinalDueDate(
+          DateTime(2026, 7, 16),
+          InstallmentFrequency.biweekly,
+          3,
+        ),
+        DateTime(2026, 8, 13),
+      );
+    });
+
+    test('calcola il fine mese dalla data iniziale originale', () {
+      expect(
+        installmentFinalDueDate(
+          DateTime(2026, 1, 31),
+          InstallmentFrequency.monthly,
+          3,
+        ),
+        DateTime(2026, 3, 31),
+      );
+    });
+
     test('calcola la prossima rata in base alle rate gia pagate', () {
       final start = DateTime(2026, 6, 29);
 

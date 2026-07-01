@@ -17,6 +17,7 @@ abstract class InstallmentPlan with _$InstallmentPlan {
     required InstallmentFrequency frequency,
     required DateTime startDate,
     DateTime? nextDueDate,
+    DateTime? endDate,
     @Default(true) bool isActive,
     String? note,
     required DateTime createdAt,
