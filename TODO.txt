@@ -12,6 +12,9 @@ Legenda:
 
 ## Problemi prioritari
 
+- [-] Rifiniture Android del 01/07 implementate: eliminazione abbonamenti
+  ottimistica, biometria locale, OCR rifornimenti e foto manutenzioni mobile.
+  APK installato; resta collaudo manuale completo sul telefono.
 - [ ] Quando sarà acquistato il dominio ufficiale, migrare URL API, Worker,
   documentazione e repository eliminando ogni riferimento personale residuo.
 - [-] Architettura local-first e Android implementata sul ramo

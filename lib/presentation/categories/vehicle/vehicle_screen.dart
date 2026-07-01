@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart' show Dio, Options;
 import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,8 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
+import 'package:spendwise/core/ocr/fuel_receipt_parser.dart';
+import 'package:spendwise/core/ocr/fuel_text_recognizer.dart';
 import 'package:spendwise/data/remote/api_client.dart';
 import 'package:spendwise/domain/models/enums.dart';
 import 'package:spendwise/domain/models/fuel_entry.dart';
@@ -1763,27 +1766,31 @@ class _AddAccessoryScreenState extends ConsumerState<AddAccessoryScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => _pickImage(ImageSource.gallery),
-                icon: const Icon(Icons.photo_library),
-                label: const Text('Galleria'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => _pickImage(ImageSource.camera),
-                icon: const Icon(Icons.photo_camera),
-                label: const Text('Scatta foto'),
-              ),
-              OutlinedButton.icon(
-                onPressed: _scan,
-                icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('Codice a barre'),
-              ),
-            ],
-          ),
+          if ((defaultTargetPlatform == TargetPlatform.android ||
+                  defaultTargetPlatform == TargetPlatform.iOS ||
+                  kIsWeb) &&
+              MediaQuery.sizeOf(context).width < 700)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => _pickImage(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library),
+                  label: const Text('Galleria'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _pickImage(ImageSource.camera),
+                  icon: const Icon(Icons.photo_camera),
+                  label: const Text('Scatta foto'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _scan,
+                  icon: const Icon(Icons.qr_code_scanner),
+                  label: const Text('Codice a barre'),
+                ),
+              ],
+            ),
           if (imageData != null) ...[
             const SizedBox(height: 12),
             SizedBox(height: 150, child: _maintenanceImage(imageData)),
@@ -1982,7 +1989,11 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
       station = TextEditingController(),
       km = TextEditingController(),
       note = TextEditingController();
-  bool fullTank = false, saving = false, detailed = false, calculating = false;
+  bool fullTank = false,
+      saving = false,
+      detailed = false,
+      calculating = false,
+      recognizing = false;
   String calculateField = 'total';
   double number(TextEditingController value) =>
       double.tryParse(value.text.replaceAll(',', '.')) ?? 0;
@@ -2038,6 +2049,54 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
     });
   }
 
+  bool get mobileFeatures =>
+      defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS ||
+      kIsWeb;
+
+  Future<void> readFuelDisplay(ImageSource source) async {
+    final file = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 1800,
+      imageQuality: 90,
+    );
+    if (file == null) return;
+    setState(() => recognizing = true);
+    try {
+      final text = await recognizeFuelText(file.path);
+      if (text == null) {
+        if (mounted) {
+          showAppMessage(
+            context,
+            'Il riconoscimento automatico è disponibile nell’app Android.',
+          );
+        }
+        return;
+      }
+      final values = parseFuelReceipt(text);
+      if (!values.hasValues) {
+        if (mounted) {
+          showAppMessage(context, 'Valori non riconosciuti: completa i campi.');
+        }
+        return;
+      }
+      calculating = true;
+      if (values.liters != null) {
+        liters.text = values.liters!.toStringAsFixed(2);
+      }
+      if (values.pricePerLiter != null) {
+        price.text = values.pricePerLiter!.toStringAsFixed(3);
+      }
+      if (values.total != null) total.text = values.total!.toStringAsFixed(2);
+      calculating = false;
+      setState(() => detailed = true);
+      if (mounted) showAppMessage(context, 'Valori letti dalla fotografia.');
+    } finally {
+      calculating = false;
+      if (mounted) setState(() => recognizing = false);
+    }
+  }
+
   @override
   void dispose() {
     for (final c in [liters, price, total, station, km, note]) {
@@ -2084,6 +2143,29 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (mobileFeatures && MediaQuery.sizeOf(context).width < 700) ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: recognizing
+                      ? null
+                      : () => readFuelDisplay(ImageSource.camera),
+                  icon: const Icon(Icons.document_scanner_outlined),
+                  label: const Text('Inquadra display'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: recognizing
+                      ? null
+                      : () => readFuelDisplay(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: const Text('Carica foto'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
           SegmentedButton<bool>(
             segments: const [
               ButtonSegment(

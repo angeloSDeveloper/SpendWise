@@ -5,6 +5,20 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 1 luglio 2026
 
+### Rifiniture Android, biometria e acquisizione immagini
+
+- Gli abbonamenti con undo vengono rimossi subito dalla lista e dal totale;
+  `Annulla` ripristina il record entro la durata configurata.
+- Compattata l'etichetta `Fine contratto` per impedirne il ritorno a capo.
+- La biometria sblocca la sessione locale all'avvio; con sessione server
+  scaduta i dati locali restano accessibili, mentre il backup richiede login.
+- Aggiunto OCR latino on-device con ML Kit per leggere totale, litri e prezzo
+  al litro da fotocamera o galleria nel nuovo rifornimento.
+- Foto manutenzione da fotocamera/galleria confermate e limitate alle UI
+  mobile; nessuna immagine OCR viene inviata a servizi esterni.
+- `flutter analyze` pulito, 32 test superati, build web e APK release riuscite.
+- APK aggiornato installato e avviato su Moto g82 5G.
+
 ### Prima base local-first e Android
 
 - Creato il ramo isolato `feature/local-first-android`; produzione, `main` e

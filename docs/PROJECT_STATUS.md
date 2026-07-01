@@ -56,6 +56,10 @@ Per ogni intervento futuro:
 
 ## Funzioni parziali
 
+- Android mobile: eliminazione abbonamenti con totale immediato e undo,
+  sblocco biometrico della copia locale, OCR carburante on-device e foto
+  manutenzioni disponibili nelle UI mobile. APK installato su Moto g82;
+  resta il collaudo funzionale dell'utente.
 - Local-first e Android sul ramo `feature/local-first-android`: dati API
   memorizzati in IndexedDB/SQLite, operazioni offline accodate, backup profilo
   disattivabile e sessione offline predisposti. APK release generato,

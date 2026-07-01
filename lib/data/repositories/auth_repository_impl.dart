@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
 import 'package:spendwise/data/remote/api_client.dart';
 import 'package:spendwise/domain/models/user.dart';
@@ -26,6 +28,8 @@ class AuthRepositoryImpl implements AuthRepository {
       value: jsonEncode(response.user.toJson()),
     );
     await storage.write(key: AppConstants.kUserIdKey, value: response.user.id);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('local_unlock_active', false);
     return response.user;
   }
 
@@ -44,6 +48,21 @@ class AuthRepositoryImpl implements AuthRepository {
     final raw = await storage.read(key: _userKey);
     final refreshToken = await storage.read(key: AppConstants.kRefreshTokenKey);
     if (raw == null || refreshToken == null) return null;
+    final prefs = await SharedPreferences.getInstance();
+    final biometrics = prefs.getBool('biometrics_enabled') ?? false;
+    if (biometrics) {
+      try {
+        final unlocked = await LocalAuthentication().authenticate(
+          localizedReason:
+              'Sblocca SpendWise con impronta o riconoscimento biometrico',
+          biometricOnly: true,
+          persistAcrossBackgrounding: true,
+        );
+        if (!unlocked) return null;
+      } catch (_) {
+        return null;
+      }
+    }
     try {
       final response = await client.refreshToken({
         'refreshToken': refreshToken,
@@ -55,6 +74,11 @@ class AuthRepositoryImpl implements AuthRepository {
           error.type == DioExceptionType.connectionTimeout ||
           error.type == DioExceptionType.receiveTimeout ||
           error.type == DioExceptionType.sendTimeout) {
+        await prefs.setBool('local_unlock_active', true);
+        return User.fromJson(Map<String, dynamic>.from(jsonDecode(raw) as Map));
+      }
+      if (biometrics) {
+        await prefs.setBool('local_unlock_active', true);
         return User.fromJson(Map<String, dynamic>.from(jsonDecode(raw) as Map));
       }
       await storage.deleteAll();
@@ -70,6 +94,10 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await client.logout();
     } finally {
+      (await SharedPreferences.getInstance()).setBool(
+        'local_unlock_active',
+        false,
+      );
       await storage.deleteAll();
     }
   }

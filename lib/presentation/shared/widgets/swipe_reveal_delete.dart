@@ -9,12 +9,14 @@ class SwipeRevealDelete extends ConsumerStatefulWidget {
   const SwipeRevealDelete({
     required this.child,
     required this.onDelete,
+    this.onUndo,
     this.deletedMessage = 'Elemento eliminato',
     super.key,
   });
 
   final Widget child;
   final Future<void> Function() onDelete;
+  final Future<void> Function()? onUndo;
   final String deletedMessage;
 
   @override
@@ -95,6 +97,26 @@ class _SwipeRevealDeleteState extends ConsumerState<SwipeRevealDelete> {
       _offset = 0;
     });
     _openItem.value = null;
+    if (widget.onUndo != null) {
+      _commitDelete();
+      if (seconds == 0) return;
+      showAppMessage(
+        context,
+        widget.deletedMessage,
+        durationSeconds: seconds,
+        actionLabel: 'ANNULLA',
+        onAction: () async {
+          _timer?.cancel();
+          try {
+            await widget.onUndo!();
+            if (mounted) setState(() => _pendingDelete = false);
+          } catch (_) {
+            if (mounted) showAppMessage(context, 'Ripristino non riuscito');
+          }
+        },
+      );
+      return;
+    }
     if (seconds == 0) {
       _commitDelete();
       return;

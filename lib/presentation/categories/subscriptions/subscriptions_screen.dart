@@ -261,6 +261,12 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                             .delete(item.id);
                         ref.invalidate(subscriptionsProvider);
                       },
+                      onUndo: () async {
+                        await ref
+                            .read(subscriptionsApiProvider)
+                            .create(item.toJson());
+                        ref.invalidate(subscriptionsProvider);
+                      },
                       child: Card(
                         child: ListTile(
                           leading: CircleAvatar(
@@ -677,7 +683,9 @@ class _SubscriptionDateField extends StatelessWidget {
     borderRadius: BorderRadius.circular(12),
     child: InputDecorator(
       decoration: InputDecoration(
-        labelText: label,
+        label: Text(label, maxLines: 1, overflow: TextOverflow.fade),
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        isDense: true,
         prefixIcon: const Icon(Icons.calendar_month),
         suffixIcon: onClear == null
             ? const Icon(Icons.arrow_drop_down)
@@ -685,6 +693,8 @@ class _SubscriptionDateField extends StatelessWidget {
       ),
       child: Text(
         date == null ? 'Non impostata' : DateFormat('dd/MM/yyyy').format(date!),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     ),
   );
