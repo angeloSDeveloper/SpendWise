@@ -12,6 +12,13 @@ Legenda:
 
 ## Problemi prioritari
 
+- [x] Aggiunti temi colore: `Gold` predefinito in grigio Vesuvio/oro,
+  `Oceano` per la precedente palette blu e `Smeraldo`.
+- [x] Dashboard collegata all'avatar configurato: iniziali, icona, forma,
+  colori o foto sono gli stessi delle Impostazioni.
+- [-] Sincronizzazione resa trasparente con conteggio, esito e motivo
+  leggibile dell'errore; verificare sul browser dell'utente l'eventuale
+  operazione locale rimasta in coda.
 - [x] Corretto il blocco infinito della dashboard web: le risposte API erano
   gia' `200`, ma il salvataggio concorrente della cache IndexedDB tratteneva
   i Future. La cache viene ora aggiornata in background con timeout.

@@ -20,8 +20,8 @@ class SpendWiseApp extends ConsumerWidget {
         AppLocalizations.delegate,
         ...GlobalMaterialLocalizations.delegates,
       ],
-      theme: AppTheme.lightTheme(),
-      darkTheme: AppTheme.darkTheme(),
+      theme: AppTheme.lightTheme(settings.colorTheme),
+      darkTheme: AppTheme.darkTheme(settings.colorTheme),
       themeMode: settings.themeMode,
       routerConfig: ref.watch(routerProvider),
     );

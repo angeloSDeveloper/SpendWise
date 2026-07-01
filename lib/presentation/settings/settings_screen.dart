@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
+import 'package:spendwise/app/theme.dart';
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_config.dart';
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_preview.dart';
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_screen.dart';
@@ -15,8 +16,6 @@ import 'package:spendwise/presentation/onboarding/onboarding_provider.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/shared/app_feedback.dart';
-
-final avatarBuilderRevisionProvider = StateProvider<int>((ref) => 0);
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -246,6 +245,27 @@ class SettingsScreen extends ConsumerWidget {
             selected: {settings.themeMode},
             onSelectionChanged: (v) =>
                 ref.read(settingsProvider.notifier).setTheme(v.first),
+          ),
+          const SizedBox(height: 16),
+          Text('Tema colore', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final colorTheme in AppColorThemes.values)
+                ChoiceChip(
+                  avatar: CircleAvatar(
+                    backgroundColor: colorTheme.primaryDark,
+                    radius: 8,
+                  ),
+                  label: Text(colorTheme.name),
+                  selected: settings.colorTheme == colorTheme.id,
+                  onSelected: (_) => ref
+                      .read(settingsProvider.notifier)
+                      .setColorTheme(colorTheme.id),
+                ),
+            ],
           ),
           const SizedBox(height: 20),
           Text('Lingua', style: Theme.of(context).textTheme.titleLarge),

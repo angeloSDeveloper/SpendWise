@@ -93,6 +93,15 @@ final currentUserProvider = Provider<User?>(
 enum SyncStatus { synced, pending, syncing, offline, error }
 
 final syncStatusProvider = StateProvider((ref) => SyncStatus.synced);
+final syncInfoProvider = StateProvider((ref) => const SyncInfo());
+
+class SyncInfo {
+  const SyncInfo({this.pending = 0, this.error, this.lastCompletedAt});
+
+  final int pending;
+  final String? error;
+  final DateTime? lastCompletedAt;
+}
 
 class SyncService {
   SyncService(this.ref, this.database, this.api, this.dio, this.storage) {
@@ -113,19 +122,32 @@ class SyncService {
     final backupEnabled = prefs.getBool('cloud_backup_enabled') ?? true;
     final userId =
         await storage.read(key: AppConstants.kUserIdKey) ?? 'local-device';
+    final pendingBefore = await database.offlineRequestCount(userId);
     if (!backupEnabled) {
-      final pending = await database.offlineRequestCount(userId);
-      ref.read(syncStatusProvider.notifier).state = pending > 0
+      ref.read(syncStatusProvider.notifier).state = pendingBefore > 0
           ? SyncStatus.pending
           : SyncStatus.synced;
+      ref.read(syncInfoProvider.notifier).state = SyncInfo(
+        pending: pendingBefore,
+        error: pendingBefore > 0
+            ? 'Backup disattivato: le modifiche restano sul dispositivo.'
+            : null,
+      );
       return true;
     }
     final connectivity = await Connectivity().checkConnectivity();
     if (connectivity.contains(ConnectivityResult.none)) {
       ref.read(syncStatusProvider.notifier).state = SyncStatus.offline;
+      ref.read(syncInfoProvider.notifier).state = SyncInfo(
+        pending: pendingBefore,
+        error: 'Dispositivo non connesso a Internet.',
+      );
       return false;
     }
     ref.read(syncStatusProvider.notifier).state = SyncStatus.syncing;
+    ref.read(syncInfoProvider.notifier).state = SyncInfo(
+      pending: pendingBefore,
+    );
     try {
       final requests = await database.pendingOfflineRequests(userId);
       for (final request in requests) {
@@ -143,7 +165,15 @@ class SyncService {
             ),
           );
           await database.removeOfflineRequest(request.id);
-        } catch (_) {
+        } catch (error) {
+          final alreadyDeleted =
+              request.method == 'DELETE' &&
+              error is DioException &&
+              error.response?.statusCode == 404;
+          if (alreadyDeleted) {
+            await database.removeOfflineRequest(request.id);
+            continue;
+          }
           await database.incrementOfflineAttempts(request.id);
           rethrow;
         }
@@ -166,11 +196,32 @@ class SyncService {
         await database.removeSync(queue.map((e) => e.id));
       }
       ref.read(syncStatusProvider.notifier).state = SyncStatus.synced;
+      ref.read(syncInfoProvider.notifier).state = SyncInfo(
+        lastCompletedAt: DateTime.now(),
+      );
       return true;
-    } catch (_) {
+    } catch (error) {
       ref.read(syncStatusProvider.notifier).state = SyncStatus.error;
+      ref.read(syncInfoProvider.notifier).state = SyncInfo(
+        pending: await database.offlineRequestCount(userId),
+        error: _readableSyncError(error),
+      );
       return false;
     }
+  }
+
+  String _readableSyncError(Object error) {
+    if (error is DioException) {
+      final body = error.response?.data;
+      final serverMessage = body is Map ? body['error'] : null;
+      if (serverMessage is String && serverMessage.isNotEmpty) {
+        return serverMessage;
+      }
+      final status = error.response?.statusCode;
+      if (status != null) return 'Il server ha risposto con errore $status.';
+      return 'Connessione al server non riuscita.';
+    }
+    return 'Una modifica locale non è stata sincronizzata.';
   }
 
   void dispose() => _timer?.cancel();

@@ -36,6 +36,12 @@ Per ogni intervento futuro:
 
 ## Funzioni completate
 
+- Temi colore persistenti: `Gold` e' il predefinito scuro in grigio
+  Vesuvio/oro; sono disponibili anche `Oceano` e `Smeraldo`.
+- L'avatar della dashboard riutilizza la configurazione SVG/foto del profilo,
+  incluse le iniziali personalizzate.
+- L'intestazione e i testi della nuova UI usano `Dashboard`, non
+  `Cruscotto`.
 - Nuova UI finance moderna approvata: onboarding, login responsive, sicurezza
   iniziale e dashboard centrata con riepiloghi adattivi, scrollbar desktop e
   widget persistenti 4x4/4x8.
@@ -65,6 +71,10 @@ Per ogni intervento futuro:
 
 ## Funzioni parziali
 
+- Sincronizzazione manuale: il comando ora mostra se non c'e' nulla da
+  inviare, quante modifiche sono state sincronizzate oppure il motivo
+  leggibile del fallimento. Resta da verificare sul browser dell'utente quale
+  vecchia operazione locale abbia prodotto lo stato di errore.
 - Il pulsante Google e' predisposto a livello UI ma non autentica ancora:
   mancano Client ID OAuth, verifica token e endpoint server.
 - Sicurezza locale: PIN applicativo derivato con sale casuale e SHA-256,

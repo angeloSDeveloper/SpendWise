@@ -77,7 +77,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   top: -130,
                   right: -100,
                   child: _Glow(
-                    color: AppColors.primary.withValues(alpha: .22),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: .22),
                     size: 430,
                   ),
                 ),
@@ -181,7 +183,7 @@ class _LoginForm extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Accedi per ritrovare il tuo cruscotto.',
+            'Accedi per ritrovare la tua dashboard.',
             style: TextStyle(color: Color(0xFF9A9DA6)),
           ),
           const SizedBox(height: 26),
@@ -295,7 +297,7 @@ class _LoginStory extends StatelessWidget {
       _CompactBrand(alignedLeft: true),
       SizedBox(height: 52),
       Text(
-        'Tutto ciò che conta,\nin un solo cruscotto.',
+        'Tutto ciò che conta,\nin una sola dashboard.',
         style: TextStyle(
           color: Colors.white,
           fontSize: 52,

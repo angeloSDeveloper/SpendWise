@@ -7,7 +7,8 @@ const appModules = {'daily', 'subscriptions', 'installments', 'vehicle'};
 
 class SettingsState {
   const SettingsState({
-    this.themeMode = ThemeMode.system,
+    this.themeMode = ThemeMode.dark,
+    this.colorTheme = 'gold',
     this.avatarData,
     this.avatarGender = 'male',
     this.avatarFace = 'smile',
@@ -27,6 +28,7 @@ class SettingsState {
     this.cloudBackupEnabled = true,
   });
   final ThemeMode themeMode;
+  final String colorTheme;
   final String? avatarData;
   final String avatarGender;
   final String avatarFace, avatarHair, avatarOutfit;
@@ -41,6 +43,7 @@ class SettingsState {
 
   SettingsState copyWith({
     ThemeMode? themeMode,
+    String? colorTheme,
     String? avatarData,
     bool clearAvatar = false,
     String? avatarGender,
@@ -61,6 +64,7 @@ class SettingsState {
     bool? cloudBackupEnabled,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
+    colorTheme: colorTheme ?? this.colorTheme,
     avatarData: clearAvatar ? null : avatarData ?? this.avatarData,
     avatarGender: avatarGender ?? this.avatarGender,
     avatarFace: avatarFace ?? this.avatarFace,
@@ -96,8 +100,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     state = SettingsState(
       themeMode: ThemeMode.values.firstWhere(
         (x) => x.name == prefs.getString('theme_mode'),
-        orElse: () => ThemeMode.system,
+        orElse: () => ThemeMode.dark,
       ),
+      colorTheme: prefs.getString('color_theme') ?? 'gold',
       avatarData: prefs.getString('avatar_data'),
       avatarGender: prefs.getString('avatar_gender') ?? 'male',
       avatarFace: _normalizeFace(prefs.getString('avatar_face')),
@@ -122,6 +127,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setTheme(ThemeMode value) async {
     state = state.copyWith(themeMode: value);
     (await SharedPreferences.getInstance()).setString('theme_mode', value.name);
+  }
+
+  Future<void> setColorTheme(String value) async {
+    state = state.copyWith(colorTheme: value);
+    await (await SharedPreferences.getInstance()).setString(
+      'color_theme',
+      value,
+    );
   }
 
   Future<void> setAvatar(String value) async {

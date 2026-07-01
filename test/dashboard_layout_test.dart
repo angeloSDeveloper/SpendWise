@@ -73,7 +73,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Personalizza cruscotto'), findsOneWidget);
+    expect(find.text('Personalizza dashboard'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

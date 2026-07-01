@@ -5,6 +5,30 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 2 luglio 2026
 
+### Temi, avatar dashboard e diagnostica sincronizzazione
+
+- Creato il ramo isolato `feature/gold-theme-sync-feedback`.
+- Aggiunto il tema predefinito `Gold`, con fondo grigio Vesuvio, superfici
+  antracite e accenti giallo/oro.
+- La precedente palette blu resta selezionabile come tema `Oceano`; aggiunto
+  anche il tema `Smeraldo`.
+- La scelta del tema colore e' persistente e indipendente dalla scelta
+  chiaro/sistema/scuro. Per le nuove installazioni la modalita' predefinita e'
+  scura.
+- Sostituiti i colori blu fissi della dashboard con il colore del tema attivo.
+- La dashboard usa ora la configurazione avatar condivisa con le
+  Impostazioni: iniziali `AC`, eventuale icona, forma, colori, bordo o foto.
+- Sostituito `Cruscotto` con `Dashboard` in intestazione, onboarding, login ed
+  editor widget.
+- La sincronizzazione manuale mostra un messaggio di esito, il numero di
+  modifiche inviate oppure il motivo leggibile dell'errore.
+- Migliorato il replay della coda: una DELETE gia' applicata che restituisce
+  `404` viene considerata completata e rimossa dalla coda.
+- `flutter analyze`: nessun problema.
+- `flutter test`: 39 test superati.
+- Build web release completata.
+- Nessun deploy Cloudflare eseguito: ramo in attesa di collaudo locale.
+
 ### Eliminazione immediata e dashboard responsive approvate
 
 - Rimosso temporaneamente il flusso di annullamento delle eliminazioni:

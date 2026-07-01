@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
@@ -13,7 +14,11 @@ import 'package:spendwise/domain/models/enums.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/presentation/auth/local_unlock_provider.dart';
 import 'package:spendwise/presentation/dashboard/dashboard_layout_provider.dart';
+import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_config.dart';
+import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_preview.dart';
+import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_storage.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
+import 'package:spendwise/presentation/shared/app_feedback.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 
 class DashboardData {
@@ -172,6 +177,21 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
     super.dispose();
   }
 
+  Future<void> _syncNow() async {
+    final before = ref.read(syncInfoProvider).pending;
+    final completed = await ref.read(syncServiceProvider).sync();
+    if (!mounted) return;
+    final info = ref.read(syncInfoProvider);
+    showAppMessage(
+      context,
+      completed
+          ? before > 0
+                ? '$before modifiche sincronizzate.'
+                : 'Tutti i dati sono già sincronizzati.'
+          : info.error ?? 'Sincronizzazione non riuscita.',
+    );
+  }
+
   Future<void> _offerSecuritySetup() async {
     final preferences = await SharedPreferences.getInstance();
     final lock = ref.read(localUnlockProvider);
@@ -193,10 +213,10 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
+              Icon(
                 Icons.shield_rounded,
                 size: 42,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 12),
               Text(
@@ -236,19 +256,26 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(currentUserProvider);
     ref.watch(syncServiceProvider);
     final sync = ref.watch(syncStatusProvider);
+    final syncInfo = ref.watch(syncInfoProvider);
     final data = ref.watch(dashboardDataProvider);
     final layout = ref.watch(dashboardLayoutProvider);
-    final modules = ref.watch(settingsProvider).visibleModules;
+    final settings = ref.watch(settingsProvider);
+    final modules = settings.visibleModules;
+    final avatarConfig =
+        ref.watch(avatarBuilderConfigProvider).valueOrNull ??
+        const AvatarBuilderConfig();
     final strings = AppLocalizations.of(context)!;
     final syncLabel = switch (sync) {
       SyncStatus.synced => strings.syncSynced,
-      SyncStatus.pending => strings.syncPending,
+      SyncStatus.pending =>
+        syncInfo.pending > 0
+            ? '${syncInfo.pending} modifiche in attesa'
+            : strings.syncPending,
       SyncStatus.syncing => strings.syncInProgress,
       SyncStatus.offline => strings.syncOffline,
-      SyncStatus.error => strings.syncError,
+      SyncStatus.error => syncInfo.error ?? strings.syncError,
     };
 
     return Scaffold(
@@ -282,7 +309,7 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Cruscotto',
+                                      'Dashboard',
                                       style: Theme.of(context)
                                           .textTheme
                                           .headlineMedium
@@ -292,20 +319,30 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
                                     Row(
                                       children: [
                                         Icon(
-                                          sync == SyncStatus.offline
-                                              ? Icons.cloud_off_rounded
-                                              : Icons.cloud_done_rounded,
+                                          switch (sync) {
+                                            SyncStatus.offline =>
+                                              Icons.cloud_off_rounded,
+                                            SyncStatus.error =>
+                                              Icons.sync_problem_rounded,
+                                            SyncStatus.syncing =>
+                                              Icons.cloud_sync_rounded,
+                                            _ => Icons.cloud_done_rounded,
+                                          },
                                           size: 15,
                                           color: Theme.of(
                                             context,
                                           ).colorScheme.onSurfaceVariant,
                                         ),
                                         const SizedBox(width: 6),
-                                        Text(
-                                          syncLabel,
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.bodySmall,
+                                        Flexible(
+                                          child: Text(
+                                            syncLabel,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -313,9 +350,11 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
                                 ),
                               ),
                               IconButton(
-                                tooltip: 'Sincronizza',
-                                onPressed: () =>
-                                    ref.read(syncServiceProvider).sync(),
+                                tooltip:
+                                    'Invia al server le modifiche salvate sul dispositivo',
+                                onPressed: sync == SyncStatus.syncing
+                                    ? null
+                                    : _syncNow,
                                 icon: Icon(
                                   sync == SyncStatus.syncing
                                       ? Icons.sync_rounded
@@ -333,16 +372,9 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(99),
                                   onTap: () => context.push('/settings'),
-                                  child: CircleAvatar(
-                                    radius: 23,
-                                    backgroundColor: const Color(0xFF0B2B55),
-                                    child: Text(
-                                      _initials(user?.displayName),
-                                      style: const TextStyle(
-                                        color: Color(0xFF42A5FF),
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
+                                  child: _DashboardAvatar(
+                                    settings: settings,
+                                    config: avatarConfig,
                                   ),
                                 ),
                               ),
@@ -435,15 +467,35 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
         showDragHandle: true,
         builder: (_) => const DashboardWidgetEditorSheet(),
       );
+}
 
-  String _initials(String? name) {
-    final parts = (name ?? 'Utente')
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return 'U';
-    return parts.take(2).map((part) => part[0].toUpperCase()).join();
+class _DashboardAvatar extends StatelessWidget {
+  const _DashboardAvatar({required this.settings, required this.config});
+
+  final SettingsState settings;
+  final AvatarBuilderConfig config;
+
+  @override
+  Widget build(BuildContext context) {
+    final photo = settings.avatarData;
+    if (photo != null) {
+      try {
+        return ClipOval(
+          child: Image.memory(
+            base64Decode(photo.split(',').last),
+            width: 46,
+            height: 46,
+            fit: BoxFit.cover,
+          ),
+        );
+      } catch (_) {
+        // In caso di foto corrotta viene usato l'avatar configurato.
+      }
+    }
+    return SizedBox.square(
+      dimension: 46,
+      child: AvatarBuilderPreview(config: config, overrideSize: 46),
+    );
   }
 }
 
@@ -692,7 +744,11 @@ class _DashboardWidgetCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(icon, size: 20, color: AppColors.primary),
+                Icon(
+                  icon,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -823,12 +879,14 @@ class _TrendWidget extends StatelessWidget {
                   FlSpot(index.toDouble(), data.months[index]),
               ],
               isCurved: true,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               barWidth: 3,
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: true,
-                color: AppColors.primary.withValues(alpha: .14),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: .14),
               ),
             ),
           ],
@@ -908,7 +966,7 @@ class DashboardWidgetEditorSheet extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Personalizza cruscotto',
+                      'Personalizza dashboard',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                   ),
@@ -947,7 +1005,10 @@ class DashboardWidgetEditorSheet extends ConsumerWidget {
                         children: [
                           const Icon(Icons.drag_indicator_rounded),
                           const SizedBox(width: 8),
-                          Icon(details.$2, color: AppColors.primary),
+                          Icon(
+                            details.$2,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(child: Text(details.$1)),
                           SegmentedButton<DashboardWidgetSize>(

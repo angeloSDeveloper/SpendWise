@@ -3,22 +3,24 @@ import 'package:spendwise/core/constants/app_constants.dart';
 import 'package:spendwise/domain/models/enums.dart';
 
 abstract final class AppTheme {
-  static ThemeData lightTheme() => _theme(Brightness.light);
-  static ThemeData darkTheme() => _theme(Brightness.dark);
-  static ThemeData _theme(Brightness brightness) {
+  static ThemeData lightTheme([String colorTheme = 'gold']) =>
+      _theme(Brightness.light, colorTheme);
+  static ThemeData darkTheme([String colorTheme = 'gold']) =>
+      _theme(Brightness.dark, colorTheme);
+  static ThemeData _theme(Brightness brightness, String colorTheme) {
+    final palette = AppColorThemes.forId(colorTheme);
     final generated = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
+      seedColor: palette.primary,
       brightness: brightness,
     );
     final dark = brightness == Brightness.dark;
     final scheme = generated.copyWith(
-      primary: dark ? const Color(0xFF3C96FF) : AppColors.primary,
-      surface: dark ? const Color(0xFF050608) : const Color(0xFFF5F7FB),
-      surfaceContainer: dark
-          ? const Color(0xFF17191D)
-          : const Color(0xFFFFFFFF),
+      primary: dark ? palette.primaryDark : palette.primary,
+      secondary: palette.secondary,
+      surface: dark ? palette.darkSurface : const Color(0xFFF5F7FB),
+      surfaceContainer: dark ? palette.darkContainer : const Color(0xFFFFFFFF),
       surfaceContainerHigh: dark
-          ? const Color(0xFF202228)
+          ? palette.darkContainerHigh
           : const Color(0xFFF0F3F8),
       outlineVariant: dark ? const Color(0xFF30333A) : const Color(0xFFDDE2EA),
     );
@@ -94,7 +96,7 @@ abstract final class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         height: 68,
         backgroundColor: scheme.surfaceContainer.withValues(alpha: .96),
-        indicatorColor: AppColors.primary.withValues(alpha: .18),
+        indicatorColor: scheme.primary.withValues(alpha: .18),
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
         ),
@@ -104,6 +106,66 @@ abstract final class AppTheme {
       ),
     );
   }
+}
+
+class AppColorTheme {
+  const AppColorTheme({
+    required this.id,
+    required this.name,
+    required this.primary,
+    required this.primaryDark,
+    required this.secondary,
+    required this.darkSurface,
+    required this.darkContainer,
+    required this.darkContainerHigh,
+  });
+
+  final String id;
+  final String name;
+  final Color primary;
+  final Color primaryDark;
+  final Color secondary;
+  final Color darkSurface;
+  final Color darkContainer;
+  final Color darkContainerHigh;
+}
+
+abstract final class AppColorThemes {
+  static const gold = AppColorTheme(
+    id: 'gold',
+    name: 'Gold',
+    primary: Color(0xFFB88A19),
+    primaryDark: Color(0xFFE3B94F),
+    secondary: Color(0xFFF2D27A),
+    darkSurface: Color(0xFF10100F),
+    darkContainer: Color(0xFF1B1B18),
+    darkContainerHigh: Color(0xFF272620),
+  );
+  static const ocean = AppColorTheme(
+    id: 'ocean',
+    name: 'Oceano',
+    primary: Color(0xFF2563EB),
+    primaryDark: Color(0xFF3C96FF),
+    secondary: Color(0xFF7C3AED),
+    darkSurface: Color(0xFF050608),
+    darkContainer: Color(0xFF17191D),
+    darkContainerHigh: Color(0xFF202228),
+  );
+  static const emerald = AppColorTheme(
+    id: 'emerald',
+    name: 'Smeraldo',
+    primary: Color(0xFF078A67),
+    primaryDark: Color(0xFF24C79A),
+    secondary: Color(0xFF7DE2C2),
+    darkSurface: Color(0xFF07100D),
+    darkContainer: Color(0xFF12201B),
+    darkContainerHigh: Color(0xFF1B2D27),
+  );
+
+  static const values = [gold, ocean, emerald];
+
+  static AppColorTheme forId(String id) =>
+      values.where((theme) => theme.id == id).firstOrNull ?? gold;
 }
 
 abstract final class CategoryColors {

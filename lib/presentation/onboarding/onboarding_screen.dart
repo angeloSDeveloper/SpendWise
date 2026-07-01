@@ -30,7 +30,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ),
     (
       icon: Icons.dashboard_customize_rounded,
-      title: 'Il tuo cruscotto, come vuoi tu',
+      title: 'La tua dashboard, come vuoi tu',
       description:
           'Scegli i widget, riordinali e usa schede quadrate 4×4 oppure '
           'orizzontali 4×8. Ogni elemento apre direttamente il suo dettaglio.',
