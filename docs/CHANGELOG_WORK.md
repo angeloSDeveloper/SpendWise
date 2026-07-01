@@ -28,7 +28,17 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - `flutter test`: 38 test superati.
 - Build web release completata.
 - Nuova grafica approvata dall'utente; rami feature, `dev` e `main` allineati.
-- Nessun deploy Cloudflare eseguito in questo intervento.
+- Il collaudo e l'allineamento rami hanno preceduto il deploy registrato nella
+  sezione successiva.
+
+### Pubblicazione UI approvata
+
+- Ricostruita la web app release con API di produzione.
+- Pubblicati Worker `spendwise` e asset Flutter integrati.
+- Versione Cloudflare:
+  `26ea9803-bf3d-4419-9f36-3ba079fd69e6`.
+- Verificati dopo il deploy il sito pubblico (`HTTP 200`) e
+  `/api/health` (`HTTP 200`, stato `ok`).
 
 ### Fix caricamento infinito dashboard web
 
