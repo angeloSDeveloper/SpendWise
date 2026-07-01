@@ -13,6 +13,8 @@ import 'package:spendwise/presentation/categories/subscriptions/subscriptions_sc
 import 'package:spendwise/presentation/categories/vehicle/vehicle_screen.dart';
 import 'package:spendwise/presentation/dashboard/dashboard_screen.dart';
 import 'package:spendwise/presentation/manual/manual_screen.dart';
+import 'package:spendwise/presentation/onboarding/onboarding_provider.dart';
+import 'package:spendwise/presentation/onboarding/onboarding_screen.dart';
 import 'package:spendwise/presentation/settings/settings_screen.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
 import 'package:spendwise/presentation/tester/tester_dashboard_screen.dart';
@@ -25,14 +27,21 @@ final routerProvider = Provider<GoRouter>(
     redirect: (context, state) {
       final auth = ref.read(authStateProvider);
       final lock = ref.read(localUnlockProvider);
+      final onboarding = ref.read(onboardingProvider);
       final signedIn = auth is Authenticated;
+      final welcomeRoute = state.matchedLocation == '/welcome';
       final unlockRoute = state.matchedLocation == '/unlock';
       final authRoute =
           state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
-      if (auth is AuthInitial || auth is AuthLoading) {
+      if (onboarding.loading || auth is AuthInitial || auth is AuthLoading) {
         return null;
       }
+      if (!onboarding.completed && !welcomeRoute) return '/welcome';
+      if (onboarding.completed && welcomeRoute) {
+        return signedIn ? '/dashboard' : '/login';
+      }
+      if (welcomeRoute) return null;
       if (!signedIn && !authRoute) {
         return '/login';
       }
@@ -55,6 +64,7 @@ final routerProvider = Provider<GoRouter>(
         builder: (c, s) =>
             const Scaffold(body: Center(child: CircularProgressIndicator())),
       ),
+      GoRoute(path: '/welcome', builder: (c, s) => const OnboardingScreen()),
       GoRoute(path: '/login', builder: (c, s) => const LoginScreen()),
       GoRoute(path: '/register', builder: (c, s) => const RegisterScreen()),
       GoRoute(path: '/unlock', builder: (c, s) => const PinUnlockScreen()),
@@ -166,6 +176,7 @@ class _RouterRefresh extends ChangeNotifier {
   _RouterRefresh(Ref ref) {
     ref.listen(authStateProvider, (_, __) => notifyListeners());
     ref.listen(localUnlockProvider, (_, __) => notifyListeners());
+    ref.listen(onboardingProvider, (_, __) => notifyListeners());
   }
 }
 
@@ -213,6 +224,12 @@ class NavigationShell extends ConsumerWidget {
     final nav = NavigationRail(
       selectedIndex: index,
       onDestinationSelected: (i) => context.go(paths[visibleIndexes[i]]),
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+      indicatorColor: Theme.of(
+        context,
+      ).colorScheme.primary.withValues(alpha: .18),
+      useIndicator: true,
+      labelType: NavigationRailLabelType.all,
       destinations: List.generate(
         visibleIndexes.length,
         (i) => NavigationRailDestination(
@@ -224,21 +241,46 @@ class NavigationShell extends ConsumerWidget {
     return Scaffold(
       body: Row(
         children: [
-          if (wide) nav,
+          if (wide)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: nav,
+              ),
+            ),
           Expanded(child: child),
         ],
       ),
       bottomNavigationBar: wide
           ? null
-          : NavigationBar(
-              selectedIndex: index,
-              onDestinationSelected: (i) =>
-                  context.go(paths[visibleIndexes[i]]),
-              destinations: List.generate(
-                visibleIndexes.length,
-                (i) => NavigationDestination(
-                  icon: Icon(icons[visibleIndexes[i]]),
-                  label: labels[visibleIndexes[i]],
+          : SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: NavigationBar(
+                    selectedIndex: index,
+                    onDestinationSelected: (i) =>
+                        context.go(paths[visibleIndexes[i]]),
+                    destinations: List.generate(
+                      visibleIndexes.length,
+                      (i) => NavigationDestination(
+                        icon: Icon(icons[visibleIndexes[i]]),
+                        selectedIcon: Icon(
+                          [
+                            Icons.home_rounded,
+                            Icons.receipt_long_rounded,
+                            Icons.autorenew_rounded,
+                            Icons.credit_card_rounded,
+                            Icons.directions_car_rounded,
+                          ][visibleIndexes[i]],
+                        ),
+                        label: labels[visibleIndexes[i]],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),

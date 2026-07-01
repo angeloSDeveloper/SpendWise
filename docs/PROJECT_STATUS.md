@@ -56,6 +56,12 @@ Per ogni intervento futuro:
 
 ## Funzioni parziali
 
+- Prototipo estetico `feature/hootz-inspired-ui`: nuova direzione grafica
+  originale ispirata ai pattern delle app finance moderne, onboarding
+  interattivo, login responsive, richiesta iniziale di sicurezza e dashboard
+  con widget persistenti riordinabili in formato 4x4/4x8. Il pulsante Google
+  e' predisposto a livello UI ma non autentica ancora: mancano Client ID OAuth,
+  verifica token e endpoint server. Il ramo non e' pubblicato in produzione.
 - Sicurezza locale: PIN applicativo derivato con sale casuale e SHA-256,
   biometria alternativa e schermata di sblocco all'avvio implementati. APK
   installato sul dispositivo fisico; resta il collaudo manuale.

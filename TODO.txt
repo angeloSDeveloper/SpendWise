@@ -12,6 +12,11 @@ Legenda:
 
 ## Problemi prioritari
 
+- [-] Prototipo grafico ispirato ai pattern moderni di Hootz sul ramo
+  `feature/hootz-inspired-ui`: onboarding, login social predisposto, richiesta
+  iniziale di PIN/biometria e dashboard a widget 4x4/4x8 personalizzabile.
+  La logica dati SpendWise deve restare invariata; Google OAuth reale richiede
+  configurazione delle credenziali e relativo endpoint server.
 - [-] PIN applicativo di almeno 4 cifre implementato con storage sicuro,
   schermata di sblocco e alternativa biometrica; APK installato, da collaudare.
 - [-] Rifiniture Android del 01/07 implementate: eliminazione abbonamenti

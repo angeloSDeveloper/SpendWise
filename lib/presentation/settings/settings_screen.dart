@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
@@ -10,6 +11,7 @@ import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_pr
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_screen.dart';
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_storage.dart';
 import 'package:spendwise/presentation/auth/local_unlock_provider.dart';
+import 'package:spendwise/presentation/onboarding/onboarding_provider.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/shared/app_feedback.dart';
@@ -431,6 +433,16 @@ class SettingsScreen extends ConsumerWidget {
               },
             ),
           const Divider(),
+          ListTile(
+            leading: const Icon(Icons.play_circle_outline_rounded),
+            title: const Text('Rivedi la guida iniziale'),
+            subtitle: const Text('Panoramica delle funzioni principali'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              await ref.read(onboardingProvider.notifier).restart();
+              if (context.mounted) context.go('/welcome');
+            },
+          ),
           const ListTile(
             leading: Icon(Icons.info_outline),
             title: Text('Versione applicazione'),

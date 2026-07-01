@@ -1,15 +1,20 @@
+import 'dart:math' as math;
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
 import 'package:spendwise/data/remote/api_client.dart';
 import 'package:spendwise/domain/models/daily_expense.dart';
 import 'package:spendwise/domain/models/enums.dart';
-import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
-import 'package:spendwise/presentation/settings/settings_provider.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
+import 'package:spendwise/presentation/auth/local_unlock_provider.dart';
+import 'package:spendwise/presentation/dashboard/dashboard_layout_provider.dart';
+import 'package:spendwise/presentation/settings/settings_provider.dart';
+import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 
 class DashboardData {
   const DashboardData({
@@ -17,9 +22,11 @@ class DashboardData {
     required this.months,
     required this.recent,
   });
+
   final List<double> categories;
   final List<double> months;
   final List<DailyExpense> recent;
+
   double get total => categories.fold(0, (sum, value) => sum + value);
 }
 
@@ -44,17 +51,18 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
   final vehicles = results[3] as List<dynamic>;
   final vehicleApi = VehiclesApiClient(dio);
   final fuelLists = await Future.wait(
-    vehicles.map((v) => vehicleApi.fuel(v.id as String)),
+    vehicles.map((vehicle) => vehicleApi.fuel(vehicle.id as String)),
   );
   final maintenanceLists = await Future.wait(
-    vehicles.map((v) => vehicleApi.maintenance(v.id as String)),
+    vehicles.map((vehicle) => vehicleApi.maintenance(vehicle.id as String)),
   );
   final accessoryLists = await Future.wait(
-    vehicles.map((v) => vehicleApi.accessories(v.id as String)),
+    vehicles.map((vehicle) => vehicleApi.accessories(vehicle.id as String)),
   );
   final monthTotals = List<double>.filled(6, 0);
   int monthIndex(DateTime date) =>
       (date.year - from.year) * 12 + date.month - from.month;
+
   if (modules.contains('daily')) {
     for (final expense in expenses) {
       final index = monthIndex(expense.date);
@@ -72,8 +80,8 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
   }
   var vehicleMonth = 0.0;
   if (modules.contains('vehicle')) {
-    for (final list in fuelLists) {
-      for (final entry in list) {
+    for (final entries in fuelLists) {
+      for (final entry in entries) {
         final index = monthIndex(entry.date);
         if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;
         if (entry.date.year == now.year && entry.date.month == now.month) {
@@ -81,10 +89,8 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
         }
       }
     }
-  }
-  if (modules.contains('vehicle')) {
-    for (final list in maintenanceLists) {
-      for (final entry in list) {
+    for (final entries in maintenanceLists) {
+      for (final entry in entries) {
         final index = monthIndex(entry.date);
         if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;
         if (entry.date.year == now.year && entry.date.month == now.month) {
@@ -92,10 +98,8 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
         }
       }
     }
-  }
-  if (modules.contains('vehicle')) {
-    for (final list in accessoryLists) {
-      for (final entry in list) {
+    for (final entries in accessoryLists) {
+      for (final entry in entries) {
         final index = monthIndex(entry.date);
         if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;
         if (entry.date.year == now.year && entry.date.month == now.month) {
@@ -106,52 +110,130 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
   }
   final dailyMonth = modules.contains('daily')
       ? expenses
-            .where((x) => x.date.year == now.year && x.date.month == now.month)
-            .fold<double>(0, (sum, x) => sum + x.amount)
+            .where(
+              (expense) =>
+                  expense.date.year == now.year &&
+                  expense.date.month == now.month,
+            )
+            .fold<double>(0, (sum, expense) => sum + expense.amount)
       : 0.0;
   final subscriptionMonth = modules.contains('subscriptions')
       ? subscriptions
-            .where((x) => x.isActive == true)
+            .where((item) => item.isActive == true)
             .fold<double>(
               0,
-              (sum, x) =>
+              (sum, item) =>
                   sum +
-                  switch (x.billingCycle as BillingCycle) {
-                    BillingCycle.weekly => (x.amount as double) * 52 / 12,
+                  switch (item.billingCycle as BillingCycle) {
+                    BillingCycle.weekly => (item.amount as double) * 52 / 12,
                     BillingCycle.monthly =>
-                      (x.amount as double) /
-                          ((x.recurrenceMonths as int?) ?? 1),
-                    BillingCycle.yearly => (x.amount as double) / 12,
+                      (item.amount as double) /
+                          ((item.recurrenceMonths as int?) ?? 1),
+                    BillingCycle.yearly => (item.amount as double) / 12,
                   },
             )
       : 0.0;
   final installmentMonth = modules.contains('installments')
       ? installments
-            .where((x) => x.isActive == true)
-            .fold<double>(0, (sum, x) => sum + (x.installmentAmount as double))
+            .where((item) => item.isActive == true)
+            .fold<double>(
+              0,
+              (sum, item) => sum + (item.installmentAmount as double),
+            )
       : 0.0;
   expenses.sort((a, b) => b.date.compareTo(a.date));
   return DashboardData(
     categories: [dailyMonth, subscriptionMonth, installmentMonth, vehicleMonth],
     months: monthTotals,
-    recent: modules.contains('daily') ? expenses.take(5).toList() : const [],
+    recent: modules.contains('daily') ? expenses.take(6).toList() : const [],
   );
 });
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
+
   @override
   ConsumerState<DashboardScreen> createState() => _DashboardState();
 }
 
 class _DashboardState extends ConsumerState<DashboardScreen> {
-  int touched = -1;
+  static const _securityPromptKey = 'initial_security_prompt_seen_v1';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _offerSecuritySetup());
+  }
+
+  Future<void> _offerSecuritySetup() async {
+    final preferences = await SharedPreferences.getInstance();
+    final lock = ref.read(localUnlockProvider);
+    if (!mounted ||
+        lock.loading ||
+        lock.protectionEnabled ||
+        (preferences.getBool(_securityPromptKey) ?? false)) {
+      return;
+    }
+    await preferences.setBool(_securityPromptKey, true);
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.shield_rounded,
+                size: 42,
+                color: AppColors.primary,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Proteggi SpendWise',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Imposta un PIN e, se disponibile, Face ID o biometria per '
+                'proteggere i dati salvati su questo dispositivo.',
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    this.context.push('/settings');
+                  },
+                  icon: const Icon(Icons.lock_outline_rounded),
+                  label: const Text('Configura sicurezza'),
+                ),
+              ),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Più tardi'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     ref.watch(syncServiceProvider);
     final sync = ref.watch(syncStatusProvider);
     final data = ref.watch(dashboardDataProvider);
+    final layout = ref.watch(dashboardLayoutProvider);
     final modules = ref.watch(settingsProvider).visibleModules;
     final strings = AppLocalizations.of(context)!;
     final syncLabel = switch (sync) {
@@ -161,329 +243,678 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
       SyncStatus.offline => strings.syncOffline,
       SyncStatus.error => strings.syncError,
     };
+
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Ciao, ${user?.displayName ?? 'utente'}!'),
-            Text(
-              DateFormat.yMMMMd('it').format(DateTime.now()),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: syncLabel,
-            onPressed: () => ref.read(syncServiceProvider).sync(),
-            icon: Icon(
-              sync == SyncStatus.offline
-                  ? Icons.cloud_off
-                  : sync == SyncStatus.syncing
-                  ? Icons.sync
-                  : Icons.cloud_done,
-            ),
-          ),
-          IconButton(
-            tooltip: 'Analisi',
-            onPressed: () => context.push('/analytics'),
-            icon: const Icon(Icons.insights),
-          ),
-          IconButton(
-            tooltip: 'Manuale',
-            onPressed: () => context.push('/manual'),
-            icon: const Icon(Icons.help_outline),
-          ),
-          IconButton(
-            tooltip: 'Impostazioni',
-            onPressed: () => context.push('/settings'),
-            icon: const Icon(Icons.settings),
-          ),
-          if (user != null && {'tester', 'admin'}.contains(user.role))
-            IconButton(
-              tooltip: 'Dashboard tester',
-              onPressed: () => context.push('/tester'),
-              icon: const Icon(Icons.science_outlined),
-            ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.refresh(dashboardDataProvider.future),
+      body: SafeArea(
         child: data.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) {
-            final expired = error.toString().contains('401');
-            return ListView(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(32),
+          error: (error, _) => _DashboardError(
+            expired: error.toString().contains('401'),
+            onRetry: () => ref.invalidate(dashboardDataProvider),
+            onLogout: () => ref.read(authStateProvider.notifier).logout(),
+          ),
+          data: (summary) => RefreshIndicator(
+            onRefresh: () => ref.refresh(dashboardDataProvider.future),
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 520),
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            children: [
-                              Icon(
-                                expired ? Icons.lock_clock : Icons.cloud_off,
-                                size: 48,
+                      constraints: const BoxConstraints(maxWidth: 1180),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 22, 20, 12),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Cruscotto',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineMedium
+                                        ?.copyWith(letterSpacing: -.8),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        sync == SyncStatus.offline
+                                            ? Icons.cloud_off_rounded
+                                            : Icons.cloud_done_rounded,
+                                        size: 15,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        syncLabel,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                expired
-                                    ? 'La sessione è scaduta'
-                                    : 'Dashboard temporaneamente non disponibile',
-                                style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            IconButton(
+                              tooltip: 'Sincronizza',
+                              onPressed: () =>
+                                  ref.read(syncServiceProvider).sync(),
+                              icon: Icon(
+                                sync == SyncStatus.syncing
+                                    ? Icons.sync_rounded
+                                    : Icons.refresh_rounded,
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                expired
-                                    ? 'Accedi nuovamente per proteggere i tuoi dati.'
-                                    : 'Controlla la connessione e riprova.',
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              FilledButton.icon(
-                                onPressed: expired
-                                    ? () => ref
-                                          .read(authStateProvider.notifier)
-                                          .logout()
-                                    : () =>
-                                          ref.invalidate(dashboardDataProvider),
-                                icon: Icon(
-                                  expired ? Icons.login : Icons.refresh,
+                            ),
+                            IconButton(
+                              tooltip: 'Analisi',
+                              onPressed: () => context.push('/analytics'),
+                              icon: const Icon(Icons.insights_rounded),
+                            ),
+                            const SizedBox(width: 4),
+                            Tooltip(
+                              message: 'Profilo e impostazioni',
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(99),
+                                onTap: () => context.push('/settings'),
+                                child: CircleAvatar(
+                                  radius: 23,
+                                  backgroundColor: const Color(0xFF0B2B55),
+                                  child: Text(
+                                    _initials(user?.displayName),
+                                    style: const TextStyle(
+                                      color: Color(0xFF42A5FF),
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
                                 ),
-                                label: Text(
-                                  expired ? 'Torna al login' : 'Riprova',
-                                ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ),
+                SliverToBoxAdapter(
+                  child: _OverviewCarousel(
+                    data: summary,
+                    modules: modules,
+                    onOpen: (path) => context.go(path),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1180),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 22, 20, 12),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Widget',
+                              style: Theme.of(context).textTheme.headlineSmall,
+                            ),
+                            const Spacer(),
+                            TextButton.icon(
+                              onPressed: () => _showWidgetEditor(context),
+                              icon: const Icon(Icons.tune_rounded),
+                              label: const Text('Modifica'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1180),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => _WidgetGrid(
+                          width: constraints.maxWidth,
+                          configs: layout
+                              .where((item) => item.visible)
+                              .toList(),
+                          builder: (config) =>
+                              _buildWidget(config.id, summary, modules),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 110)),
               ],
-            );
-          },
-          data: (summary) => ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Card(
-                color: Theme.of(context).colorScheme.primaryContainer,
+            ),
+          ),
+        ),
+      ),
+      floatingActionButton: modules.contains('daily')
+          ? FloatingActionButton.extended(
+              onPressed: () => context.push('/daily/add'),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Nuova spesa'),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildWidget(String id, DashboardData data, Set<String> modules) =>
+      switch (id) {
+        'quick' => _QuickActionsWidget(modules: modules),
+        'categories' => _CategoriesWidget(data: data, modules: modules),
+        'trend' => _TrendWidget(data: data),
+        'recent' => _RecentWidget(data: data),
+        _ => const SizedBox.shrink(),
+      };
+
+  Future<void> _showWidgetEditor(BuildContext context) =>
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (_) => const DashboardWidgetEditorSheet(),
+      );
+
+  String _initials(String? name) {
+    final parts = (name ?? 'Utente')
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return 'U';
+    return parts.take(2).map((part) => part[0].toUpperCase()).join();
+  }
+}
+
+class _OverviewCarousel extends StatelessWidget {
+  const _OverviewCarousel({
+    required this.data,
+    required this.modules,
+    required this.onOpen,
+  });
+
+  final DashboardData data;
+  final Set<String> modules;
+  final ValueChanged<String> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = <({String title, double value, Color color, String path})>[
+      (
+        title: 'Spese del mese',
+        value: data.total,
+        color: const Color(0xFF1378F5),
+        path: '/analytics',
+      ),
+      if (modules.contains('daily'))
+        (
+          title: 'Spese quotidiane',
+          value: data.categories[0],
+          color: AppColors.daily,
+          path: '/daily',
+        ),
+      if (modules.contains('subscriptions'))
+        (
+          title: 'Abbonamenti',
+          value: data.categories[1],
+          color: AppColors.subscription,
+          path: '/subscriptions',
+        ),
+      if (modules.contains('installments'))
+        (
+          title: 'Rate',
+          value: data.categories[2],
+          color: AppColors.installment,
+          path: '/installments',
+        ),
+      if (modules.contains('vehicle'))
+        (
+          title: 'Veicoli',
+          value: data.categories[3],
+          color: AppColors.vehicle,
+          path: '/vehicle',
+        ),
+    ];
+    return SizedBox(
+      height: 176,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        scrollDirection: Axis.horizontal,
+        itemCount: cards.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final card = cards[index];
+          return SizedBox(
+            width: 260,
+            child: Material(
+              color: index == 0
+                  ? card.color
+                  : Theme.of(context).colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(26),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => onOpen(card.path),
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(22),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Spese stimate questo mese'),
-                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            index == 0
+                                ? Icons.account_balance_wallet_rounded
+                                : Icons.arrow_outward_rounded,
+                            size: 20,
+                            color: index == 0 ? Colors.white : card.color,
+                          ),
+                          const Spacer(),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: index == 0
+                                ? Colors.white70
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
                       Text(
-                        NumberFormat.currency(
-                          locale: 'it_IT',
-                          symbol: '€',
-                        ).format(summary.total),
-                        style: const TextStyle(
-                          fontSize: 34,
-                          fontWeight: FontWeight.bold,
+                        card.title,
+                        style: TextStyle(
+                          color: index == 0
+                              ? Colors.white
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _currency(card.value),
+                        style: TextStyle(
+                          color: index == 0
+                              ? Colors.white
+                              : Theme.of(context).colorScheme.onSurface,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -.8,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              LayoutBuilder(
-                builder: (context, constraints) => constraints.maxWidth > 750
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(child: _categoryChart(summary)),
-                          const SizedBox(width: 16),
-                          Expanded(child: _monthlyChart(summary)),
-                        ],
-                      )
-                    : Column(
-                        children: [
-                          _categoryChart(summary),
-                          const SizedBox(height: 16),
-                          _monthlyChart(summary),
-                        ],
-                      ),
-              ),
-              const SizedBox(height: 20),
-              if (modules.contains('daily')) ...[
-                Text(
-                  'Ultime spese',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                if (summary.recent.isEmpty)
-                  const Card(
-                    child: ListTile(title: Text('Nessuna transazione')),
-                  ),
-                for (final expense in summary.recent)
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.receipt_long),
-                      title: Text(expense.description ?? 'Spesa'),
-                      subtitle: Text(
-                        DateFormat('dd/MM/yyyy').format(expense.date.toLocal()),
-                      ),
-                      trailing: Text(
-                        NumberFormat.currency(
-                          locale: 'it_IT',
-                          symbol: '€',
-                        ).format(expense.amount),
-                      ),
-                    ),
-                  ),
-              ],
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
-      floatingActionButton: modules.contains('daily')
-          ? FloatingActionButton(
-              onPressed: () => context.push('/daily/add'),
-              child: const Icon(Icons.add),
-            )
-          : null,
     );
   }
+}
 
-  Widget _categoryChart(DashboardData data) {
-    const labels = ['Spese', 'Abbonamenti', 'Rate', 'Veicolo'];
+class _WidgetGrid extends StatelessWidget {
+  const _WidgetGrid({
+    required this.width,
+    required this.configs,
+    required this.builder,
+  });
+
+  final double width;
+  final List<DashboardWidgetConfig> configs;
+  final Widget Function(DashboardWidgetConfig config) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    const gap = 14.0;
+    final contentWidth = math.max(0, width - 40).toDouble();
+    final columns = width >= 900 ? 4 : 2;
+    final unit = (contentWidth - gap * (columns - 1)) / columns;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Wrap(
+        spacing: gap,
+        runSpacing: gap,
+        children: [
+          for (final config in configs)
+            SizedBox(
+              width: config.size == DashboardWidgetSize.wide
+                  ? contentWidth
+                  : width >= 900
+                  ? unit * 2 + gap
+                  : unit,
+              height: config.size == DashboardWidgetSize.wide
+                  ? (width >= 700 ? 250 : 230)
+                  : width >= 900
+                  ? unit * .78
+                  : unit * 1.08,
+              child: builder(config),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardWidgetCard extends StatelessWidget {
+  const _DashboardWidgetCard({
+    required this.title,
+    required this.icon,
+    required this.child,
+    this.onTap,
+  });
+
+  final String title;
+  final IconData icon;
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Theme.of(context).colorScheme.surfaceContainer,
+    borderRadius: BorderRadius.circular(26),
+    clipBehavior: Clip.antiAlias,
+    child: InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 20, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Expanded(child: child),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _QuickActionsWidget extends StatelessWidget {
+  const _QuickActionsWidget({required this.modules});
+
+  final Set<String> modules;
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = [
+      if (modules.contains('daily'))
+        ('Spesa', Icons.receipt_long_rounded, '/daily/add'),
+      if (modules.contains('subscriptions'))
+        ('Abbonamento', Icons.autorenew_rounded, '/subscriptions/add'),
+      if (modules.contains('installments'))
+        ('Piano rateale', Icons.credit_card_rounded, '/installments/add'),
+      if (modules.contains('vehicle'))
+        ('Veicolo', Icons.directions_car_rounded, '/vehicle/add'),
+    ];
+    return _DashboardWidgetCard(
+      title: 'Azioni rapide',
+      icon: Icons.bolt_rounded,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            for (final action in actions)
+              FilledButton.tonalIcon(
+                onPressed: () => context.push(action.$3),
+                icon: Icon(action.$2),
+                label: Text(action.$1),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoriesWidget extends StatelessWidget {
+  const _CategoriesWidget({required this.data, required this.modules});
+
+  final DashboardData data;
+  final Set<String> modules;
+
+  @override
+  Widget build(BuildContext context) {
     const colors = [
       AppColors.daily,
       AppColors.subscription,
       AppColors.installment,
       AppColors.vehicle,
     ];
-    final modules = ref.read(settingsProvider).visibleModules;
     final visible = [
       if (modules.contains('daily')) 0,
       if (modules.contains('subscriptions')) 1,
       if (modules.contains('installments')) 2,
       if (modules.contains('vehicle')) 3,
     ];
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              'Distribuzione del mese',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            SizedBox(
-              height: 230,
-              child: PieChart(
-                PieChartData(
-                  pieTouchData: PieTouchData(
-                    touchCallback: (_, response) => setState(
-                      () => touched =
-                          response?.touchedSection?.touchedSectionIndex ?? -1,
-                    ),
-                  ),
-                  sections: visible.map((index) {
-                    final value = data.categories[index];
-                    return PieChartSectionData(
-                      value: value <= 0 ? .001 : value,
-                      color: colors[index],
-                      radius: touched == index ? 70 : 58,
-                      title: value <= 0
-                          ? ''
-                          : NumberFormat.compactCurrency(
-                              locale: 'it_IT',
-                              symbol: '€',
-                            ).format(value),
-                      titleStyle: const TextStyle(fontWeight: FontWeight.bold),
-                    );
-                  }).toList(),
-                ),
+    return _DashboardWidgetCard(
+      title: 'Categorie',
+      icon: Icons.donut_large_rounded,
+      onTap: () => context.push('/analytics'),
+      child: PieChart(
+        PieChartData(
+          centerSpaceRadius: 34,
+          sectionsSpace: 4,
+          sections: [
+            for (final index in visible)
+              PieChartSectionData(
+                value: data.categories[index] <= 0
+                    ? .001
+                    : data.categories[index],
+                color: colors[index],
+                radius: 22,
+                showTitle: false,
               ),
-            ),
-            Wrap(
-              spacing: 12,
-              children: visible
-                  .map(
-                    (i) => Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.circle, size: 12, color: colors[i]),
-                        const SizedBox(width: 4),
-                        Text(labels[i]),
-                      ],
-                    ),
-                  )
-                  .toList(),
-            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _monthlyChart(DashboardData data) {
-    final now = DateTime.now();
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              'Andamento ultimi 6 mesi',
-              style: Theme.of(context).textTheme.titleMedium,
+class _TrendWidget extends StatelessWidget {
+  const _TrendWidget({required this.data});
+
+  final DashboardData data;
+
+  @override
+  Widget build(BuildContext context) => _DashboardWidgetCard(
+    title: 'Ultimi 6 mesi',
+    icon: Icons.show_chart_rounded,
+    onTap: () => context.push('/analytics'),
+    child: Padding(
+      padding: const EdgeInsets.only(top: 12, right: 6),
+      child: LineChart(
+        LineChartData(
+          minY: 0,
+          borderData: FlBorderData(show: false),
+          gridData: const FlGridData(show: false),
+          titlesData: const FlTitlesData(show: false),
+          lineTouchData: const LineTouchData(enabled: true),
+          lineBarsData: [
+            LineChartBarData(
+              spots: [
+                for (var index = 0; index < data.months.length; index++)
+                  FlSpot(index.toDouble(), data.months[index]),
+              ],
+              isCurved: true,
+              color: AppColors.primary,
+              barWidth: 3,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                color: AppColors.primary.withValues(alpha: .14),
+              ),
             ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 230,
-              child: BarChart(
-                BarChartData(
-                  barTouchData: BarTouchData(enabled: true),
-                  borderData: FlBorderData(show: false),
-                  gridData: const FlGridData(show: false),
-                  titlesData: FlTitlesData(
-                    leftTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, _) {
-                          final date = DateTime(
-                            now.year,
-                            now.month - 5 + value.toInt(),
-                          );
-                          return Text(DateFormat.MMM('it').format(date));
-                        },
-                      ),
-                    ),
-                  ),
-                  barGroups: List.generate(
-                    6,
-                    (i) => BarChartGroupData(
-                      x: i,
-                      barRods: [
-                        BarChartRodData(
-                          toY: data.months[i],
-                          color: AppColors.primary,
-                          width: 22,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ],
-                    ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _RecentWidget extends StatelessWidget {
+  const _RecentWidget({required this.data});
+
+  final DashboardData data;
+
+  @override
+  Widget build(BuildContext context) => _DashboardWidgetCard(
+    title: 'Ultime spese',
+    icon: Icons.history_rounded,
+    onTap: () => context.go('/daily'),
+    child: data.recent.isEmpty
+        ? const Center(child: Text('Nessuna spesa recente'))
+        : ListView.separated(
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: math.min(data.recent.length, 3),
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final expense = data.recent[index];
+              return ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(
+                  backgroundColor: AppColors.daily.withValues(alpha: .14),
+                  child: const Icon(
+                    Icons.shopping_bag_outlined,
+                    color: AppColors.daily,
                   ),
                 ),
+                title: Text(
+                  expense.description ?? 'Spesa',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  DateFormat('dd MMM', 'it').format(expense.date.toLocal()),
+                ),
+                trailing: Text(
+                  _currency(expense.amount),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              );
+            },
+          ),
+  );
+}
+
+class DashboardWidgetEditorSheet extends ConsumerWidget {
+  const DashboardWidgetEditorSheet({super.key});
+
+  static const metadata = {
+    'quick': ('Azioni rapide', Icons.bolt_rounded),
+    'categories': ('Categorie', Icons.donut_large_rounded),
+    'trend': ('Ultimi 6 mesi', Icons.show_chart_rounded),
+    'recent': ('Ultime spese', Icons.history_rounded),
+  };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final layout = ref.watch(dashboardLayoutProvider);
+    return SafeArea(
+      child: SizedBox(
+        height: math.min(MediaQuery.sizeOf(context).height * .82, 680),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 12, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Personalizza cruscotto',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        ref.read(dashboardLayoutProvider.notifier).reset(),
+                    child: const Text('Ripristina'),
+                  ),
+                ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Trascina per riordinare e scegli 4×4 o 4×8.'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ReorderableListView.builder(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+                itemCount: layout.length,
+                onReorderItem: (oldIndex, newIndex) => ref
+                    .read(dashboardLayoutProvider.notifier)
+                    .reorder(oldIndex, newIndex),
+                itemBuilder: (context, index) {
+                  final item = layout[index];
+                  final details = metadata[item.id]!;
+                  return Card(
+                    key: ValueKey(item.id),
+                    margin: const EdgeInsets.symmetric(vertical: 5),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.drag_indicator_rounded),
+                          const SizedBox(width: 8),
+                          Icon(details.$2, color: AppColors.primary),
+                          const SizedBox(width: 10),
+                          Expanded(child: Text(details.$1)),
+                          SegmentedButton<DashboardWidgetSize>(
+                            showSelectedIcon: false,
+                            segments: const [
+                              ButtonSegment(
+                                value: DashboardWidgetSize.square,
+                                label: Text('4×4'),
+                              ),
+                              ButtonSegment(
+                                value: DashboardWidgetSize.wide,
+                                label: Text('4×8'),
+                              ),
+                            ],
+                            selected: {item.size},
+                            onSelectionChanged: (value) => ref
+                                .read(dashboardLayoutProvider.notifier)
+                                .setSize(item.id, value.first),
+                          ),
+                          Switch(
+                            value: item.visible,
+                            onChanged: (value) => ref
+                                .read(dashboardLayoutProvider.notifier)
+                                .setVisible(item.id, value),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -492,3 +923,58 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
     );
   }
 }
+
+class _DashboardError extends StatelessWidget {
+  const _DashboardError({
+    required this.expired,
+    required this.onRetry,
+    required this.onLogout,
+  });
+
+  final bool expired;
+  final VoidCallback onRetry;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 460),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              expired ? Icons.lock_clock_rounded : Icons.cloud_off_rounded,
+              size: 52,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              expired
+                  ? 'La sessione è scaduta'
+                  : 'Dashboard temporaneamente non disponibile',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              expired
+                  ? 'Accedi nuovamente per proteggere i tuoi dati.'
+                  : 'Controlla la connessione e riprova.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: expired ? onLogout : onRetry,
+              icon: Icon(expired ? Icons.login_rounded : Icons.refresh_rounded),
+              label: Text(expired ? 'Torna al login' : 'Riprova'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+String _currency(double value) =>
+    NumberFormat.currency(locale: 'it_IT', symbol: '€').format(value);

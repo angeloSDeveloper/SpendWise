@@ -5,6 +5,34 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 1 luglio 2026
 
+### Prototipo UI finance moderna e cruscotto personalizzabile
+
+- Creato da `dev` il ramo isolato `feature/hootz-inspired-ui`; `dev`, `main`
+  e produzione non sono stati modificati.
+- Studiati i pattern pubblici di Hootz e i 14 riferimenti forniti, mantenendo
+  illustrazioni, marchio e codice originali di SpendWise.
+- Aggiunto onboarding interattivo in quattro passaggi con panoramica di
+  moduli, dashboard, analisi e sicurezza.
+- Aggiunte configurazione facoltativa di PIN e biometria durante la guida e
+  richiesta di configurazione sicurezza al primo accesso autenticato.
+- Ridisegnato il login con layout mobile/desktop, stile scuro premium e
+  accesso Google predisposto. Google OAuth reale resta disabilitato finche'
+  non saranno configurati Client ID e verifica server-side.
+- Ridisegnato il cruscotto con riepiloghi superiori cliccabili, azioni rapide,
+  grafici e ultime spese.
+- Aggiunto editor persistente per mostrare, nascondere, riordinare e
+  ridimensionare i widget nei formati 4x4 e 4x8.
+- Aggiornati tema globale e navigazione responsive; aggiunta nelle
+  Impostazioni la voce per rivedere la guida iniziale.
+- `flutter analyze`: nessun problema.
+- `flutter test`: 37 test superati; aggiunti test per persistenza layout,
+  fallback JSON, onboarding mobile ed editor widget mobile senza overflow.
+- Build web release riuscita e prototipo avviato su
+  `http://localhost:52100`.
+- Il controllo visivo automatizzato nel browser integrato non e' stato
+  possibile per indisponibilita' del browser nella sessione; resta il
+  collaudo visivo dell'utente.
+
 ### PIN applicativo
 
 - Aggiunta in Sicurezza la configurazione di un PIN numerico di almeno 4
