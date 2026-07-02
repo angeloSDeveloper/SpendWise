@@ -7,6 +7,12 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ### Backup e ripristino espliciti
 
+- Corretto il ripristino apparentemente vuoto: con sincronizzazione automatica
+  spenta e nessuna modifica pendente, le letture raggiungono il profilo e
+  aggiornano la cache; con modifiche locali pendenti continuano invece a usare
+  esclusivamente la copia del dispositivo.
+- Correzione pubblicata sul Worker `spendwise`, versione Cloudflare
+  `40b412ea-98d5-439b-bd58-4f3d36d9a44a`.
 - Rinominato il flag in `Sincronizzazione automatica`, distinguendolo dalle
   operazioni manuali.
 - Aggiunto `Backup ora`: invia le modifiche locali al profilo mantenendo attiva

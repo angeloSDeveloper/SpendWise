@@ -64,6 +64,12 @@ class OfflineInterceptor extends Interceptor {
 
     if (options.method == 'GET') {
       if (backupEnabled) return handler.next(options);
+      final pending = await store.database.offlineRequestCount(userId);
+      // Modalita' locale non significa modalita' offline: quando non ci sono
+      // modifiche locali da proteggere leggiamo il profilo e aggiorniamo la
+      // cache. Se esiste una coda locale, invece, la cache resta la fonte
+      // principale finche' l'utente non esegue un backup manuale.
+      if (pending == 0) return handler.next(options);
       final cached = await _readLocal(userId, _uri(options));
       return handler.resolve(
         Response(

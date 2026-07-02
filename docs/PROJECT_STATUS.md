@@ -51,6 +51,9 @@ Per ogni intervento futuro:
   manuale della Panoramica inviano la coda senza cambiare modalita'. Il comando
   `Ripristina dal cloud` scarica sul dispositivo la copia del profilo e viene
   bloccato se esistono modifiche locali ancora da salvare.
+  Quando non esistono modifiche locali in attesa, una lettura online aggiorna
+  automaticamente anche la cache; con modifiche pendenti o senza rete viene
+  protetta e mostrata la copia locale.
 - Gli input degli importi usano la virgola italiana e due decimali; il solo
   prezzo al litro dei rifornimenti usa tre decimali.
 - Temi premium centralizzati: `Oceano` e' il predefinito; `Gold` usa una
