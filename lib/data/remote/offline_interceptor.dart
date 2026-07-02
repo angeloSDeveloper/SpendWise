@@ -43,10 +43,17 @@ class OfflineInterceptor extends Interceptor {
     if (!_isDataPath(options.path) || options.extra['offlineReplay'] == true) {
       return handler.next(options);
     }
+    final backupEnabled = await _backupEnabled();
+    // Quando il cloud e' attivo una cancellazione deve raggiungere subito il
+    // server. Se manca la rete, onError la applichera' localmente e la
+    // inserira' nella coda offline.
+    if (options.method == 'DELETE' && backupEnabled) {
+      return handler.next(options);
+    }
     final userId = await _userId();
 
     if (options.method == 'GET') {
-      if (await _backupEnabled()) return handler.next(options);
+      if (backupEnabled) return handler.next(options);
       final cached = await store.read(userId, _uri(options));
       return handler.resolve(
         Response(
@@ -101,15 +108,7 @@ class OfflineInterceptor extends Interceptor {
     final options = err.requestOptions;
     if (!_isDataPath(options.path) ||
         options.extra['offlineReplay'] == true ||
-        (!_isConnectionError(err) && err.response?.statusCode != 401)) {
-      return handler.next(err);
-    }
-    final localUnlock =
-        (await SharedPreferences.getInstance()).getBool(
-          'local_unlock_active',
-        ) ??
-        false;
-    if (err.response?.statusCode == 401 && !localUnlock) {
+        !_isConnectionError(err)) {
       return handler.next(err);
     }
     final userId = await _userId();

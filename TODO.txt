@@ -12,6 +12,9 @@ Legenda:
 
 ## Problemi prioritari
 
+- [x] Corretto definitivamente il percorso DELETE: con backup cloud attivo
+  abbonamenti e altri record vengono eliminati subito dal server; la coda
+  local-first resta il fallback soltanto in assenza di rete.
 - [x] Aggiunti temi colore: `Gold` predefinito in grigio Vesuvio/oro,
   `Oceano` per la precedente palette blu e `Smeraldo`.
 - [x] Dashboard collegata all'avatar configurato: iniziali, icona, forma,

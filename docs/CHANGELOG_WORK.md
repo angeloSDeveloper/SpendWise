@@ -24,6 +24,12 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
   modifiche inviate oppure il motivo leggibile dell'errore.
 - Migliorato il replay della coda: una DELETE gia' applicata che restituisce
   `404` viene considerata completata e rimossa dalla coda.
+- Corretto il difetto che rendeva instabili le eliminazioni: quando il backup
+  cloud e' attivo, le DELETE vengono inviate immediatamente al Worker invece
+  di essere sempre rinviate alla coda locale. In assenza di rete
+  l'interceptor applica comunque la cancellazione locale e la accoda.
+- La correzione vale sia per il cestino dopo swipe sia per il pulsante
+  `Elimina` nel dettaglio dell'abbonamento.
 - `flutter analyze`: nessun problema.
 - `flutter test`: 39 test superati.
 - Build web release completata.

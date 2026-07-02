@@ -36,6 +36,9 @@ Per ogni intervento futuro:
 
 ## Funzioni completate
 
+- Le DELETE online raggiungono direttamente il Worker e aggiornano il server
+  prima del refetch; se la rete manca vengono applicate localmente e accodate.
+  Questo copre sia lo swipe sia l'eliminazione dal dettaglio.
 - Temi colore persistenti: `Gold` e' il predefinito scuro in grigio
   Vesuvio/oro; sono disponibili anche `Oceano` e `Smeraldo`.
 - L'avatar della dashboard riutilizza la configurazione SVG/foto del profilo,
