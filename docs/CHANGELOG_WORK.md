@@ -22,6 +22,8 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
   rafforzati bordi e card del tema chiaro e aggiunta una palette persistente
   per il colore di ogni sezione.
 - Versione applicativa mantenuta a `1.0.0`.
+- Build web pubblicata sul Worker Cloudflare `spendwise`.
+- Versione Cloudflare: `5ced6617-379c-4a15-a4d3-59be0906600f`.
 
 ### Sistema temi premium e identita' visiva
 
