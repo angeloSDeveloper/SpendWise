@@ -309,7 +309,7 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Dashboard',
+                                      'Panoramica',
                                       style: Theme.of(context)
                                           .textTheme
                                           .headlineMedium
@@ -976,7 +976,7 @@ class DashboardWidgetEditorSheet extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Personalizza dashboard',
+                      'Personalizza panoramica',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                   ),
@@ -1086,7 +1086,7 @@ class _DashboardError extends StatelessWidget {
             Text(
               expired
                   ? 'La sessione è scaduta'
-                  : 'Dashboard temporaneamente non disponibile',
+                  : 'Panoramica temporaneamente non disponibile',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge,
             ),

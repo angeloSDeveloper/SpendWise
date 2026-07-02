@@ -36,7 +36,7 @@ class ManualScreen extends StatelessWidget {
               'Scegli un servizio comune, importo, periodicità settimanale, mensile o annuale e l’eventuale durata.',
         ),
         _Guide(
-          title: 'Dashboard',
+          title: 'Panoramica',
           icon: Icons.bar_chart,
           text:
               'Consulta riepiloghi e grafici; tocca gli elementi dei grafici per leggerne i valori.',

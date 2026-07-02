@@ -15,8 +15,8 @@ Legenda:
 - [x] Corretto definitivamente il percorso DELETE: con backup cloud attivo
   abbonamenti e altri record vengono eliminati subito dal server; la coda
   local-first resta il fallback soltanto in assenza di rete.
-- [x] Aggiunti temi colore: `Gold` predefinito in grigio Vesuvio/oro,
-  `Oceano` per la precedente palette blu e `Smeraldo`.
+- [x] Aggiunti temi colore: `Oceano` predefinito, `Gold` premium,
+  `Emerald`, `Violet`, `Crimson` e `Graphite`.
 - [x] Dashboard collegata all'avatar configurato: iniziali, icona, forma,
   colori o foto sono gli stessi delle Impostazioni.
 - [-] Sincronizzazione resa trasparente con conteggio, esito e motivo
@@ -120,6 +120,10 @@ Legenda:
 
 ## UI mobile
 
+- [x] Guida interattiva automatica solo al primo utilizzo; rimossa dalla
+  login, resta riapribile volontariamente dalle Impostazioni.
+- [x] Nome della pagina principale uniformato su `Panoramica` nell'interfaccia
+  italiana; `Dashboard` resta soltanto in contesti tecnici o promozionali.
 - [x] Barra inferiore rifinita sotto 480 px: etichette compatte su una riga,
   carattere ridotto e bordo nero sottile con ombra di separazione.
 - [x] Nuova spesa: data e importo affiancati, testo categoria compatto.

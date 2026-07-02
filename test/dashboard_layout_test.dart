@@ -5,12 +5,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendwise/presentation/dashboard/dashboard_layout_provider.dart';
 import 'package:spendwise/presentation/dashboard/dashboard_screen.dart';
 import 'package:spendwise/presentation/onboarding/onboarding_screen.dart';
+import 'package:spendwise/presentation/onboarding/onboarding_provider.dart';
 import 'package:spendwise/domain/models/daily_expense.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  test(
+    'onboarding completato non viene riproposto agli accessi successivi',
+    () async {
+      final firstUse = OnboardingNotifier();
+      await firstUse.load();
+      expect(firstUse.state.completed, isFalse);
+
+      await firstUse.complete();
+      final nextAccess = OnboardingNotifier();
+      await nextAccess.load();
+      expect(nextAccess.state.completed, isTrue);
+    },
+  );
 
   test('dashboard layout persists visibility, size and order', () async {
     final notifier = DashboardLayoutNotifier();
@@ -73,7 +88,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Personalizza dashboard'), findsOneWidget);
+    expect(find.text('Personalizza panoramica'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

@@ -29,6 +29,22 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - Verifica browser integrata non eseguita per assenza di un browser collegato
   alla sessione; resta il collaudo visivo manuale prima del rilascio.
 
+### Guida iniziale e nomenclatura Panoramica
+
+- Confermato il comportamento one-shot dell'onboarding tramite preferenza
+  persistente: la guida automatica compare solo al primo utilizzo.
+- Rimosso il comando `Guida` dalla schermata di login, evitando che venga
+  riproposta durante gli accessi ordinari.
+- Conservato nelle Impostazioni il comando volontario per rivedere la guida.
+- Sostituito `Dashboard` con `Panoramica` nell'intestazione, nella navigazione,
+  nel manuale, nell'editor e nei messaggi dell'interfaccia italiana.
+- Conservato il termine `dashboard` esclusivamente nei nomi tecnici interni e
+  nel testo promozionale dell'onboarding.
+- Aggiunto test di persistenza che verifica che un onboarding completato non
+  venga riproposto all'accesso successivo.
+- `flutter analyze`: nessun problema.
+- `flutter test`: 41 test superati.
+
 ### Temi, avatar dashboard e diagnostica sincronizzazione
 
 - Creato il ramo isolato `feature/gold-theme-sync-feedback`.

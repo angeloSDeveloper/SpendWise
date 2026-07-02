@@ -42,18 +42,23 @@ Per ogni intervento futuro:
   semantici del tema e i relativi stati interattivi.
 - Login aggiornato con testo fintech piu' breve, card tematica e marchio
   originale `S + check`, riutilizzato come favicon web.
+- La pagina principale e' denominata `Panoramica` nell'interfaccia italiana;
+  `Dashboard` resta un termine interno, tecnico o promozionale.
+- La guida interattiva viene proposta automaticamente solo al primo utilizzo.
+  Non compare piu' nella login, ma puo' essere riaperta volontariamente dalle
+  Impostazioni.
 - Navigazione mobile: sotto 480 px usa etichette compatte senza ritorni a
   capo; la barra ha un bordo nero sottile e un'ombra che la separano dai
   widget della dashboard.
 - Le DELETE online raggiungono direttamente il Worker e aggiornano il server
   prima del refetch; se la rete manca vengono applicate localmente e accodate.
   Questo copre sia lo swipe sia l'eliminazione dal dettaglio.
-- Temi colore persistenti: `Gold` e' il predefinito scuro in grigio
-  Vesuvio/oro; sono disponibili anche `Oceano` e `Smeraldo`.
+- Temi colore persistenti: `Oceano` e' il predefinito; sono disponibili anche
+  `Gold`, `Emerald`, `Violet`, `Crimson` e `Graphite`.
 - L'avatar della dashboard riutilizza la configurazione SVG/foto del profilo,
   incluse le iniziali personalizzate.
-- L'intestazione e i testi della nuova UI usano `Dashboard`, non
-  `Cruscotto`.
+- L'intestazione e la navigazione italiana usano `Panoramica`, non
+  `Cruscotto` o `Dashboard`.
 - Nuova UI finance moderna approvata: onboarding, login responsive, sicurezza
   iniziale e dashboard centrata con riepiloghi adattivi, scrollbar desktop e
   widget persistenti 4x4/4x8.

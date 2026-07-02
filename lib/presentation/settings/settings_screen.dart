@@ -335,7 +335,7 @@ class SettingsScreen extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const Text(
-            'La dashboard, le statistiche e la navigazione seguiranno queste scelte.',
+            'La panoramica, le statistiche e la navigazione seguiranno queste scelte.',
           ),
           for (final module in const {
             'daily': ('Spese', Icons.receipt_long),

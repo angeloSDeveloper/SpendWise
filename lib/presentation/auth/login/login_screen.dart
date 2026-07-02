@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
-import 'package:spendwise/presentation/onboarding/onboarding_provider.dart';
 import 'package:spendwise/presentation/shared/app_feedback.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 
@@ -45,11 +44,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       'Accesso Google predisposto: servono Client ID OAuth e endpoint '
       'server prima di abilitarlo in sicurezza.',
     );
-  }
-
-  Future<void> replayIntroduction() async {
-    await ref.read(onboardingProvider.notifier).restart();
-    if (mounted) context.go('/welcome');
   }
 
   @override
@@ -116,15 +110,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                     ),
-                  ),
-                ),
-                Positioned(
-                  top: 10,
-                  right: 14,
-                  child: TextButton.icon(
-                    onPressed: replayIntroduction,
-                    icon: const Icon(Icons.play_circle_outline_rounded),
-                    label: const Text('Guida'),
                   ),
                 ),
               ],
@@ -195,7 +180,7 @@ class _LoginForm extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Accedi per ritrovare la tua dashboard.',
+              'Accedi per ritrovare la tua panoramica.',
               style: TextStyle(color: colors.onSurfaceVariant),
             ),
             const SizedBox(height: 26),
