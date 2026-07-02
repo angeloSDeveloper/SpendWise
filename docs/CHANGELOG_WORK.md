@@ -100,6 +100,15 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - `flutter analyze`: nessun problema.
 - `flutter test`: 43 test superati.
 
+### Pubblicazione temi premium, CRUD e OCR web
+
+- Allineati `feature/premium-theme-system`, `dev` e `main`.
+- Pubblicati Worker `spendwise` e asset Flutter integrati.
+- Versione Cloudflare:
+  `3795dee4-7972-4d78-a4f3-4acbf0b8531e`.
+- Verificati il sito pubblico (`HTTP 200`), `/api/health` (`HTTP 200`, stato
+  `ok`), il caricamento del motore OCR web e la nuova favicon.
+
 ### Temi, avatar dashboard e diagnostica sincronizzazione
 
 - Creato il ramo isolato `feature/gold-theme-sync-feedback`.
