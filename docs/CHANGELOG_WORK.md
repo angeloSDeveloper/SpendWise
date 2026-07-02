@@ -5,6 +5,30 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 2 luglio 2026
 
+### Sistema temi premium e identita' visiva
+
+- Creato il ramo isolato `feature/premium-theme-system`.
+- Ripristinato `Oceano` come tema predefinito per le nuove installazioni.
+- Reso `Gold` piu' sobrio con fondo nero/antracite, bordi caldi e oro
+  `#C9A227` limitato agli elementi attivi e alle azioni principali.
+- Aggiunti i temi `Emerald`, `Violet`, `Crimson` e `Graphite`.
+- Estesa la configurazione centralizzata con colori per hover, contrasto,
+  bordi e testi; input, pulsanti, card, chip e navigazione usano ora questi
+  valori senza colori locali duplicati.
+- Migliorata la login card con bordo sottile, glow tematico leggero, input e
+  password eye allineati al tema e nuovo testo:
+  `Tutto cio' che conta, in un unico posto.`
+- Uniformata la nomenclatura principale su `Dashboard`; nell'editor della
+  dashboard `Widget` e' diventato `Personalizzazione`.
+- Disegnato un marchio vettoriale originale `S + check` per login e favicon
+  web, senza dipendenze grafiche aggiuntive.
+- Rafforzati bordi e hover delle card interattive della dashboard.
+- Mantenuta la versione applicativa `1.0.0`.
+- `flutter analyze`: nessun problema.
+- `flutter test`: 40 test superati.
+- Verifica browser integrata non eseguita per assenza di un browser collegato
+  alla sessione; resta il collaudo visivo manuale prima del rilascio.
+
 ### Temi, avatar dashboard e diagnostica sincronizzazione
 
 - Creato il ramo isolato `feature/gold-theme-sync-feedback`.

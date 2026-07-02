@@ -55,8 +55,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final loading = ref.watch(authStateProvider) is AuthLoading;
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFF050608),
+      backgroundColor: colors.surface,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -87,7 +88,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   bottom: -180,
                   left: -130,
                   child: _Glow(
-                    color: AppColors.secondary.withValues(alpha: .16),
+                    color: colors.secondary.withValues(alpha: .12),
                     size: 480,
                   ),
                 ),
@@ -157,179 +158,204 @@ class _LoginForm extends StatelessWidget {
   final VoidCallback onGoogle;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(28),
-    decoration: BoxDecoration(
-      color: const Color(0xFF15171B),
-      borderRadius: BorderRadius.circular(30),
-      border: Border.all(color: const Color(0xFF2A2D34)),
-      boxShadow: const [
-        BoxShadow(color: Colors.black38, blurRadius: 50, offset: Offset(0, 24)),
-      ],
-    ),
-    child: Form(
-      key: formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'Bentornato',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -.6,
-            ),
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(30),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainer,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: colors.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primary.withValues(alpha: .06),
+            blurRadius: 42,
+            spreadRadius: 1,
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'Accedi per ritrovare la tua dashboard.',
-            style: TextStyle(color: Color(0xFF9A9DA6)),
-          ),
-          const SizedBox(height: 26),
-          OutlinedButton.icon(
-            onPressed: onGoogle,
-            icon: const _GoogleMark(),
-            label: const Text('Continua con Google'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              minimumSize: const Size.fromHeight(54),
-              side: const BorderSide(color: Color(0xFF3B3E46)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 18),
-            child: Row(
-              children: [
-                Expanded(child: Divider(color: Color(0xFF343740))),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    'oppure con email',
-                    style: TextStyle(color: Color(0xFF777A83), fontSize: 12),
-                  ),
-                ),
-                Expanded(child: Divider(color: Color(0xFF343740))),
-              ],
-            ),
-          ),
-          TextFormField(
-            controller: email,
-            keyboardType: TextInputType.emailAddress,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              prefixIcon: Icon(Icons.email_outlined),
-            ),
-            validator: (value) =>
-                value != null && RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(value)
-                ? null
-                : 'Inserisci un’email valida',
-          ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: password,
-            obscureText: hidden,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              labelText: 'Password',
-              prefixIcon: const Icon(Icons.lock_outline_rounded),
-              suffixIcon: IconButton(
-                onPressed: onTogglePassword,
-                icon: Icon(
-                  hidden
-                      ? Icons.visibility_rounded
-                      : Icons.visibility_off_rounded,
-                ),
-              ),
-            ),
-            validator: (value) =>
-                (value?.isNotEmpty ?? false) ? null : 'Password obbligatoria',
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => showAppMessage(
-                context,
-                'Recupero password disponibile prossimamente',
-              ),
-              child: const Text('Password dimenticata?'),
-            ),
-          ),
-          const SizedBox(height: 4),
-          FilledButton(
-            onPressed: loading ? null : onSubmit,
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF1677F2),
-              minimumSize: const Size.fromHeight(56),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(17),
-              ),
-            ),
-            child: loading
-                ? const SizedBox.square(
-                    dimension: 21,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Accedi'),
-          ),
-          const SizedBox(height: 10),
-          TextButton(
-            onPressed: () => context.go('/register'),
-            child: const Text('Non hai un account? Registrati'),
+          const BoxShadow(
+            color: Colors.black38,
+            blurRadius: 48,
+            offset: Offset(0, 22),
           ),
         ],
       ),
-    ),
-  );
+      child: Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Bentornato',
+              style: TextStyle(
+                color: colors.onSurface,
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -.6,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Accedi per ritrovare la tua dashboard.',
+              style: TextStyle(color: colors.onSurfaceVariant),
+            ),
+            const SizedBox(height: 26),
+            OutlinedButton.icon(
+              onPressed: onGoogle,
+              icon: const _GoogleMark(),
+              label: const Text('Continua con Google'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colors.onSurface,
+                minimumSize: const Size.fromHeight(54),
+                side: BorderSide(color: colors.outlineVariant),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              child: Row(
+                children: [
+                  Expanded(child: Divider(color: colors.outlineVariant)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      'oppure con email',
+                      style: TextStyle(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: colors.outlineVariant)),
+                ],
+              ),
+            ),
+            TextFormField(
+              controller: email,
+              keyboardType: TextInputType.emailAddress,
+              style: TextStyle(color: colors.onSurface),
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
+              validator: (value) =>
+                  value != null &&
+                      RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(value)
+                  ? null
+                  : 'Inserisci un’email valida',
+            ),
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: password,
+              obscureText: hidden,
+              style: TextStyle(color: colors.onSurface),
+              decoration: InputDecoration(
+                labelText: 'Password',
+                prefixIcon: const Icon(Icons.lock_outline_rounded),
+                suffixIcon: IconButton(
+                  onPressed: onTogglePassword,
+                  icon: Icon(
+                    hidden
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
+                  ),
+                ),
+              ),
+              validator: (value) =>
+                  (value?.isNotEmpty ?? false) ? null : 'Password obbligatoria',
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => showAppMessage(
+                  context,
+                  'Recupero password disponibile prossimamente',
+                ),
+                child: const Text('Password dimenticata?'),
+              ),
+            ),
+            const SizedBox(height: 4),
+            FilledButton(
+              onPressed: loading ? null : onSubmit,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(56),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(17),
+                ),
+              ),
+              child: loading
+                  ? const SizedBox.square(
+                      dimension: 21,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Accedi'),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => context.go('/register'),
+              child: const Text('Non hai un account? Registrati'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _LoginStory extends StatelessWidget {
   const _LoginStory();
 
   @override
-  Widget build(BuildContext context) => const Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _CompactBrand(alignedLeft: true),
-      SizedBox(height: 52),
-      Text(
-        'Tutto ciò che conta,\nin una sola dashboard.',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 52,
-          height: 1.05,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -1.8,
-        ),
-      ),
-      SizedBox(height: 22),
-      SizedBox(
-        width: 530,
-        child: Text(
-          'Organizza spese, scadenze, rate e veicoli con widget costruiti '
-          'intorno al tuo modo di usare SpendWise.',
-          style: TextStyle(color: Color(0xFF9A9DA6), fontSize: 19, height: 1.5),
-        ),
-      ),
-      SizedBox(height: 34),
-      Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: [
-          _FeatureChip(
-            icon: Icons.dashboard_customize_rounded,
-            label: 'Widget',
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _CompactBrand(alignedLeft: true),
+        const SizedBox(height: 52),
+        Text(
+          'Tutto ciò che conta,\nin un unico posto.',
+          style: TextStyle(
+            color: colors.onSurface,
+            fontSize: 52,
+            height: 1.05,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -1.8,
           ),
-          _FeatureChip(icon: Icons.lock_rounded, label: 'PIN e biometria'),
-          _FeatureChip(icon: Icons.cloud_done_rounded, label: 'Backup'),
-        ],
-      ),
-    ],
-  );
+        ),
+        const SizedBox(height: 22),
+        SizedBox(
+          width: 530,
+          child: Text(
+            'Organizza spese, scadenze, rate e veicoli con un’esperienza '
+            'semplice, veloce e sicura.',
+            style: TextStyle(
+              color: colors.onSurfaceVariant,
+              fontSize: 19,
+              height: 1.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 34),
+        const Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _FeatureChip(
+              icon: Icons.dashboard_customize_rounded,
+              label: 'Widget',
+            ),
+            _FeatureChip(icon: Icons.lock_rounded, label: 'PIN e biometria'),
+            _FeatureChip(
+              icon: Icons.cloud_done_outlined,
+              label: 'Backup e sincronizzazione',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
 class _CompactBrand extends StatelessWidget {
@@ -344,28 +370,102 @@ class _CompactBrand extends StatelessWidget {
         ? MainAxisAlignment.start
         : MainAxisAlignment.center,
     children: [
-      Container(
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF35A3FF), Color(0xFF1555E8)],
-          ),
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: const Icon(Icons.ssid_chart_rounded, color: Colors.white),
-      ),
+      const _SpendWiseMark(size: 46),
       const SizedBox(width: 12),
-      const Text(
+      Text(
         AppConstants.appName,
         style: TextStyle(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.onSurface,
           fontSize: 24,
           fontWeight: FontWeight.w800,
         ),
       ),
     ],
   );
+}
+
+class _SpendWiseMark extends StatelessWidget {
+  const _SpendWiseMark({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 46,
+    height: 46,
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Theme.of(context).colorScheme.primary,
+          Theme.of(context).colorScheme.primary.withValues(alpha: .72),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(15),
+    ),
+    child: CustomPaint(
+      painter: _SpendWiseMarkPainter(
+        color: Theme.of(context).colorScheme.onPrimary,
+      ),
+    ),
+  );
+}
+
+class _SpendWiseMarkPainter extends CustomPainter {
+  const _SpendWiseMarkPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * .075
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(
+      Path()
+        ..moveTo(size.width * .68, size.height * .27)
+        ..cubicTo(
+          size.width * .57,
+          size.height * .16,
+          size.width * .31,
+          size.height * .2,
+          size.width * .31,
+          size.height * .36,
+        )
+        ..cubicTo(
+          size.width * .31,
+          size.height * .52,
+          size.width * .67,
+          size.height * .45,
+          size.width * .67,
+          size.height * .65,
+        )
+        ..cubicTo(
+          size.width * .67,
+          size.height * .8,
+          size.width * .39,
+          size.height * .85,
+          size.width * .26,
+          size.height * .7,
+        ),
+      paint,
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(size.width * .48, size.height * .62)
+        ..lineTo(size.width * .59, size.height * .73)
+        ..lineTo(size.width * .79, size.height * .49),
+      paint..strokeWidth = size.width * .065,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SpendWiseMarkPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class _FeatureChip extends StatelessWidget {
@@ -378,16 +478,16 @@ class _FeatureChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
     decoration: BoxDecoration(
-      color: const Color(0xFF15171B),
+      color: Theme.of(context).colorScheme.surfaceContainer,
       borderRadius: BorderRadius.circular(99),
-      border: Border.all(color: const Color(0xFF2B2E35)),
+      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 17, color: const Color(0xFF48A5FF)),
+        Icon(icon, size: 17, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 7),
-        Text(label, style: const TextStyle(color: Colors.white)),
+        Text(label),
       ],
     ),
   );

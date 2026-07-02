@@ -36,6 +36,12 @@ Per ogni intervento futuro:
 
 ## Funzioni completate
 
+- Temi premium centralizzati: `Oceano` e' il predefinito; `Gold` usa una
+  palette antracite e oro sobrio; sono disponibili anche `Emerald`, `Violet`,
+  `Crimson` e `Graphite`. Login, input, pulsanti, chip e card usano i colori
+  semantici del tema e i relativi stati interattivi.
+- Login aggiornato con testo fintech piu' breve, card tematica e marchio
+  originale `S + check`, riutilizzato come favicon web.
 - Navigazione mobile: sotto 480 px usa etichette compatte senza ritorni a
   capo; la barra ha un bordo nero sottile e un'ombra che la separano dai
   widget della dashboard.
@@ -77,6 +83,9 @@ Per ogni intervento futuro:
 
 ## Funzioni parziali
 
+- Le icone nuove e principali usano uno stile outlined coerente; le numerose
+  schermate storiche usano ancora un insieme misto di icone Material e
+  richiedono un audit visivo dedicato prima di un'eventuale migrazione globale.
 - Sincronizzazione manuale: il comando ora mostra se non c'e' nulla da
   inviare, quante modifiche sono state sincronizzate oppure il motivo
   leggibile del fallimento. Resta da verificare sul browser dell'utente quale

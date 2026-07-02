@@ -400,7 +400,7 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
                           child: Row(
                             children: [
                               Text(
-                                'Widget',
+                                'Personalizzazione',
                                 style: Theme.of(
                                   context,
                                 ).textTheme.headlineSmall,
@@ -618,7 +618,14 @@ class _OverviewCard extends StatelessWidget {
     color: primary
         ? data.color
         : Theme.of(context).colorScheme.surfaceContainer,
-    borderRadius: BorderRadius.circular(26),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(26),
+      side: BorderSide(
+        color: primary
+            ? data.color
+            : Theme.of(context).colorScheme.outlineVariant,
+      ),
+    ),
     clipBehavior: Clip.antiAlias,
     child: InkWell(
       onTap: onTap,
@@ -733,7 +740,10 @@ class _DashboardWidgetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
     color: Theme.of(context).colorScheme.surfaceContainer,
-    borderRadius: BorderRadius.circular(26),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(26),
+      side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+    ),
     clipBehavior: Clip.antiAlias,
     child: InkWell(
       onTap: onTap,

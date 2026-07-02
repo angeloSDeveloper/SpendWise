@@ -8,23 +8,34 @@ import 'package:spendwise/presentation/settings/settings_screen.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  test('Gold è il tema predefinito e Oceano viene memorizzato', () async {
+  test('Oceano è il tema predefinito e Gold viene memorizzato', () async {
     final settings = SettingsNotifier();
     await settings.load();
-    expect(settings.state.colorTheme, 'gold');
+    expect(settings.state.colorTheme, 'ocean');
     expect(
       AppTheme.darkTheme(settings.state.colorTheme).colorScheme.primary,
-      AppColorThemes.gold.primaryDark,
+      AppColorThemes.ocean.primary,
     );
 
-    await settings.setColorTheme('ocean');
+    await settings.setColorTheme('gold');
     final restored = SettingsNotifier();
     await restored.load();
-    expect(restored.state.colorTheme, 'ocean');
+    expect(restored.state.colorTheme, 'gold');
     expect(
       AppTheme.darkTheme(restored.state.colorTheme).colorScheme.primary,
-      AppColorThemes.ocean.primaryDark,
+      AppColorThemes.gold.primary,
     );
+  });
+
+  test('tutti i temi premium generano una palette scura coerente', () {
+    expect(AppColorThemes.values, hasLength(6));
+    for (final palette in AppColorThemes.values) {
+      final scheme = AppTheme.darkTheme(palette.id).colorScheme;
+      expect(scheme.primary, palette.primary);
+      expect(scheme.surface, palette.darkSurface);
+      expect(scheme.surfaceContainer, palette.darkContainer);
+      expect(scheme.outlineVariant, palette.border);
+    }
   });
 
   testWidgets('disegna le versioni uomo e donna', (tester) async {

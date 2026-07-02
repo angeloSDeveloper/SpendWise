@@ -8,7 +8,7 @@ const appModules = {'daily', 'subscriptions', 'installments', 'vehicle'};
 class SettingsState {
   const SettingsState({
     this.themeMode = ThemeMode.dark,
-    this.colorTheme = 'gold',
+    this.colorTheme = 'ocean',
     this.avatarData,
     this.avatarGender = 'male',
     this.avatarFace = 'smile',
@@ -102,7 +102,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         (x) => x.name == prefs.getString('theme_mode'),
         orElse: () => ThemeMode.dark,
       ),
-      colorTheme: prefs.getString('color_theme') ?? 'gold',
+      colorTheme: prefs.getString('color_theme') ?? 'ocean',
       avatarData: prefs.getString('avatar_data'),
       avatarGender: prefs.getString('avatar_gender') ?? 'male',
       avatarFace: _normalizeFace(prefs.getString('avatar_face')),

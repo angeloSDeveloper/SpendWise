@@ -97,6 +97,15 @@ Legenda:
 
 ## Impostazioni e personalizzazione
 
+- [x] Sistema temi premium centralizzato: `Oceano` predefinito, `Gold`
+  sobrio e palette `Emerald`, `Violet`, `Crimson` e `Graphite`.
+- [x] Login, input, pulsanti, card e badge collegati ai colori semantici del
+  tema, con stati focus, hover e disabilitato coerenti.
+- [x] Terminologia principale uniformata su `Dashboard`; testo login
+  aggiornato e `Widget` rinominato `Personalizzazione` dove indica l'editor.
+- [-] Prima uniformazione delle icone tramite varianti Material outlined a
+  tratto coerente e nuovo marchio originale `S + check`; resta un audit
+  completo delle icone storiche in tutte le schermate.
 - [-] Scelta lingua italiano, inglese, spagnolo e tedesco implementata per
   navigazione, componenti di sistema e testi localizzati principali; resta la
   conversione dei testi storici ancora hardcoded.
