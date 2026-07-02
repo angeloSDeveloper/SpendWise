@@ -63,6 +63,7 @@ class DioClient {
       BaseOptions(
         baseUrl: AppConstants.apiBaseUrl,
         connectTimeout: const Duration(seconds: 10),
+        sendTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 30),
       ),
     );

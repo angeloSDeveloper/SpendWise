@@ -53,6 +53,9 @@ Per ogni intervento futuro:
 - Le DELETE online raggiungono direttamente il Worker e aggiornano il server
   prima del refetch; se la rete manca vengono applicate localmente e accodate.
   Questo copre sia lo swipe sia l'eliminazione dal dettaglio.
+- Con backup attivo anche POST e PUT raggiungono direttamente il Worker:
+  creazione e modifica non attendono piu' una scrittura IndexedDB potenzialmente
+  bloccata. In assenza di rete restano applicazione locale e coda offline.
 - Temi colore persistenti: `Oceano` e' il predefinito; sono disponibili anche
   `Gold`, `Emerald`, `Violet`, `Crimson` e `Graphite`.
 - L'avatar della dashboard riutilizza la configurazione SVG/foto del profilo,

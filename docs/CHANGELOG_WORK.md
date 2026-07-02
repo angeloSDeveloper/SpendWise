@@ -56,6 +56,17 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - Il provider viene invalidato subito dopo la DELETE per riallineare la cache
   senza attendere il cambio di pagina.
 
+### Fix blocco salvataggio abbonamenti
+
+- Individuato il blocco nel percorso local-first: POST e PUT attendevano la
+  scrittura IndexedDB prima di completare il form anche con backup cloud
+  attivo.
+- Le scritture online vengono ora inviate immediatamente al Worker; se manca
+  la connessione, l'interceptor le applica localmente e le inserisce nella
+  coda offline.
+- Aggiunto un timeout di invio HTTP di 15 secondi per impedire richieste senza
+  limite e garantire il ripristino del pulsante in caso di errore.
+
 ### Temi, avatar dashboard e diagnostica sincronizzazione
 
 - Creato il ramo isolato `feature/gold-theme-sync-feedback`.

@@ -44,10 +44,10 @@ class OfflineInterceptor extends Interceptor {
       return handler.next(options);
     }
     final backupEnabled = await _backupEnabled();
-    // Quando il cloud e' attivo una cancellazione deve raggiungere subito il
-    // server. Se manca la rete, onError la applichera' localmente e la
-    // inserira' nella coda offline.
-    if (options.method == 'DELETE' && backupEnabled) {
+    // Con il backup attivo le scritture raggiungono subito il server. In
+    // assenza di rete onError le applica localmente e le accoda. Evitiamo
+    // cosi' che una scrittura IndexedDB lenta blocchi indefinitamente i form.
+    if (options.method != 'GET' && backupEnabled) {
       return handler.next(options);
     }
     final userId = await _userId();

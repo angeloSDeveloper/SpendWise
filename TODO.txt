@@ -61,6 +61,9 @@ Legenda:
 
 ## Abbonamenti e rate
 
+- [x] Corretto il blocco di `Salva abbonamento`: con backup attivo POST e PUT
+  raggiungono subito il Worker; IndexedDB e coda offline intervengono soltanto
+  quando la rete non e' disponibile.
 - [x] Eliminazione abbonamenti aggiornata in tempo reale: un errore della
   sincronizzazione successiva non ripristina piu' nella lista un record gia'
   cancellato correttamente dal server.
