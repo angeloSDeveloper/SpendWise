@@ -12,6 +12,9 @@ Legenda:
 
 ## Problemi prioritari
 
+- [x] Audit trasversale CRUD: POST/PUT online non vengono piu' bloccate dalla
+  cache locale; tutte le DELETE aggiornano subito il provider senza attendere
+  il replay della coda offline.
 - [x] Corretto definitivamente il percorso DELETE: con backup cloud attivo
   abbonamenti e altri record vengono eliminati subito dal server; la coda
   local-first resta il fallback soltanto in assenza di rete.
@@ -99,7 +102,8 @@ Legenda:
   completo conservato, da collaudare visivamente.
 - [x] Capacita serbatoio in creazione/modifica veicolo e precompilazione litri
   con pieno completo, migrata e pubblicata.
-- [ ] Dettaglio/modifica/eliminazione rifornimenti.
+- [-] I rifornimenti supportano creazione ed eliminazione; dettaglio e
+  modifica restano da implementare.
 
 ## Impostazioni e personalizzazione
 

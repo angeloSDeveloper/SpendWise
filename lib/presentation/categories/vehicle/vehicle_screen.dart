@@ -16,8 +16,8 @@ import 'package:spendwise/data/remote/api_client.dart';
 import 'package:spendwise/domain/models/enums.dart';
 import 'package:spendwise/domain/models/fuel_entry.dart';
 import 'package:spendwise/domain/models/vehicle.dart';
-import 'package:spendwise/domain/models/vehicle_maintenance.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
+import 'package:spendwise/domain/models/vehicle_maintenance.dart';
 import 'package:spendwise/presentation/shared/app_feedback.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
 import 'package:spendwise/presentation/shared/widgets/swipe_reveal_delete.dart';
@@ -237,10 +237,7 @@ class _VehicleScreenState extends ConsumerState<VehicleScreen> {
                               await ref
                                   .read(vehiclesApiProvider)
                                   .delete(vehicle.id);
-                              final synced = await ref
-                                  .read(syncServiceProvider)
-                                  .sync();
-                              if (synced) ref.invalidate(vehiclesProvider);
+                              ref.invalidate(vehiclesProvider);
                             },
                             child: Card(
                               child: ListTile(
@@ -652,8 +649,7 @@ class _FuelTab extends ConsumerWidget {
                       await ref
                           .read(vehiclesApiProvider)
                           .deleteFuel(id, item.id);
-                      final synced = await ref.read(syncServiceProvider).sync();
-                      if (synced) ref.invalidate(fuelEntriesProvider(id));
+                      ref.invalidate(fuelEntriesProvider(id));
                     },
                     child: Card(
                       child: ListTile(
@@ -739,12 +735,7 @@ class _MaintenanceTab extends ConsumerWidget {
                         await ref
                             .read(vehiclesApiProvider)
                             .deleteMaintenance(id, item.id);
-                        final synced = await ref
-                            .read(syncServiceProvider)
-                            .sync();
-                        if (synced) {
-                          ref.invalidate(maintenanceEntriesProvider(id));
-                        }
+                        ref.invalidate(maintenanceEntriesProvider(id));
                       },
                       child: _MaintenanceCard(
                         item: item,
@@ -843,10 +834,7 @@ class _AccessoryCard extends ConsumerWidget {
         await ref
             .read(vehiclesApiProvider)
             .deleteAccessory(item.vehicleId, item.id);
-        final synced = await ref.read(syncServiceProvider).sync();
-        if (synced) {
-          ref.invalidate(accessoryEntriesProvider(item.vehicleId));
-        }
+        ref.invalidate(accessoryEntriesProvider(item.vehicleId));
       },
       child: Card(
         child: ListTile(

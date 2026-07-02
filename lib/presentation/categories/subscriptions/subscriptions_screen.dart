@@ -272,12 +272,6 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                           rethrow;
                         }
                         ref.invalidate(subscriptionsProvider);
-                        try {
-                          await ref.read(syncServiceProvider).sync();
-                        } catch (_) {
-                          // La DELETE e' gia' riuscita: un errore del replay
-                          // offline non deve ripristinare il record nella UI.
-                        }
                       },
                       child: Card(
                         child: ListTile(

@@ -56,6 +56,9 @@ Per ogni intervento futuro:
 - Con backup attivo anche POST e PUT raggiungono direttamente il Worker:
   creazione e modifica non attendono piu' una scrittura IndexedDB potenzialmente
   bloccata. In assenza di rete restano applicazione locale e coda offline.
+- Le eliminazioni di spese, abbonamenti, rate, veicoli, rifornimenti,
+  manutenzioni e accessori invalidano subito il relativo provider; la
+  sincronizzazione periodica gestisce separatamente l'eventuale coda offline.
 - Temi colore persistenti: `Oceano` e' il predefinito; sono disponibili anche
   `Gold`, `Emerald`, `Violet`, `Crimson` e `Graphite`.
 - L'avatar della dashboard riutilizza la configurazione SVG/foto del profilo,
@@ -86,6 +89,8 @@ Per ogni intervento futuro:
 - Capacità serbatoio del veicolo e precompilazione dei litri per il pieno
   completo.
 - CRUD per spese quotidiane, abbonamenti, rate, manutenzioni e accessori.
+  I rifornimenti hanno creazione ed eliminazione, ma non ancora dettaglio e
+  modifica.
 - Menu principali configurabili dalle impostazioni.
 - Preferenze locali per tema, avatar, biometria e promemoria.
 - Avatar vettoriale leggero semplificato alle versioni Uomo e Donna, con foto

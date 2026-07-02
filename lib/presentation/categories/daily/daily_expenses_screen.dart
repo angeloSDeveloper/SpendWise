@@ -151,10 +151,7 @@ class _State extends ConsumerState<DailyExpensesScreen> {
                         await ref
                             .read(expensesApiProvider)
                             .deleteExpense(item.id);
-                        final synced = await ref
-                            .read(syncServiceProvider)
-                            .sync();
-                        if (synced) ref.invalidate(dailyExpensesProvider);
+                        ref.invalidate(dailyExpensesProvider);
                       },
                       child: Card(
                         child: ListTile(

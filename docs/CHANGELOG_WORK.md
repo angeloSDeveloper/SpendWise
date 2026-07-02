@@ -67,6 +67,22 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - Aggiunto un timeout di invio HTTP di 15 secondi per impedire richieste senza
   limite e garantire il ripristino del pulsante in caso di errore.
 
+### Audit CRUD completo
+
+- Verificati i flussi di creazione/modifica/eliminazione per spese,
+  abbonamenti, rate, veicoli, rifornimenti, manutenzioni e accessori.
+- Confermato che il blocco di `Nuovo rifornimento` aveva la stessa causa
+  trasversale del salvataggio abbonamenti ed e' coperto dalla correzione
+  dell'interceptor POST/PUT.
+- Uniformate tutte le DELETE: il provider interessato viene invalidato subito
+  dopo la risposta, senza attendere la sincronizzazione periodica.
+- Aggiunto un test dell'interceptor che verifica che una POST con backup
+  attivo raggiunga realmente il server.
+- Resta incompleto il CRUD dei rifornimenti: creazione ed eliminazione sono
+  presenti, dettaglio e modifica non sono ancora implementati.
+- `flutter analyze`: nessun problema.
+- `flutter test`: 42 test superati.
+
 ### Temi, avatar dashboard e diagnostica sincronizzazione
 
 - Creato il ramo isolato `feature/gold-theme-sync-feedback`.
