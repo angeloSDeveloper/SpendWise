@@ -37,7 +37,17 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - `flutter analyze`: nessun problema.
 - `flutter test`: 39 test superati.
 - Build web release completata.
-- Nessun deploy Cloudflare eseguito: ramo in attesa di collaudo locale.
+- Pubblicata la modifica su Cloudflare dopo l'allineamento di `main`, `dev` e
+  del ramo feature.
+
+### Pubblicazione temi, sincronizzazione e navigazione mobile
+
+- Ricostruita la web app release con API di produzione.
+- Pubblicati Worker `spendwise` e asset Flutter integrati.
+- Versione Cloudflare:
+  `d2dd90ce-4432-4123-a061-972784a4e940`.
+- Verificati dopo il deploy il sito pubblico (`HTTP 200`) e
+  `/api/health` (`HTTP 200`, stato `ok`).
 
 ### Eliminazione immediata e dashboard responsive approvate
 
