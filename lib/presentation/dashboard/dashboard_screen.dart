@@ -38,34 +38,48 @@ class DashboardData {
 final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
   ref,
 ) async {
+  Future<List<T>> safeList<T>(Future<List<T>> request) async {
+    try {
+      return await request.timeout(const Duration(seconds: 8));
+    } catch (_) {
+      return <T>[];
+    }
+  }
+
   final settings = ref.watch(settingsProvider);
   final modules = settings.visibleModules;
   final dio = ref.watch(dioClientProvider).dio;
   final now = DateTime.now();
   final from = DateTime(now.year, now.month - 11, 1);
   final results = await Future.wait([
-    ExpensesApiClient(dio).getExpenses(
-      settings.cloudBackupEnabled ? from.toIso8601String() : null,
-      settings.cloudBackupEnabled ? now.toIso8601String() : null,
-      null,
+    safeList<DailyExpense>(
+      ExpensesApiClient(dio).getExpenses(
+        settings.cloudBackupEnabled ? from.toIso8601String() : null,
+        settings.cloudBackupEnabled ? now.toIso8601String() : null,
+        null,
+      ),
     ),
-    SubscriptionsApiClient(dio).getAll(),
-    InstallmentsApiClient(dio).getAll(),
-    VehiclesApiClient(dio).getAll(),
+    safeList<dynamic>(SubscriptionsApiClient(dio).getAll()),
+    safeList<dynamic>(InstallmentsApiClient(dio).getAll()),
+    safeList<dynamic>(VehiclesApiClient(dio).getAll()),
   ]);
   final expenses = results[0] as List<DailyExpense>;
-  final subscriptions = results[1] as List<dynamic>;
-  final installments = results[2] as List<dynamic>;
-  final vehicles = results[3] as List<dynamic>;
+  final subscriptions = results[1];
+  final installments = results[2];
+  final vehicles = results[3];
   final vehicleApi = VehiclesApiClient(dio);
   final fuelLists = await Future.wait(
-    vehicles.map((vehicle) => vehicleApi.fuel(vehicle.id as String)),
+    vehicles.map((vehicle) => safeList(vehicleApi.fuel(vehicle.id as String))),
   );
   final maintenanceLists = await Future.wait(
-    vehicles.map((vehicle) => vehicleApi.maintenance(vehicle.id as String)),
+    vehicles.map(
+      (vehicle) => safeList(vehicleApi.maintenance(vehicle.id as String)),
+    ),
   );
   final accessoryLists = await Future.wait(
-    vehicles.map((vehicle) => vehicleApi.accessories(vehicle.id as String)),
+    vehicles.map(
+      (vehicle) => safeList(vehicleApi.accessories(vehicle.id as String)),
+    ),
   );
   final monthTotals = List<double>.filled(12, 0);
   int monthIndex(DateTime date) =>

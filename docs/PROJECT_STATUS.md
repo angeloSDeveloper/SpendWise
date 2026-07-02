@@ -38,6 +38,8 @@ Per ogni intervento futuro:
 
 - La schermata Analisi non usa piu' valori dimostrativi: grafici, percentuali,
   totali e intervalli derivano dai dati reali caricati dalla Panoramica.
+- La Panoramica carica in modo resiliente gli archivi aggregati: errori o
+  timeout di una singola categoria/veicolo non bloccano l'intera schermata.
 - I rifornimenti esistenti sono modificabili dalla relativa lista; l'OCR e'
   esplicitamente indicato come sperimentale finche' il riconoscimento non sara'
   affidabile sui diversi display.

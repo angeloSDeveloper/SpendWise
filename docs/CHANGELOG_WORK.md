@@ -5,6 +5,16 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 2 luglio 2026
 
+### Panoramica resiliente ai dati parziali
+
+- Verificata direttamente la copia cloud: presenti 3 veicoli, 4 rifornimenti,
+  15 manutenzioni e 2 accessori; nessun dato e' stato perso.
+- Le richieste aggregate della Panoramica hanno ora timeout e fallback
+  indipendenti: un singolo archivio lento o non convertibile non blocca piu'
+  l'intera pagina.
+- Correzione pubblicata sul Worker `spendwise`, versione Cloudflare
+  `ff9875be-5183-4e71-9980-af2c51c072c7`.
+
 ### Backup e ripristino espliciti
 
 - Corretto il ripristino apparentemente vuoto: con sincronizzazione automatica
