@@ -97,6 +97,18 @@ abstract final class AppTheme {
         height: 68,
         backgroundColor: scheme.surfaceContainer.withValues(alpha: .96),
         indicatorColor: scheme.primary.withValues(alpha: .18),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            color: states.contains(WidgetState.selected)
+                ? scheme.primary
+                : scheme.onSurfaceVariant,
+            fontSize: 10.5,
+            height: 1,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w500,
+          ),
+        ),
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
         ),

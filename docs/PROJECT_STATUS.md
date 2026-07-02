@@ -36,6 +36,9 @@ Per ogni intervento futuro:
 
 ## Funzioni completate
 
+- Navigazione mobile: sotto 480 px usa etichette compatte senza ritorni a
+  capo; la barra ha un bordo nero sottile e un'ombra che la separano dai
+  widget della dashboard.
 - Le DELETE online raggiungono direttamente il Worker e aggiornano il server
   prima del refetch; se la rete manca vengono applicate localmente e accodate.
   Questo copre sia lo swipe sia l'eliminazione dal dettaglio.

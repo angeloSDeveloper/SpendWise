@@ -30,6 +30,10 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
   l'interceptor applica comunque la cancellazione locale e la accoda.
 - La correzione vale sia per il cestino dopo swipe sia per il pulsante
   `Elimina` nel dettaglio dell'abbonamento.
+- Rifinita la barra di navigazione mobile: sotto 480 px `Abbonamenti` diventa
+  `Abbon.` e `Rateizzazioni` diventa `Rate`, evitando testi su due righe.
+- Ridotto il testo delle etichette a 10,5 px e aggiunti bordo nero da 1,25 px,
+  raggio coerente e ombra leggera per separare la barra dai contenuti.
 - `flutter analyze`: nessun problema.
 - `flutter test`: 39 test superati.
 - Build web release completata.

@@ -111,6 +111,8 @@ Legenda:
 
 ## UI mobile
 
+- [x] Barra inferiore rifinita sotto 480 px: etichette compatte su una riga,
+  carattere ridotto e bordo nero sottile con ombra di separazione.
 - [x] Nuova spesa: data e importo affiancati, testo categoria compatto.
 - [x] Nuovo abbonamento: periodicita semplificata a settimanale, mensile,
   annuale o personalizzata; scadenza/fine contratto affiancati.

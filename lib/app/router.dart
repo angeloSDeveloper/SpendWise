@@ -212,7 +212,8 @@ class NavigationShell extends ConsumerWidget {
     final index = visibleIndexes
         .indexOf(absoluteIndex)
         .clamp(0, visibleIndexes.length - 1);
-    final wide = MediaQuery.sizeOf(context).width > 1024;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final wide = screenWidth > 1024;
     final strings = AppLocalizations.of(context)!;
     final labels = [
       strings.dashboard,
@@ -221,6 +222,14 @@ class NavigationShell extends ConsumerWidget {
       strings.installments,
       strings.vehicle,
     ];
+    final compactLabels = [
+      strings.dashboard,
+      strings.expensesNav,
+      'Abbon.',
+      'Rate',
+      strings.vehicle,
+    ];
+    final useCompactLabels = screenWidth < 480 && visibleIndexes.length >= 4;
     final nav = NavigationRail(
       selectedIndex: index,
       onDestinationSelected: (i) => context.go(paths[visibleIndexes[i]]),
@@ -258,26 +267,44 @@ class NavigationShell extends ConsumerWidget {
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: NavigationBar(
-                    selectedIndex: index,
-                    onDestinationSelected: (i) =>
-                        context.go(paths[visibleIndexes[i]]),
-                    destinations: List.generate(
-                      visibleIndexes.length,
-                      (i) => NavigationDestination(
-                        icon: Icon(icons[visibleIndexes[i]]),
-                        selectedIcon: Icon(
-                          [
-                            Icons.home_rounded,
-                            Icons.receipt_long_rounded,
-                            Icons.autorenew_rounded,
-                            Icons.credit_card_rounded,
-                            Icons.directions_car_rounded,
-                          ][visibleIndexes[i]],
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(
+                      color: Colors.black.withValues(alpha: .9),
+                      width: 1.25,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x66000000),
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(23.5),
+                    child: NavigationBar(
+                      selectedIndex: index,
+                      onDestinationSelected: (i) =>
+                          context.go(paths[visibleIndexes[i]]),
+                      destinations: List.generate(
+                        visibleIndexes.length,
+                        (i) => NavigationDestination(
+                          icon: Icon(icons[visibleIndexes[i]]),
+                          selectedIcon: Icon(
+                            [
+                              Icons.home_rounded,
+                              Icons.receipt_long_rounded,
+                              Icons.autorenew_rounded,
+                              Icons.credit_card_rounded,
+                              Icons.directions_car_rounded,
+                            ][visibleIndexes[i]],
+                          ),
+                          label: (useCompactLabels
+                              ? compactLabels
+                              : labels)[visibleIndexes[i]],
                         ),
-                        label: labels[visibleIndexes[i]],
                       ),
                     ),
                   ),
