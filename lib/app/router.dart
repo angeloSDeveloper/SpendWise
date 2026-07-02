@@ -189,6 +189,7 @@ class NavigationShell extends ConsumerWidget {
     '/subscriptions',
     '/installments',
     '/vehicle',
+    '/tester',
   ];
   static const icons = [
     Icons.home_outlined,
@@ -196,19 +197,23 @@ class NavigationShell extends ConsumerWidget {
     Icons.autorenew,
     Icons.credit_card,
     Icons.directions_car_outlined,
+    Icons.science_outlined,
   ];
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final modules = ref.watch(settingsProvider).visibleModules;
+    final user = ref.watch(currentUserProvider);
+    final tester = user != null && {'tester', 'admin'}.contains(user.role);
     final visibleIndexes = <int>[
       0,
       if (modules.contains('daily')) 1,
       if (modules.contains('subscriptions')) 2,
       if (modules.contains('installments')) 3,
       if (modules.contains('vehicle')) 4,
+      if (tester) 5,
     ];
     final location = GoRouterState.of(context).matchedLocation;
-    final absoluteIndex = paths.indexWhere(location.startsWith).clamp(0, 4);
+    final absoluteIndex = paths.indexWhere(location.startsWith).clamp(0, 5);
     final index = visibleIndexes
         .indexOf(absoluteIndex)
         .clamp(0, visibleIndexes.length - 1);
@@ -221,6 +226,7 @@ class NavigationShell extends ConsumerWidget {
       strings.subscriptions,
       strings.installments,
       strings.vehicle,
+      'Test',
     ];
     final compactLabels = [
       strings.dashboard,
@@ -228,6 +234,7 @@ class NavigationShell extends ConsumerWidget {
       'Abbon.',
       'Rate',
       strings.vehicle,
+      'Test',
     ];
     final useCompactLabels = screenWidth < 480 && visibleIndexes.length >= 4;
     final nav = NavigationRail(
@@ -299,6 +306,7 @@ class NavigationShell extends ConsumerWidget {
                               Icons.autorenew_rounded,
                               Icons.credit_card_rounded,
                               Icons.directions_car_rounded,
+                              Icons.science_rounded,
                             ][visibleIndexes[i]],
                           ),
                           label: (useCompactLabels

@@ -146,6 +146,9 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          Text('Profilo', style: Theme.of(context).textTheme.headlineSmall),
+          const Text('Foto, avatar e identità visiva del tuo account.'),
+          const SizedBox(height: 16),
           Center(
             child: Column(
               children: [
@@ -221,7 +224,17 @@ class SettingsScreen extends ConsumerWidget {
               },
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 28),
+          const Divider(),
+          const SizedBox(height: 20),
+          Text(
+            'Impostazioni generali',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const Text(
+            'Aspetto, navigazione, dati, notifiche e sicurezza dell’app.',
+          ),
+          const SizedBox(height: 20),
           Text('Aspetto', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           SegmentedButton<ThemeMode>(
@@ -344,12 +357,67 @@ class SettingsScreen extends ConsumerWidget {
             'vehicle': ('Veicolo', Icons.directions_car),
           }.entries)
             SwitchListTile(
-              secondary: Icon(module.value.$2),
+              secondary: CircleAvatar(
+                backgroundColor: settings.moduleColor(module.key),
+                child: Icon(module.value.$2, color: Colors.white),
+              ),
               title: Text(module.value.$1),
+              subtitle: const Text('Tocca il colore per personalizzare'),
               value: settings.visibleModules.contains(module.key),
               onChanged: (value) => ref
                   .read(settingsProvider.notifier)
                   .setModule(module.key, value),
+            ),
+          const SizedBox(height: 8),
+          Text(
+            'Colori delle sezioni',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          for (final module in const {
+            'daily': 'Spese',
+            'subscriptions': 'Abbonamenti',
+            'installments': 'Rate',
+            'vehicle': 'Veicolo',
+          }.entries)
+            ListTile(
+              leading: CircleAvatar(
+                backgroundColor: settings.moduleColor(module.key),
+              ),
+              title: Text(module.value),
+              trailing: Wrap(
+                spacing: 6,
+                children: [
+                  for (final color in const [
+                    0xFF2563EB,
+                    0xFF8B5CF6,
+                    0xFFEC4899,
+                    0xFF10B981,
+                    0xFFF59E0B,
+                    0xFFE11D48,
+                  ])
+                    InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () => ref
+                          .read(settingsProvider.notifier)
+                          .setModuleColor(module.key, color),
+                      child: Padding(
+                        padding: const EdgeInsets.all(3),
+                        child: CircleAvatar(
+                          radius: 10,
+                          backgroundColor: Color(color),
+                          child: settings.moduleColors[module.key] == color
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 13,
+                                  color: Colors.white,
+                                )
+                              : null,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           const SizedBox(height: 20),
           Text('Dati e backup', style: Theme.of(context).textTheme.titleLarge),

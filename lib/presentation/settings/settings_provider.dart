@@ -4,6 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:spendwise/presentation/shared/app_feedback.dart';
 
 const appModules = {'daily', 'subscriptions', 'installments', 'vehicle'};
+const defaultModuleColors = {
+  'daily': 0xFFF59E0B,
+  'subscriptions': 0xFF8B5CF6,
+  'installments': 0xFFEC4899,
+  'vehicle': 0xFF10B981,
+};
 
 class SettingsState {
   const SettingsState({
@@ -26,6 +32,7 @@ class SettingsState {
     this.swipeDirection = 'left',
     this.bannerDurationSeconds = 10,
     this.cloudBackupEnabled = true,
+    this.moduleColors = defaultModuleColors,
   });
   final ThemeMode themeMode;
   final String colorTheme;
@@ -40,6 +47,10 @@ class SettingsState {
   final String swipeDirection;
   final int bannerDurationSeconds;
   final bool cloudBackupEnabled;
+  final Map<String, int> moduleColors;
+
+  Color moduleColor(String module) =>
+      Color(moduleColors[module] ?? defaultModuleColors[module] ?? 0xFF2563EB);
 
   SettingsState copyWith({
     ThemeMode? themeMode,
@@ -62,6 +73,7 @@ class SettingsState {
     String? swipeDirection,
     int? bannerDurationSeconds,
     bool? cloudBackupEnabled,
+    Map<String, int>? moduleColors,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     colorTheme: colorTheme ?? this.colorTheme,
@@ -83,6 +95,7 @@ class SettingsState {
     swipeDirection: swipeDirection ?? this.swipeDirection,
     bannerDurationSeconds: bannerDurationSeconds ?? this.bannerDurationSeconds,
     cloudBackupEnabled: cloudBackupEnabled ?? this.cloudBackupEnabled,
+    moduleColors: moduleColors ?? this.moduleColors,
   );
 }
 
@@ -121,6 +134,10 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       swipeDirection: prefs.getString('swipe_direction') ?? 'left',
       bannerDurationSeconds: bannerDurationSeconds,
       cloudBackupEnabled: prefs.getBool('cloud_backup_enabled') ?? true,
+      moduleColors: {
+        for (final entry in defaultModuleColors.entries)
+          entry.key: prefs.getInt('module_color_${entry.key}') ?? entry.value,
+      },
     );
   }
 
@@ -214,6 +231,16 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     (await SharedPreferences.getInstance()).setStringList(
       'visible_modules',
       modules.toList(),
+    );
+  }
+
+  Future<void> setModuleColor(String module, int color) async {
+    state = state.copyWith(
+      moduleColors: {...state.moduleColors, module: color},
+    );
+    await (await SharedPreferences.getInstance()).setInt(
+      'module_color_$module',
+      color,
     );
   }
 

@@ -6,6 +6,7 @@ import 'package:spendwise/presentation/categories/installments/installments_scre
 import 'package:spendwise/presentation/categories/subscriptions/subscriptions_screen.dart';
 import 'package:spendwise/presentation/categories/vehicle/vehicle_screen.dart';
 import 'package:spendwise/presentation/analytics/analytics_screen.dart';
+import 'package:spendwise/presentation/dashboard/dashboard_screen.dart';
 
 void main() {
   Future<void> pumpMobile(WidgetTester tester, Widget child) async {
@@ -13,7 +14,20 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(ProviderScope(child: MaterialApp(home: child)));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dashboardDataProvider.overrideWith(
+            (ref) async => const DashboardData(
+              categories: [0, 0, 0, 0],
+              months: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              recent: [],
+            ),
+          ),
+        ],
+        child: MaterialApp(home: child),
+      ),
+    );
     await tester.pump();
   }
 

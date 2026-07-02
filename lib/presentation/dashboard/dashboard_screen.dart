@@ -41,7 +41,7 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
   final modules = ref.watch(settingsProvider).visibleModules;
   final dio = ref.watch(dioClientProvider).dio;
   final now = DateTime.now();
-  final from = DateTime(now.year, now.month - 5, 1);
+  final from = DateTime(now.year, now.month - 11, 1);
   final results = await Future.wait([
     ExpensesApiClient(
       dio,
@@ -64,21 +64,21 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
   final accessoryLists = await Future.wait(
     vehicles.map((vehicle) => vehicleApi.accessories(vehicle.id as String)),
   );
-  final monthTotals = List<double>.filled(6, 0);
+  final monthTotals = List<double>.filled(12, 0);
   int monthIndex(DateTime date) =>
       (date.year - from.year) * 12 + date.month - from.month;
 
   if (modules.contains('daily')) {
     for (final expense in expenses) {
       final index = monthIndex(expense.date);
-      if (index >= 0 && index < 6) monthTotals[index] += expense.amount;
+      if (index >= 0 && index < 12) monthTotals[index] += expense.amount;
     }
   }
   if (modules.contains('installments')) {
     for (final plan in installments) {
       if (plan.nextDueDate == null || plan.isActive != true) continue;
       final index = monthIndex(plan.nextDueDate as DateTime);
-      if (index >= 0 && index < 6) {
+      if (index >= 0 && index < 12) {
         monthTotals[index] += plan.installmentAmount as double;
       }
     }
@@ -88,7 +88,7 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
     for (final entries in fuelLists) {
       for (final entry in entries) {
         final index = monthIndex(entry.date);
-        if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;
+        if (index >= 0 && index < 12) monthTotals[index] += entry.totalCost;
         if (entry.date.year == now.year && entry.date.month == now.month) {
           vehicleMonth += entry.totalCost;
         }
@@ -97,7 +97,7 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
     for (final entries in maintenanceLists) {
       for (final entry in entries) {
         final index = monthIndex(entry.date);
-        if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;
+        if (index >= 0 && index < 12) monthTotals[index] += entry.totalCost;
         if (entry.date.year == now.year && entry.date.month == now.month) {
           vehicleMonth += entry.totalCost;
         }
@@ -106,7 +106,7 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
     for (final entries in accessoryLists) {
       for (final entry in entries) {
         final index = monthIndex(entry.date);
-        if (index >= 0 && index < 6) monthTotals[index] += entry.totalCost;
+        if (index >= 0 && index < 12) monthTotals[index] += entry.totalCost;
         if (entry.date.year == now.year && entry.date.month == now.month) {
           vehicleMonth += entry.totalCost;
         }
@@ -178,6 +178,7 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _syncNow() async {
+    showAppMessage(context, 'Sincronizzazione in corso…');
     final before = ref.read(syncInfoProvider).pending;
     final completed = await ref.read(syncServiceProvider).sync();
     if (!mounted) return;
@@ -818,19 +819,20 @@ class _QuickActionsWidget extends StatelessWidget {
   }
 }
 
-class _CategoriesWidget extends StatelessWidget {
+class _CategoriesWidget extends ConsumerWidget {
   const _CategoriesWidget({required this.data, required this.modules});
 
   final DashboardData data;
   final Set<String> modules;
 
   @override
-  Widget build(BuildContext context) {
-    const colors = [
-      AppColors.daily,
-      AppColors.subscription,
-      AppColors.installment,
-      AppColors.vehicle,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final colors = [
+      settings.moduleColor('daily'),
+      settings.moduleColor('subscriptions'),
+      settings.moduleColor('installments'),
+      settings.moduleColor('vehicle'),
     ];
     final visible = [
       if (modules.contains('daily')) 0,
@@ -842,22 +844,59 @@ class _CategoriesWidget extends StatelessWidget {
       title: 'Categorie',
       icon: Icons.donut_large_rounded,
       onTap: () => context.push('/analytics'),
-      child: PieChart(
-        PieChartData(
-          centerSpaceRadius: 34,
-          sectionsSpace: 4,
-          sections: [
-            for (final index in visible)
-              PieChartSectionData(
-                value: data.categories[index] <= 0
-                    ? .001
-                    : data.categories[index],
-                color: colors[index],
-                radius: 22,
-                showTitle: false,
+      child: Row(
+        children: [
+          Expanded(
+            child: PieChart(
+              PieChartData(
+                centerSpaceRadius: 30,
+                sectionsSpace: 3,
+                sections: [
+                  for (final index in visible)
+                    PieChartSectionData(
+                      value: data.categories[index] <= 0
+                          ? .001
+                          : data.categories[index],
+                      color: colors[index],
+                      radius: 20,
+                      showTitle: false,
+                    ),
+                ],
               ),
-          ],
-        ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final index in visible)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      children: [
+                        CircleAvatar(radius: 4, backgroundColor: colors[index]),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(
+                            ['Spese', 'Abbonamenti', 'Rate', 'Veicoli'][index],
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          NumberFormat.currency(
+                            locale: 'it_IT',
+                            symbol: '€',
+                          ).format(data.categories[index]),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -869,41 +908,70 @@ class _TrendWidget extends StatelessWidget {
   final DashboardData data;
 
   @override
-  Widget build(BuildContext context) => _DashboardWidgetCard(
-    title: 'Ultimi 6 mesi',
-    icon: Icons.show_chart_rounded,
-    onTap: () => context.push('/analytics'),
-    child: Padding(
-      padding: const EdgeInsets.only(top: 12, right: 6),
-      child: LineChart(
-        LineChartData(
-          minY: 0,
-          borderData: FlBorderData(show: false),
-          gridData: const FlGridData(show: false),
-          titlesData: const FlTitlesData(show: false),
-          lineTouchData: const LineTouchData(enabled: true),
-          lineBarsData: [
-            LineChartBarData(
-              spots: [
-                for (var index = 0; index < data.months.length; index++)
-                  FlSpot(index.toDouble(), data.months[index]),
-              ],
-              isCurved: true,
-              color: Theme.of(context).colorScheme.primary,
-              barWidth: 3,
-              dotData: const FlDotData(show: false),
-              belowBarData: BarAreaData(
-                show: true,
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: .14),
+  Widget build(BuildContext context) {
+    final values = data.months.length > 6
+        ? data.months.sublist(data.months.length - 6)
+        : data.months;
+    final now = DateTime.now();
+    return _DashboardWidgetCard(
+      title: 'Ultimi 6 mesi',
+      icon: Icons.show_chart_rounded,
+      onTap: () => context.push('/analytics'),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 12, right: 6),
+        child: LineChart(
+          LineChartData(
+            minY: 0,
+            borderData: FlBorderData(show: false),
+            gridData: const FlGridData(show: false),
+            titlesData: FlTitlesData(
+              topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              leftTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 24,
+                  getTitlesWidget: (value, meta) {
+                    final date = DateTime(
+                      now.year,
+                      now.month - values.length + 1 + value.toInt(),
+                    );
+                    return Text(DateFormat('MMM', 'it').format(date));
+                  },
+                ),
               ),
             ),
-          ],
+            lineTouchData: const LineTouchData(enabled: true),
+            lineBarsData: [
+              LineChartBarData(
+                spots: [
+                  for (var index = 0; index < values.length; index++)
+                    FlSpot(index.toDouble(), values[index]),
+                ],
+                isCurved: true,
+                color: Theme.of(context).colorScheme.primary,
+                barWidth: 3,
+                dotData: const FlDotData(show: false),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: .14),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _RecentWidget extends StatelessWidget {

@@ -36,6 +36,16 @@ Per ogni intervento futuro:
 
 ## Funzioni completate
 
+- La schermata Analisi non usa piu' valori dimostrativi: grafici, percentuali,
+  totali e intervalli derivano dai dati reali caricati dalla Panoramica.
+- I rifornimenti esistenti sono modificabili dalla relativa lista; l'OCR e'
+  esplicitamente indicato come sperimentale finche' il riconoscimento non sara'
+  affidabile sui diversi display.
+- La sincronizzazione manuale comunica subito l'avvio e poi l'esito. L'area
+  tester e' nuovamente raggiungibile dall'ultima icona per tester e admin.
+- Impostazioni profilo e generali sono separate visivamente; il tema chiaro
+  usa bordi piu' leggibili. I colori delle quattro sezioni sono configurabili
+  e persistenti, per ora applicati ai grafici principali.
 - Temi premium centralizzati: `Oceano` e' il predefinito; `Gold` usa una
   palette antracite e oro sobrio; sono disponibili anche `Emerald`, `Violet`,
   `Crimson` e `Graphite`. Login, input, pulsanti, chip e card usano i colori

@@ -54,7 +54,20 @@ Legenda:
   della sessione abbia eliminato definitivamente gli errori `401`. Migliorata
   la gestione del salvataggio rate: se la sessione scade viene mostrato un
   messaggio leggibile e l'utente viene riportato al login.
-- [ ] Aggiungere dettaglio, modifica ed eliminazione ai rifornimenti.
+- [x] Aggiunta modifica dei rifornimenti direttamente dalla lista; creazione,
+  aggiornamento ed eliminazione invalidano subito i dati del veicolo.
+- [-] OCR rifornimenti disponibile su web e mobile con dicitura
+  `Sperimentale`; l'affidabilita' su display e scontrini reali resta da
+  migliorare e collaudare.
+- [x] Analisi collegata ai dati reali della Panoramica: distribuzione per
+  categoria, andamento 1/3/6/12 mesi, legenda, importi e stati vuoti.
+- [x] Sincronizzazione manuale con feedback immediato di avvio e messaggio
+  finale con esito, numero di modifiche o errore.
+- [x] Pannello tester ripristinato come ultima icona della navigazione per i
+  soli ruoli `tester` e `admin`.
+- [-] Colori personalizzabili per Spese, Abbonamenti, Rate e Veicolo:
+  persistenza e grafici attivi; estendere l'accento a ogni elemento interno
+  delle singole schermate dopo collaudo visivo.
 - [ ] Completare dettaglio, modifica ed eliminazione in ogni eventuale schermata
   rimasta esclusa, con audit manuale di tutti i menu.
 - [-] Collaudare caricamento e persistenza della foto avatar su Chrome desktop,

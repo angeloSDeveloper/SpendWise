@@ -653,6 +653,15 @@ class _FuelTab extends ConsumerWidget {
                     },
                     child: Card(
                       child: ListTile(
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  AddFuelScreen(vehicleId: id, existing: item),
+                            ),
+                          );
+                          ref.invalidate(fuelEntriesProvider(id));
+                        },
                         leading: const Icon(Icons.local_gas_station),
                         title: Text(
                           item.liters > 0
@@ -668,11 +677,19 @@ class _FuelTab extends ConsumerWidget {
                               '${item.kmOdometer} km',
                           ].join(' · '),
                         ),
-                        trailing: item.pricePerLiter > 0
-                            ? Text(
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (item.pricePerLiter > 0)
+                              Text(
                                 '${item.pricePerLiter.toStringAsFixed(3)} €/L',
                               )
-                            : const Text('Semplificato'),
+                            else
+                              const Text('Semplificato'),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.edit_outlined, size: 19),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -1975,8 +1992,9 @@ class _AccessoryDateField extends StatelessWidget {
 }
 
 class AddFuelScreen extends ConsumerStatefulWidget {
-  const AddFuelScreen({required this.vehicleId, super.key});
+  const AddFuelScreen({required this.vehicleId, this.existing, super.key});
   final String vehicleId;
+  final FuelEntry? existing;
   @override
   ConsumerState<AddFuelScreen> createState() => _AddFuelScreenState();
 }
@@ -2001,6 +2019,19 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
   @override
   void initState() {
     super.initState();
+    final item = widget.existing;
+    if (item != null) {
+      detailed = item.liters > 0 && item.pricePerLiter > 0;
+      fullTank = item.isFullTank;
+      liters.text = item.liters > 0 ? item.liters.toStringAsFixed(2) : '';
+      price.text = item.pricePerLiter > 0
+          ? item.pricePerLiter.toStringAsFixed(3)
+          : '';
+      total.text = item.totalCost.toStringAsFixed(2);
+      station.text = item.stationName ?? '';
+      km.text = item.kmOdometer?.toString() ?? '';
+      note.text = item.note ?? '';
+    }
     for (final controller in [liters, price, total]) {
       controller.addListener(calculate);
     }
@@ -2174,8 +2205,9 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
     }
     setState(() => saving = true);
     try {
-      await ref.read(vehiclesApiProvider).addFuel(widget.vehicleId, {
-        'date': DateTime.now().millisecondsSinceEpoch,
+      final body = {
+        'date':
+            (widget.existing?.date ?? DateTime.now()).millisecondsSinceEpoch,
         'liters': detailed ? number(liters) : 0.0,
         'pricePerLiter': detailed ? number(price) : 0.0,
         'totalCost': number(total),
@@ -2183,7 +2215,13 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
         'kmOdometer': int.tryParse(km.text),
         'isFullTank': fullTank ? 1 : 0,
         'note': note.text.trim(),
-      });
+      };
+      final api = ref.read(vehiclesApiProvider);
+      if (widget.existing == null) {
+        await api.addFuel(widget.vehicleId, body);
+      } else {
+        await api.updateFuel(widget.vehicleId, widget.existing!.id, body);
+      }
       ref.invalidate(fuelEntriesProvider(widget.vehicleId));
       if (mounted) context.pop();
     } catch (error) {
@@ -2197,7 +2235,13 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Nuovo rifornimento')),
+    appBar: AppBar(
+      title: Text(
+        widget.existing == null
+            ? 'Nuovo rifornimento'
+            : 'Modifica rifornimento',
+      ),
+    ),
     body: Form(
       key: formKey,
       child: ListView(
@@ -2216,7 +2260,11 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.photo_library_outlined),
-                label: Text(recognizing ? 'Lettura in corso…' : 'Carica foto'),
+                label: Text(
+                  recognizing
+                      ? 'Lettura in corso…'
+                      : 'Carica foto · Sperimentale',
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -2231,14 +2279,14 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
                       ? null
                       : () => readFuelDisplay(ImageSource.camera),
                   icon: const Icon(Icons.document_scanner_outlined),
-                  label: const Text('Inquadra display'),
+                  label: const Text('Inquadra display · Sperimentale'),
                 ),
                 OutlinedButton.icon(
                   onPressed: recognizing
                       ? null
                       : () => readFuelDisplay(ImageSource.gallery),
                   icon: const Icon(Icons.photo_library_outlined),
-                  label: const Text('Carica foto'),
+                  label: const Text('Carica foto · Sperimentale'),
                 ),
               ],
             ),

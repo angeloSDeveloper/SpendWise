@@ -5,6 +5,24 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 2 luglio 2026
 
+### Analisi reali, modifica rifornimenti e controlli applicazione
+
+- Creato il ramo `feature/analytics-profile-controls`.
+- Sostituiti i dati dimostrativi di Analisi con valori reali provenienti dalle
+  API: categorie, percentuali, barre mensili e totale del periodo.
+- Estesa la serie storica della Panoramica a dodici mesi; il widget compatto
+  continua a mostrare gli ultimi sei con etichette dei mesi e legenda importi.
+- Aggiunta modifica dei rifornimenti con endpoint PUT gia' supportato dal
+  Worker e aggiornamento immediato del provider.
+- Marcati come `Sperimentale` i comandi OCR per foto e fotocamera.
+- Aggiunto feedback immediato durante la sincronizzazione manuale.
+- Ripristinato il pannello tester come ultima destinazione, visibile solo ai
+  ruoli `tester` e `admin`.
+- Separate visivamente le opzioni Profilo dalle Impostazioni generali,
+  rafforzati bordi e card del tema chiaro e aggiunta una palette persistente
+  per il colore di ogni sezione.
+- Versione applicativa mantenuta a `1.0.0`.
+
 ### Sistema temi premium e identita' visiva
 
 - Creato il ramo isolato `feature/premium-theme-system`.

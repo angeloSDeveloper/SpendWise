@@ -25,8 +25,8 @@ abstract final class AppTheme {
           : const Color(0xFFF0F3F8),
       onSurface: dark ? palette.textPrimary : const Color(0xFF14171D),
       onSurfaceVariant: dark ? palette.textSecondary : const Color(0xFF5E6572),
-      outline: dark ? palette.border : const Color(0xFFC9D0DA),
-      outlineVariant: dark ? palette.border : const Color(0xFFDDE2EA),
+      outline: dark ? palette.border : const Color(0xFF9DA8B8),
+      outlineVariant: dark ? palette.border : const Color(0xFFC1CAD7),
     );
     final base = ThemeData(
       useMaterial3: true,
@@ -57,7 +57,10 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: scheme.surface,
       cardTheme: CardThemeData(
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
         color: scheme.surfaceContainer,
         surfaceTintColor: Colors.transparent,
       ),
