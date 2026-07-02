@@ -83,6 +83,23 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - `flutter analyze`: nessun problema.
 - `flutter test`: 42 test superati.
 
+### OCR web rifornimenti e compilazione guidata
+
+- Rimossa dal web l'azione `Inquadra display`; resta disponibile solo
+  `Carica foto`. Fotocamera e galleria complete restano nelle build native.
+- Aggiunto riconoscimento OCR nel browser senza invio della fotografia al
+  Worker SpendWise.
+- Esteso il parser ai display con valori prima delle etichette e verificato
+  il caso reale `50,14 €`, `27,12 L`, `1,849 €/L`.
+- In modalita' semplificata la foto compila soltanto l'importo totale.
+- In modalita' dettagliata vengono compilati i due valori di input e il terzo
+  viene calcolato automaticamente in base alla scelta `Totale`, `Litri` o
+  `€/L`.
+- Aggiunti stato `Lettura in corso`, gestione degli errori OCR e messaggio
+  leggibile quando il display non viene riconosciuto.
+- `flutter analyze`: nessun problema.
+- `flutter test`: 43 test superati.
+
 ### Temi, avatar dashboard e diagnostica sincronizzazione
 
 - Creato il ramo isolato `feature/gold-theme-sync-feedback`.

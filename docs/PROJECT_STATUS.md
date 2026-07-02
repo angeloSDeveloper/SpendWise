@@ -79,6 +79,10 @@ Per ogni intervento futuro:
 - Builder avatar premium con anteprima live, preset, randomizzazione, forme,
   iniziali, icone, colori, gradiente, bordo e dimensioni.
 - Registro veicoli con manutenzioni e accessori.
+- Nel nuovo rifornimento il web espone soltanto il caricamento dalla galleria;
+  acquisizione da fotocamera e scansione display sono riservate alle app
+  native. L'OCR web compila i valori coerentemente con la modalita'
+  semplificata/dettagliata e con il campo selezionato per il calcolo.
 - Modifica, archiviazione, ripristino ed eliminazione dei veicoli.
 - Abbonamenti con prossima scadenza e ricorrenza personalizzata in mesi.
 - Piani rateali con prossima scadenza e registrazione della rata pagata.

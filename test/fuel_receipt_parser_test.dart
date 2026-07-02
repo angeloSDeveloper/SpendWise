@@ -10,4 +10,13 @@ void main() {
     expect(values.liters, 27.793);
     expect(values.pricePerLiter, 1.799);
   });
+
+  test('riconosce il display con valori prima delle etichette', () {
+    final values = parseFuelReceipt(
+      '50.14 IMPORTO €\n27.12 LITRI\n1.849 PREZZO € PER LITRO',
+    );
+    expect(values.total, 50.14);
+    expect(values.liters, 27.12);
+    expect(values.pricePerLiter, 1.849);
+  });
 }

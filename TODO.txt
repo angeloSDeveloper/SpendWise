@@ -93,6 +93,13 @@ Legenda:
 
 ## Veicoli
 
+- [x] Rifornimenti: sul web e' disponibile solo `Carica foto`; fotocamera e
+  `Inquadra display` restano riservati alla futura app mobile.
+- [x] OCR web della foto rifornimento con compilazione per modalita':
+  semplificata (totale) oppure dettagliata calcolando totale, litri o prezzo
+  al litro in base alla scelta dell'utente.
+- [x] Parser verificato anche con display che mostrano il numero prima
+  dell'etichetta, come `50,14 IMPORTO`, `27,12 LITRI`, `1,849 €/L`.
 - [x] Modifica dei dati del veicolo.
 - [x] Eliminazione con conferma e avviso sui dati collegati.
 - [x] Archiviazione, elenco separato, ripristino.

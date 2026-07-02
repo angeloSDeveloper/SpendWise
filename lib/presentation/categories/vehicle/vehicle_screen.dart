@@ -2049,10 +2049,72 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
     });
   }
 
-  bool get mobileFeatures =>
-      defaultTargetPlatform == TargetPlatform.android ||
-      defaultTargetPlatform == TargetPlatform.iOS ||
-      kIsWeb;
+  bool get nativeMobileFeatures =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android ||
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+  void applyRecognizedFuelValues(FuelReceiptValues values) {
+    var recognizedTotal = values.total;
+    var recognizedLiters = values.liters;
+    var recognizedPrice = values.pricePerLiter;
+    if (recognizedTotal == null &&
+        recognizedLiters != null &&
+        recognizedPrice != null) {
+      recognizedTotal = recognizedLiters * recognizedPrice;
+    }
+    if (recognizedLiters == null &&
+        recognizedTotal != null &&
+        recognizedPrice != null &&
+        recognizedPrice > 0) {
+      recognizedLiters = recognizedTotal / recognizedPrice;
+    }
+    if (recognizedPrice == null &&
+        recognizedTotal != null &&
+        recognizedLiters != null &&
+        recognizedLiters > 0) {
+      recognizedPrice = recognizedTotal / recognizedLiters;
+    }
+
+    calculating = true;
+    if (!detailed) {
+      if (recognizedTotal != null) {
+        total.text = recognizedTotal.toStringAsFixed(2);
+      }
+    } else {
+      switch (calculateField) {
+        case 'liters':
+          if (recognizedPrice != null) {
+            price.text = recognizedPrice.toStringAsFixed(3);
+          }
+          if (recognizedTotal != null) {
+            total.text = recognizedTotal.toStringAsFixed(2);
+          }
+          liters.clear();
+        case 'price':
+          if (recognizedLiters != null) {
+            liters.text = recognizedLiters.toStringAsFixed(2);
+          }
+          if (recognizedTotal != null) {
+            total.text = recognizedTotal.toStringAsFixed(2);
+          }
+          price.clear();
+        default:
+          if (recognizedLiters != null) {
+            liters.text = recognizedLiters.toStringAsFixed(2);
+          }
+          if (recognizedPrice != null) {
+            price.text = recognizedPrice.toStringAsFixed(3);
+          }
+          total.clear();
+      }
+    }
+    calculating = false;
+    if (detailed) {
+      calculate();
+    } else {
+      setState(() {});
+    }
+  }
 
   Future<void> readFuelDisplay(ImageSource source) async {
     final file = await ImagePicker().pickImage(
@@ -2080,17 +2142,15 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
         }
         return;
       }
-      calculating = true;
-      if (values.liters != null) {
-        liters.text = values.liters!.toStringAsFixed(2);
-      }
-      if (values.pricePerLiter != null) {
-        price.text = values.pricePerLiter!.toStringAsFixed(3);
-      }
-      if (values.total != null) total.text = values.total!.toStringAsFixed(2);
-      calculating = false;
-      setState(() => detailed = true);
+      applyRecognizedFuelValues(values);
       if (mounted) showAppMessage(context, 'Valori letti dalla fotografia.');
+    } catch (_) {
+      if (mounted) {
+        showAppMessage(
+          context,
+          'Non è stato possibile leggere la foto. Riprova con il display ben visibile.',
+        );
+      }
     } finally {
       calculating = false;
       if (mounted) setState(() => recognizing = false);
@@ -2143,7 +2203,25 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (mobileFeatures && MediaQuery.sizeOf(context).width < 700) ...[
+          if (kIsWeb) ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: recognizing
+                    ? null
+                    : () => readFuelDisplay(ImageSource.gallery),
+                icon: recognizing
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.photo_library_outlined),
+                label: Text(recognizing ? 'Lettura in corso…' : 'Carica foto'),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ] else if (nativeMobileFeatures &&
+              MediaQuery.sizeOf(context).width < 700) ...[
             Wrap(
               spacing: 8,
               runSpacing: 8,
