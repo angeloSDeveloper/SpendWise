@@ -19,6 +19,7 @@ import 'package:spendwise/domain/models/vehicle.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/domain/models/vehicle_maintenance.dart';
 import 'package:spendwise/presentation/shared/app_feedback.dart';
+import 'package:spendwise/presentation/shared/italian_decimal_input_formatter.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
 import 'package:spendwise/presentation/shared/widgets/swipe_reveal_delete.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -473,6 +474,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  inputFormatters: [ItalianDecimalInputFormatter()],
                   decoration: const InputDecoration(
                     labelText: 'Capacità serbatoio',
                     suffixText: 'L',
@@ -682,7 +684,7 @@ class _FuelTab extends ConsumerWidget {
                           children: [
                             if (item.pricePerLiter > 0)
                               Text(
-                                '${item.pricePerLiter.toStringAsFixed(3)} €/L',
+                                '${item.pricePerLiter.toStringAsFixed(3).replaceAll('.', ',')} €/L',
                               )
                             else
                               const Text('Semplificato'),
@@ -1580,10 +1582,12 @@ class _AddAccessoryScreenState extends ConsumerState<AddAccessoryScreen> {
       name.text = item.itemName;
       model.text = item.partCode ?? '';
       quantity.text = '${item.quantity}';
-      price.text = item.price.toStringAsFixed(2);
+      price.text = item.price.toStringAsFixed(2).replaceAll('.', ',');
       installationCost.text =
           ((meta['installationCost'] as num?)?.toDouble() ?? 0) > 0
-          ? (meta['installationCost'] as num).toStringAsFixed(2)
+          ? (meta['installationCost'] as num)
+                .toStringAsFixed(2)
+                .replaceAll('.', ',')
           : '';
       seller.text = item.shopName ?? '';
       link.text = item.shopUrl ?? '';
@@ -1832,6 +1836,7 @@ class _AddAccessoryScreenState extends ConsumerState<AddAccessoryScreen> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  inputFormatters: [ItalianDecimalInputFormatter()],
                   decoration: const InputDecoration(
                     labelText: 'Prezzo (€) *',
                     hintText: '0,00',
@@ -2023,11 +2028,13 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
     if (item != null) {
       detailed = item.liters > 0 && item.pricePerLiter > 0;
       fullTank = item.isFullTank;
-      liters.text = item.liters > 0 ? item.liters.toStringAsFixed(2) : '';
-      price.text = item.pricePerLiter > 0
-          ? item.pricePerLiter.toStringAsFixed(3)
+      liters.text = item.liters > 0
+          ? item.liters.toStringAsFixed(2).replaceAll('.', ',')
           : '';
-      total.text = item.totalCost.toStringAsFixed(2);
+      price.text = item.pricePerLiter > 0
+          ? item.pricePerLiter.toStringAsFixed(3).replaceAll('.', ',')
+          : '';
+      total.text = item.totalCost.toStringAsFixed(2).replaceAll('.', ',');
       station.text = item.stationName ?? '';
       km.text = item.kmOdometer?.toString() ?? '';
       note.text = item.note ?? '';
@@ -2052,7 +2059,9 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
       _ => total,
     };
     final text = result > 0
-        ? result.toStringAsFixed(calculateField == 'price' ? 3 : 2)
+        ? result
+              .toStringAsFixed(calculateField == 'price' ? 3 : 2)
+              .replaceAll('.', ',')
         : '';
     if (target.text != text) target.text = text;
     calculating = false;
@@ -2074,9 +2083,9 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
     setState(() {
       detailed = true;
       calculateField = 'total';
-      liters.text = capacity.toStringAsFixed(
-        capacity == capacity.roundToDouble() ? 0 : 2,
-      );
+      liters.text = capacity
+          .toStringAsFixed(capacity == capacity.roundToDouble() ? 0 : 2)
+          .replaceAll('.', ',');
     });
   }
 
@@ -2109,32 +2118,44 @@ class _AddFuelScreenState extends ConsumerState<AddFuelScreen> {
     calculating = true;
     if (!detailed) {
       if (recognizedTotal != null) {
-        total.text = recognizedTotal.toStringAsFixed(2);
+        total.text = recognizedTotal.toStringAsFixed(2).replaceAll('.', ',');
       }
     } else {
       switch (calculateField) {
         case 'liters':
           if (recognizedPrice != null) {
-            price.text = recognizedPrice.toStringAsFixed(3);
+            price.text = recognizedPrice
+                .toStringAsFixed(3)
+                .replaceAll('.', ',');
           }
           if (recognizedTotal != null) {
-            total.text = recognizedTotal.toStringAsFixed(2);
+            total.text = recognizedTotal
+                .toStringAsFixed(2)
+                .replaceAll('.', ',');
           }
           liters.clear();
         case 'price':
           if (recognizedLiters != null) {
-            liters.text = recognizedLiters.toStringAsFixed(2);
+            liters.text = recognizedLiters
+                .toStringAsFixed(2)
+                .replaceAll('.', ',');
           }
           if (recognizedTotal != null) {
-            total.text = recognizedTotal.toStringAsFixed(2);
+            total.text = recognizedTotal
+                .toStringAsFixed(2)
+                .replaceAll('.', ',');
           }
           price.clear();
         default:
           if (recognizedLiters != null) {
-            liters.text = recognizedLiters.toStringAsFixed(2);
+            liters.text = recognizedLiters
+                .toStringAsFixed(2)
+                .replaceAll('.', ',');
           }
           if (recognizedPrice != null) {
-            price.text = recognizedPrice.toStringAsFixed(3);
+            price.text = recognizedPrice
+                .toStringAsFixed(3)
+                .replaceAll('.', ',');
           }
           total.clear();
       }
@@ -2380,6 +2401,11 @@ Widget _fuelNumber(
     controller: controller,
     enabled: enabled,
     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    inputFormatters: [
+      ItalianDecimalInputFormatter(
+        decimalDigits: label.contains('litro') ? 3 : 2,
+      ),
+    ],
     decoration: InputDecoration(
       labelText: '$label *',
       suffixIcon: enabled ? null : const Icon(Icons.auto_awesome),
@@ -2722,6 +2748,7 @@ class _MaintenanceLineEditorRow extends StatelessWidget {
   ) => TextFormField(
     controller: controller,
     keyboardType: TextInputType.numberWithOptions(decimal: !integer),
+    inputFormatters: integer ? null : [ItalianDecimalInputFormatter()],
     decoration: InputDecoration(labelText: label, isDense: true),
     validator: (value) {
       final normalized = (value ?? '').replaceAll(',', '.');
@@ -3148,6 +3175,7 @@ class _AddMaintenanceScreenState extends ConsumerState<AddMaintenanceScreen> {
           TextFormField(
             controller: overallPrice,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [ItalianDecimalInputFormatter()],
             decoration: const InputDecoration(
               labelText: 'Prezzo complessivo (€)',
               prefixIcon: Icon(Icons.euro),

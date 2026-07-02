@@ -7,6 +7,7 @@ import 'package:spendwise/data/remote/api_client.dart';
 import 'package:spendwise/domain/models/daily_expense.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/shared/app_feedback.dart';
+import 'package:spendwise/presentation/shared/italian_decimal_input_formatter.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
 import 'package:spendwise/presentation/shared/widgets/swipe_reveal_delete.dart';
 
@@ -294,7 +295,7 @@ class _AddDailyExpenseState extends ConsumerState<AddDailyExpenseScreen> {
     final item = widget.existing;
     if (item != null) {
       description.text = item.description ?? '';
-      amount.text = item.amount.toStringAsFixed(2);
+      amount.text = item.amount.toStringAsFixed(2).replaceAll('.', ',');
       category = categoryFrom(item);
       note.text = (item.note ?? '').replaceFirst(
         RegExp(r'^categoria:[^\n]+\n?'),
@@ -390,6 +391,7 @@ class _AddDailyExpenseState extends ConsumerState<AddDailyExpenseScreen> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
+                inputFormatters: [ItalianDecimalInputFormatter()],
                 decoration: const InputDecoration(labelText: 'Importo *'),
               ),
             ),

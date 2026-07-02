@@ -5,6 +5,19 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 2 luglio 2026
 
+### Backup locale e formattazione importi
+
+- Corretto il caricamento della Panoramica con backup disattivato: le letture
+  IndexedDB hanno un timeout sicuro e non possono bloccare indefinitamente UI.
+- Il pulsante sincronizzazione ora informa che, con backup spento, i dati
+  restano sul dispositivo e non vengono inviati al profilo.
+- Aggiunto formatter condiviso per importi: accetta punto o virgola, visualizza
+  la virgola e limita le valute a due decimali.
+- Conservate tre cifre decimali esclusivamente per il prezzo al litro nei
+  rifornimenti.
+- Pubblicato il Worker `spendwise`, versione Cloudflare
+  `2a7532bd-b092-4304-83f9-e19f7d18bfc9`.
+
 ### Analisi reali, modifica rifornimenti e controlli applicazione
 
 - Creato il ramo `feature/analytics-profile-controls`.

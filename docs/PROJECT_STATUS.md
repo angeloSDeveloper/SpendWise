@@ -46,6 +46,11 @@ Per ogni intervento futuro:
 - Impostazioni profilo e generali sono separate visivamente; il tema chiaro
   usa bordi piu' leggibili. I colori delle quattro sezioni sono configurabili
   e persistenti, per ora applicati ai grafici principali.
+- Disattivare il backup mantiene le operazioni e le letture sul dispositivo:
+  il pulsante di sincronizzazione non invia nulla e lo dichiara esplicitamente.
+  Riattivando il backup, la coda locale puo' essere inviata al profilo.
+- Gli input degli importi usano la virgola italiana e due decimali; il solo
+  prezzo al litro dei rifornimenti usa tre decimali.
 - Temi premium centralizzati: `Oceano` e' il predefinito; `Gold` usa una
   palette antracite e oro sobrio; sono disponibili anche `Emerald`, `Violet`,
   `Crimson` e `Graphite`. Login, input, pulsanti, chip e card usano i colori

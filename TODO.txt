@@ -68,6 +68,12 @@ Legenda:
 - [-] Colori personalizzabili per Spese, Abbonamenti, Rate e Veicolo:
   persistenza e grafici attivi; estendere l'accento a ogni elemento interno
   delle singole schermate dopo collaudo visivo.
+- [x] Con backup disattivato la Panoramica legge la cache locale senza restare
+  bloccata; il comando di sincronizzazione spiega che non invia dati finche'
+  il backup non viene riattivato.
+- [x] Input monetari italiani standardizzati: punto e virgola vengono mostrati
+  come virgola, massimo due decimali; solo il prezzo carburante consente tre
+  decimali.
 - [ ] Completare dettaglio, modifica ed eliminazione in ogni eventuale schermata
   rimasta esclusa, con audit manuale di tutti i menu.
 - [-] Collaudare caricamento e persistenza della foto avatar su Chrome desktop,

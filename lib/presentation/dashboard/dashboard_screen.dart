@@ -178,6 +178,14 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _syncNow() async {
+    if (!ref.read(settingsProvider).cloudBackupEnabled) {
+      showAppMessage(
+        context,
+        'Backup disattivato: i dati restano su questo dispositivo. '
+        'Attivalo nelle Impostazioni per sincronizzarli online.',
+      );
+      return;
+    }
     showAppMessage(context, 'Sincronizzazione in corso…');
     final before = ref.read(syncInfoProvider).pending;
     final completed = await ref.read(syncServiceProvider).sync();

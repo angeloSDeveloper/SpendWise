@@ -8,6 +8,7 @@ import 'package:spendwise/domain/models/enums.dart';
 import 'package:spendwise/domain/models/subscription.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/shared/app_feedback.dart';
+import 'package:spendwise/presentation/shared/italian_decimal_input_formatter.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
 import 'package:spendwise/presentation/shared/widgets/swipe_reveal_delete.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
@@ -464,7 +465,7 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
     final item = widget.existing;
     if (item != null) {
       name.text = item.name;
-      amount.text = item.amount.toStringAsFixed(2);
+      amount.text = item.amount.toStringAsFixed(2).replaceAll('.', ',');
       url.text = item.url ?? '';
       note.text = item.note ?? '';
       cycle = item.billingCycle;
@@ -559,6 +560,7 @@ class _AddSubscriptionState extends ConsumerState<AddSubscriptionScreen> {
           TextFormField(
             controller: amount,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [ItalianDecimalInputFormatter()],
             decoration: const InputDecoration(labelText: 'Importo *'),
             validator: (v) =>
                 (double.tryParse((v ?? '').replaceAll(',', '.')) ?? 0) <= 0

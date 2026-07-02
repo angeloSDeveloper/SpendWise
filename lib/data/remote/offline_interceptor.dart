@@ -54,7 +54,9 @@ class OfflineInterceptor extends Interceptor {
 
     if (options.method == 'GET') {
       if (backupEnabled) return handler.next(options);
-      final cached = await store.read(userId, _uri(options));
+      final cached = await store
+          .read(userId, _uri(options))
+          .timeout(const Duration(seconds: 3), onTimeout: () => null);
       return handler.resolve(
         Response(
           requestOptions: options,

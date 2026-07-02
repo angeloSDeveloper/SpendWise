@@ -9,6 +9,7 @@ import 'package:spendwise/domain/models/enums.dart';
 import 'package:spendwise/domain/models/installment_plan.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
 import 'package:spendwise/presentation/shared/app_feedback.dart';
+import 'package:spendwise/presentation/shared/italian_decimal_input_formatter.dart';
 import 'package:spendwise/presentation/shared/widgets/category_page.dart';
 import 'package:spendwise/presentation/shared/widgets/swipe_reveal_delete.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
@@ -346,8 +347,12 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
     if (item != null) {
       first.name.text = item.name;
       provider.text = item.provider ?? '';
-      first.total.text = item.totalAmount.toStringAsFixed(2);
-      first.installment.text = item.installmentAmount.toStringAsFixed(2);
+      first.total.text = item.totalAmount
+          .toStringAsFixed(2)
+          .replaceAll('.', ',');
+      first.installment.text = item.installmentAmount
+          .toStringAsFixed(2)
+          .replaceAll('.', ',');
       count.text = '${item.totalInstallments}';
       note.text = item.note ?? '';
       frequency = item.frequency;
@@ -490,6 +495,7 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  inputFormatters: [ItalianDecimalInputFormatter()],
                   decoration: const InputDecoration(labelText: 'Totale *'),
                 ),
               ),
@@ -500,6 +506,7 @@ class _AddInstallmentState extends ConsumerState<AddInstallmentScreen> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  inputFormatters: [ItalianDecimalInputFormatter()],
                   decoration: const InputDecoration(
                     labelText: 'Importo rata *',
                   ),
