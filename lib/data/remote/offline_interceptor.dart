@@ -35,6 +35,16 @@ class OfflineInterceptor extends Interceptor {
           ),
   );
 
+  Future<dynamic> _readLocal(String userId, Uri uri) async {
+    try {
+      return await store
+          .read(userId, uri)
+          .timeout(const Duration(milliseconds: 750), onTimeout: () => null);
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Future<void> onRequest(
     RequestOptions options,
@@ -54,9 +64,7 @@ class OfflineInterceptor extends Interceptor {
 
     if (options.method == 'GET') {
       if (backupEnabled) return handler.next(options);
-      final cached = await store
-          .read(userId, _uri(options))
-          .timeout(const Duration(seconds: 3), onTimeout: () => null);
+      final cached = await _readLocal(userId, _uri(options));
       return handler.resolve(
         Response(
           requestOptions: options,
@@ -115,7 +123,7 @@ class OfflineInterceptor extends Interceptor {
     }
     final userId = await _userId();
     if (options.method == 'GET') {
-      final cached = await store.read(userId, _uri(options));
+      final cached = await _readLocal(userId, _uri(options));
       if (cached != null) {
         return handler.resolve(
           Response(

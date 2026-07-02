@@ -17,6 +17,11 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
   rifornimenti.
 - Pubblicato il Worker `spendwise`, versione Cloudflare
   `2a7532bd-b092-4304-83f9-e19f7d18bfc9`.
+- Ridotto il timeout delle letture locali a 750 ms e gestite le cache
+  incomplete/corrotte con fallback vuoto, evitando attese concatenate nella
+  Panoramica in modalita' solo dispositivo.
+- Pubblicata la correzione sul Worker `spendwise`, versione Cloudflare
+  `3a7c6d58-6a22-4564-abee-d3ce0698be97`.
 
 ### Analisi reali, modifica rifornimenti e controlli applicazione
 
