@@ -45,6 +45,17 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 - `flutter analyze`: nessun problema.
 - `flutter test`: 41 test superati.
 
+### Aggiornamento immediato eliminazione abbonamenti
+
+- Separato l'esito della DELETE dall'esito della sincronizzazione offline.
+- La riga viene esclusa subito dalla lista e il totale viene ricalcolato nello
+  stesso frame.
+- Il record viene ripristinato soltanto se fallisce la DELETE; un errore della
+  sincronizzazione successiva non fa piu' ricomparire un abbonamento gia'
+  cancellato dal server.
+- Il provider viene invalidato subito dopo la DELETE per riallineare la cache
+  senza attendere il cambio di pagina.
+
 ### Temi, avatar dashboard e diagnostica sincronizzazione
 
 - Creato il ramo isolato `feature/gold-theme-sync-feedback`.

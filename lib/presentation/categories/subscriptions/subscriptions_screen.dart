@@ -265,15 +265,18 @@ class _SubscriptionsState extends ConsumerState<SubscriptionsScreen> {
                           await ref
                               .read(subscriptionsApiProvider)
                               .delete(item.id);
-                          final synced = await ref
-                              .read(syncServiceProvider)
-                              .sync();
-                          if (synced) ref.invalidate(subscriptionsProvider);
                         } catch (_) {
                           if (mounted) {
                             setState(() => deletedIds.remove(item.id));
                           }
                           rethrow;
+                        }
+                        ref.invalidate(subscriptionsProvider);
+                        try {
+                          await ref.read(syncServiceProvider).sync();
+                        } catch (_) {
+                          // La DELETE e' gia' riuscita: un errore del replay
+                          // offline non deve ripristinare il record nella UI.
                         }
                       },
                       child: Card(

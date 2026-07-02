@@ -64,7 +64,9 @@ Per ogni intervento futuro:
   widget persistenti 4x4/4x8.
 - Lo swipe mostra il cestino e cancella immediatamente senza annullamento.
   Negli abbonamenti lista e totale si aggiornano in modo ottimistico, quindi
-  la coda local-first viene sincronizzata prima del refetch.
+  il record resta escluso dalla schermata durante refetch e sincronizzazione.
+  Un eventuale errore del replay offline non ripristina una DELETE server gia'
+  riuscita.
 - La cache local-first non blocca piu' le risposte API: le scritture
   IndexedDB vengono eseguite in background con timeout, evitando lo spinner
   infinito della dashboard web con richieste di rete gia' completate.

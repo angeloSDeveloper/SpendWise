@@ -61,6 +61,9 @@ Legenda:
 
 ## Abbonamenti e rate
 
+- [x] Eliminazione abbonamenti aggiornata in tempo reale: un errore della
+  sincronizzazione successiva non ripristina piu' nella lista un record gia'
+  cancellato correttamente dal server.
 - [-] Annullamento dell'ultima rata pagata implementato e verificato
   staticamente; endpoint Worker pubblicato.
 - [x] Swipe configurabile con cestino ed eliminazione immediata al click,
