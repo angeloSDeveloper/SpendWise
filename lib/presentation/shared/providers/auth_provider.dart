@@ -112,7 +112,9 @@ class RestoreProgress {
     this.current = 0,
     this.total = 1,
     this.records = 0,
-    this.label = 'Preparazione…',
+    this.bytesReceived = 0,
+    this.bytesTotal = 0,
+    this.label = 'Preparazione del ripristino…',
     this.error,
   });
 
@@ -121,6 +123,8 @@ class RestoreProgress {
   final int current;
   final int total;
   final int records;
+  final int bytesReceived;
+  final int bytesTotal;
   final String label;
   final String? error;
 
@@ -237,11 +241,13 @@ class SyncService {
   Future<bool> restoreFromCloud() async {
     ref.read(restoreProgressProvider.notifier).state = const RestoreProgress(
       running: true,
-      label: 'Controllo della copia locale…',
+      label: 'Verifica della copia online…',
     );
     final userId =
         await storage.read(key: AppConstants.kUserIdKey) ?? 'local-device';
-    final pending = await database.offlineRequestCount(userId);
+    final pending = await database
+        .offlineRequestCount(userId)
+        .timeout(const Duration(seconds: 1), onTimeout: () => 0);
     if (pending > 0) {
       ref.read(syncStatusProvider.notifier).state = SyncStatus.pending;
       ref.read(syncInfoProvider.notifier).state = SyncInfo(
@@ -277,22 +283,44 @@ class SyncService {
       var current = 0;
       var total = 4;
       var records = 0;
+      var bytesReceived = 0;
+      var bytesTotal = 0;
       Future<List<dynamic>> download(String path, String label) async {
         ref.read(restoreProgressProvider.notifier).state = RestoreProgress(
           running: true,
           current: current,
           total: total,
           records: records,
+          bytesReceived: bytesReceived,
+          bytesTotal: bytesTotal,
           label: label,
         );
+        final receivedBefore = bytesReceived;
+        final totalBefore = bytesTotal;
         final response = await dio.get<dynamic>(
           path,
           options: Options(extra: const {'offlineReplay': true}),
+          onReceiveProgress: (received, expected) {
+            ref.read(restoreProgressProvider.notifier).state = RestoreProgress(
+              running: true,
+              current: current,
+              total: total,
+              records: records,
+              bytesReceived: receivedBefore + received,
+              bytesTotal: expected > 0 ? totalBefore + expected : totalBefore,
+              label: label,
+            );
+          },
         );
         final rows = response.data is List
             ? List<dynamic>.from(response.data as List)
             : <dynamic>[];
-        await store.cache(userId, Uri(path: path), rows);
+        final encodedBytes = utf8.encode(jsonEncode(rows)).length;
+        bytesReceived = receivedBefore + encodedBytes;
+        bytesTotal = totalBefore + encodedBytes;
+        await store
+            .cache(userId, Uri(path: path), rows)
+            .timeout(const Duration(seconds: 2), onTimeout: () {});
         current++;
         records += rows.length;
         ref.read(restoreProgressProvider.notifier).state = RestoreProgress(
@@ -300,6 +328,8 @@ class SyncService {
           current: current,
           total: total,
           records: records,
+          bytesReceived: bytesReceived,
+          bytesTotal: bytesTotal,
           label: '$label completato',
         );
         return rows;
@@ -327,6 +357,8 @@ class SyncService {
         current: current,
         total: total,
         records: records,
+        bytesReceived: bytesReceived,
+        bytesTotal: bytesTotal,
         label: 'Ripristino completato',
       );
       return true;

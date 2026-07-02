@@ -7,6 +7,12 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ### Panoramica resiliente ai dati parziali
 
+- Corretto `Controllo della copia locale` in `Verifica della copia online`.
+- Il controllo IndexedDB preliminare e le scritture cache hanno ora timeout
+  autonomi; il ripristino non puo' restare fermo prima della prima richiesta.
+- L'avanzamento mostra anche byte ricevuti/totali quando disponibili.
+- Pubblicato sul Worker `spendwise`, versione Cloudflare
+  `d4afb3e6-ff46-4644-b844-9025a1c998b6`.
 - Aggiunta finestra di avanzamento del ripristino con archivio corrente,
   percentuale, conteggio record ed esito finale esplicito.
 - Parallelizzato il caricamento di rifornimenti, manutenzioni e accessori dei

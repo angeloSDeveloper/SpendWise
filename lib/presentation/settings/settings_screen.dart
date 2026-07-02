@@ -665,9 +665,12 @@ class _RestoreProgressDialog extends ConsumerWidget {
                 progress.error != null
                     ? 'I dati locali non sono stati sostituiti.'
                     : finished
-                    ? '${progress.records} record recuperati dal profilo.'
+                    ? '${progress.records} record · '
+                          '${_formatBytes(progress.bytesReceived)} recuperati.'
                     : '${progress.current} di ${progress.total} archivi · '
-                          '${progress.records} record recuperati',
+                          '${progress.records} record\n'
+                          '${_formatBytes(progress.bytesReceived)}'
+                          '${progress.bytesTotal > 0 ? ' di ${_formatBytes(progress.bytesTotal)}' : ''}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
@@ -682,6 +685,14 @@ class _RestoreProgressDialog extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  static String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1).replaceAll('.', ',')} KB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1).replaceAll('.', ',')} MB';
   }
 }
 
