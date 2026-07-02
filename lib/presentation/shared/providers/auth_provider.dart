@@ -95,6 +95,7 @@ enum SyncStatus { synced, pending, syncing, offline, error }
 
 final syncStatusProvider = StateProvider((ref) => SyncStatus.synced);
 final syncInfoProvider = StateProvider((ref) => const SyncInfo());
+final restoreProgressProvider = StateProvider((ref) => const RestoreProgress());
 
 class SyncInfo {
   const SyncInfo({this.pending = 0, this.error, this.lastCompletedAt});
@@ -102,6 +103,28 @@ class SyncInfo {
   final int pending;
   final String? error;
   final DateTime? lastCompletedAt;
+}
+
+class RestoreProgress {
+  const RestoreProgress({
+    this.running = false,
+    this.completed = false,
+    this.current = 0,
+    this.total = 1,
+    this.records = 0,
+    this.label = 'Preparazione…',
+    this.error,
+  });
+
+  final bool running;
+  final bool completed;
+  final int current;
+  final int total;
+  final int records;
+  final String label;
+  final String? error;
+
+  double get fraction => total <= 0 ? 0 : (current / total).clamp(0, 1);
 }
 
 class SyncService {
@@ -212,6 +235,10 @@ class SyncService {
   }
 
   Future<bool> restoreFromCloud() async {
+    ref.read(restoreProgressProvider.notifier).state = const RestoreProgress(
+      running: true,
+      label: 'Controllo della copia locale…',
+    );
     final userId =
         await storage.read(key: AppConstants.kUserIdKey) ?? 'local-device';
     final pending = await database.offlineRequestCount(userId);
@@ -219,6 +246,12 @@ class SyncService {
       ref.read(syncStatusProvider.notifier).state = SyncStatus.pending;
       ref.read(syncInfoProvider.notifier).state = SyncInfo(
         pending: pending,
+        error:
+            'Ci sono $pending modifiche locali non salvate. '
+            'Esegui prima “Backup ora”.',
+      );
+      ref.read(restoreProgressProvider.notifier).state = RestoreProgress(
+        completed: true,
         error:
             'Ci sono $pending modifiche locali non salvate. '
             'Esegui prima “Backup ora”.',
@@ -231,13 +264,27 @@ class SyncService {
       ref.read(syncInfoProvider.notifier).state = const SyncInfo(
         error: 'Serve una connessione Internet per ripristinare il backup.',
       );
+      ref.read(restoreProgressProvider.notifier).state = const RestoreProgress(
+        completed: true,
+        error: 'Nessuna connessione Internet.',
+      );
       return false;
     }
     ref.read(syncStatusProvider.notifier).state = SyncStatus.syncing;
     ref.read(syncInfoProvider.notifier).state = const SyncInfo();
     final store = OfflineStore(database);
     try {
-      Future<List<dynamic>> download(String path) async {
+      var current = 0;
+      var total = 4;
+      var records = 0;
+      Future<List<dynamic>> download(String path, String label) async {
+        ref.read(restoreProgressProvider.notifier).state = RestoreProgress(
+          running: true,
+          current: current,
+          total: total,
+          records: records,
+          label: label,
+        );
         final response = await dio.get<dynamic>(
           path,
           options: Options(extra: const {'offlineReplay': true}),
@@ -246,29 +293,52 @@ class SyncService {
             ? List<dynamic>.from(response.data as List)
             : <dynamic>[];
         await store.cache(userId, Uri(path: path), rows);
+        current++;
+        records += rows.length;
+        ref.read(restoreProgressProvider.notifier).state = RestoreProgress(
+          running: true,
+          current: current,
+          total: total,
+          records: records,
+          label: '$label completato',
+        );
         return rows;
       }
 
-      await download('/expenses');
-      await download('/subscriptions');
-      await download('/installments');
-      final vehicles = await download('/vehicles');
+      await download('/expenses', 'Spese');
+      await download('/subscriptions', 'Abbonamenti');
+      await download('/installments', 'Rate e finanziamenti');
+      final vehicles = await download('/vehicles', 'Veicoli');
+      total += vehicles.length * 3;
       for (final vehicle in vehicles.whereType<Map>()) {
         final id = vehicle['id']?.toString();
         if (id == null || id.isEmpty) continue;
-        await download('/vehicles/$id/fuel');
-        await download('/vehicles/$id/maintenance');
-        await download('/vehicles/$id/accessories');
+        final name = vehicle['name']?.toString() ?? 'Veicolo';
+        await download('/vehicles/$id/fuel', 'Rifornimenti · $name');
+        await download('/vehicles/$id/maintenance', 'Manutenzioni · $name');
+        await download('/vehicles/$id/accessories', 'Accessori · $name');
       }
       ref.read(syncStatusProvider.notifier).state = SyncStatus.synced;
       ref.read(syncInfoProvider.notifier).state = SyncInfo(
         lastCompletedAt: DateTime.now(),
+      );
+      ref.read(restoreProgressProvider.notifier).state = RestoreProgress(
+        completed: true,
+        current: current,
+        total: total,
+        records: records,
+        label: 'Ripristino completato',
       );
       return true;
     } catch (error) {
       ref.read(syncStatusProvider.notifier).state = SyncStatus.error;
       ref.read(syncInfoProvider.notifier).state = SyncInfo(
         error: _readableSyncError(error),
+      );
+      ref.read(restoreProgressProvider.notifier).state = RestoreProgress(
+        completed: true,
+        error: _readableSyncError(error),
+        label: 'Ripristino non riuscito',
       );
       return false;
     }

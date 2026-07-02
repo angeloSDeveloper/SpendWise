@@ -40,7 +40,7 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
 ) async {
   Future<List<T>> safeList<T>(Future<List<T>> request) async {
     try {
-      return await request.timeout(const Duration(seconds: 8));
+      return await request.timeout(const Duration(seconds: 5));
     } catch (_) {
       return <T>[];
     }
@@ -68,19 +68,22 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
   final installments = results[2];
   final vehicles = results[3];
   final vehicleApi = VehiclesApiClient(dio);
-  final fuelLists = await Future.wait(
-    vehicles.map((vehicle) => safeList(vehicleApi.fuel(vehicle.id as String))),
+  final vehicleBundles = await Future.wait(
+    vehicles.map((vehicle) async {
+      final id = vehicle.id as String;
+      final fuel = safeList(vehicleApi.fuel(id));
+      final maintenance = safeList(vehicleApi.maintenance(id));
+      final accessories = safeList(vehicleApi.accessories(id));
+      return (
+        fuel: await fuel,
+        maintenance: await maintenance,
+        accessories: await accessories,
+      );
+    }),
   );
-  final maintenanceLists = await Future.wait(
-    vehicles.map(
-      (vehicle) => safeList(vehicleApi.maintenance(vehicle.id as String)),
-    ),
-  );
-  final accessoryLists = await Future.wait(
-    vehicles.map(
-      (vehicle) => safeList(vehicleApi.accessories(vehicle.id as String)),
-    ),
-  );
+  final fuelLists = vehicleBundles.map((bundle) => bundle.fuel);
+  final maintenanceLists = vehicleBundles.map((bundle) => bundle.maintenance);
+  final accessoryLists = vehicleBundles.map((bundle) => bundle.accessories);
   final monthTotals = List<double>.filled(12, 0);
   int monthIndex(DateTime date) =>
       (date.year - from.year) * 12 + date.month - from.month;
@@ -304,7 +307,21 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
     return Scaffold(
       body: SafeArea(
         child: data.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Caricamento della Panoramica…'),
+                SizedBox(height: 6),
+                Text(
+                  'Recupero spese, rate e veicoli',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
           error: (error, _) => _DashboardError(
             expired: error.toString().contains('401'),
             onRetry: () => ref.invalidate(dashboardDataProvider),

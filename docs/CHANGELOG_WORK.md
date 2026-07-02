@@ -7,6 +7,12 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ### Panoramica resiliente ai dati parziali
 
+- Aggiunta finestra di avanzamento del ripristino con archivio corrente,
+  percentuale, conteggio record ed esito finale esplicito.
+- Parallelizzato il caricamento di rifornimenti, manutenzioni e accessori dei
+  veicoli; la Panoramica mostra inoltre una descrizione della fase di attesa.
+- Pubblicato sul Worker `spendwise`, versione Cloudflare
+  `1929d30d-523d-4c8b-aa24-454fd33d996b`.
 - Verificata direttamente la copia cloud: presenti 3 veicoli, 4 rifornimenti,
   15 manutenzioni e 2 accessori; nessun dato e' stato perso.
 - Le richieste aggregate della Panoramica hanno ora timeout e fallback

@@ -74,6 +74,8 @@ Legenda:
 - [x] Gestione esplicita locale/cloud: sincronizzazione automatica opzionale,
   `Backup ora` manuale senza uscire dalla modalita' locale e
   `Ripristina dal cloud` con protezione dalle modifiche locali non salvate.
+- [x] Ripristino cloud con avanzamento visibile, archivio corrente, conteggio
+  record ed esito finale; archivi veicolo caricati in parallelo.
 - [x] Input monetari italiani standardizzati: punto e virgola vengono mostrati
   come virgola, massimo due decimali; solo il prezzo carburante consente tre
   decimali.

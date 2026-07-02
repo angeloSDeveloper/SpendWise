@@ -496,10 +496,15 @@ class SettingsScreen extends ConsumerWidget {
                       ) ??
                       false;
                   if (!confirmed || !context.mounted) return;
-                  showAppMessage(context, 'Ripristino in corso…');
-                  final restored = await ref
+                  final operation = ref
                       .read(syncServiceProvider)
                       .restoreFromCloud();
+                  await showDialog<void>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const _RestoreProgressDialog(),
+                  );
+                  final restored = await operation;
                   ref.invalidate(dashboardDataProvider);
                   if (!context.mounted) return;
                   final info = ref.read(syncInfoProvider);
@@ -612,6 +617,68 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('Esci'),
             onTap: () => ref.read(authStateProvider.notifier).logout(),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RestoreProgressDialog extends ConsumerWidget {
+  const _RestoreProgressDialog();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final progress = ref.watch(restoreProgressProvider);
+    final finished = progress.completed && !progress.running;
+    return PopScope(
+      canPop: finished,
+      child: AlertDialog(
+        icon: Icon(
+          progress.error != null
+              ? Icons.error_outline_rounded
+              : finished
+              ? Icons.cloud_done_outlined
+              : Icons.cloud_download_outlined,
+        ),
+        title: Text(
+          progress.error != null
+              ? 'Ripristino non riuscito'
+              : finished
+              ? 'Ripristino completato'
+              : 'Ripristino dal cloud',
+        ),
+        content: SizedBox(
+          width: 420,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              LinearProgressIndicator(
+                value: finished || progress.error != null
+                    ? 1
+                    : progress.fraction,
+              ),
+              const SizedBox(height: 16),
+              Text(progress.error ?? progress.label),
+              const SizedBox(height: 8),
+              Text(
+                progress.error != null
+                    ? 'I dati locali non sono stati sostituiti.'
+                    : finished
+                    ? '${progress.records} record recuperati dal profilo.'
+                    : '${progress.current} di ${progress.total} archivi · '
+                          '${progress.records} record recuperati',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          if (finished)
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('CHIUDI'),
+            ),
         ],
       ),
     );
