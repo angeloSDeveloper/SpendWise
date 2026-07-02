@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:spendwise/core/constants/app_constants.dart';
 import 'package:spendwise/data/local/database.dart';
+import 'package:spendwise/data/local/offline_store.dart';
 import 'package:spendwise/data/remote/api_client.dart';
 import 'package:spendwise/data/repositories/auth_repository_impl.dart';
 import 'package:spendwise/domain/models/user.dart';
@@ -117,13 +118,13 @@ class SyncService {
   final Dio dio;
   final FlutterSecureStorage storage;
   Timer? _timer;
-  Future<bool> sync() async {
+  Future<bool> sync({bool force = false}) async {
     final prefs = await SharedPreferences.getInstance();
     final backupEnabled = prefs.getBool('cloud_backup_enabled') ?? true;
     final userId =
         await storage.read(key: AppConstants.kUserIdKey) ?? 'local-device';
     final pendingBefore = await database.offlineRequestCount(userId);
-    if (!backupEnabled) {
+    if (!backupEnabled && !force) {
       ref.read(syncStatusProvider.notifier).state = pendingBefore > 0
           ? SyncStatus.pending
           : SyncStatus.synced;
@@ -204,6 +205,69 @@ class SyncService {
       ref.read(syncStatusProvider.notifier).state = SyncStatus.error;
       ref.read(syncInfoProvider.notifier).state = SyncInfo(
         pending: await database.offlineRequestCount(userId),
+        error: _readableSyncError(error),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> restoreFromCloud() async {
+    final userId =
+        await storage.read(key: AppConstants.kUserIdKey) ?? 'local-device';
+    final pending = await database.offlineRequestCount(userId);
+    if (pending > 0) {
+      ref.read(syncStatusProvider.notifier).state = SyncStatus.pending;
+      ref.read(syncInfoProvider.notifier).state = SyncInfo(
+        pending: pending,
+        error:
+            'Ci sono $pending modifiche locali non salvate. '
+            'Esegui prima “Backup ora”.',
+      );
+      return false;
+    }
+    final connectivity = await Connectivity().checkConnectivity();
+    if (connectivity.contains(ConnectivityResult.none)) {
+      ref.read(syncStatusProvider.notifier).state = SyncStatus.offline;
+      ref.read(syncInfoProvider.notifier).state = const SyncInfo(
+        error: 'Serve una connessione Internet per ripristinare il backup.',
+      );
+      return false;
+    }
+    ref.read(syncStatusProvider.notifier).state = SyncStatus.syncing;
+    ref.read(syncInfoProvider.notifier).state = const SyncInfo();
+    final store = OfflineStore(database);
+    try {
+      Future<List<dynamic>> download(String path) async {
+        final response = await dio.get<dynamic>(
+          path,
+          options: Options(extra: const {'offlineReplay': true}),
+        );
+        final rows = response.data is List
+            ? List<dynamic>.from(response.data as List)
+            : <dynamic>[];
+        await store.cache(userId, Uri(path: path), rows);
+        return rows;
+      }
+
+      await download('/expenses');
+      await download('/subscriptions');
+      await download('/installments');
+      final vehicles = await download('/vehicles');
+      for (final vehicle in vehicles.whereType<Map>()) {
+        final id = vehicle['id']?.toString();
+        if (id == null || id.isEmpty) continue;
+        await download('/vehicles/$id/fuel');
+        await download('/vehicles/$id/maintenance');
+        await download('/vehicles/$id/accessories');
+      }
+      ref.read(syncStatusProvider.notifier).state = SyncStatus.synced;
+      ref.read(syncInfoProvider.notifier).state = SyncInfo(
+        lastCompletedAt: DateTime.now(),
+      );
+      return true;
+    } catch (error) {
+      ref.read(syncStatusProvider.notifier).state = SyncStatus.error;
+      ref.read(syncInfoProvider.notifier).state = SyncInfo(
         error: _readableSyncError(error),
       );
       return false;

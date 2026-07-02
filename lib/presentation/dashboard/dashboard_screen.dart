@@ -38,14 +38,17 @@ class DashboardData {
 final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
   ref,
 ) async {
-  final modules = ref.watch(settingsProvider).visibleModules;
+  final settings = ref.watch(settingsProvider);
+  final modules = settings.visibleModules;
   final dio = ref.watch(dioClientProvider).dio;
   final now = DateTime.now();
   final from = DateTime(now.year, now.month - 11, 1);
   final results = await Future.wait([
-    ExpensesApiClient(
-      dio,
-    ).getExpenses(from.toIso8601String(), now.toIso8601String(), null),
+    ExpensesApiClient(dio).getExpenses(
+      settings.cloudBackupEnabled ? from.toIso8601String() : null,
+      settings.cloudBackupEnabled ? now.toIso8601String() : null,
+      null,
+    ),
     SubscriptionsApiClient(dio).getAll(),
     InstallmentsApiClient(dio).getAll(),
     VehiclesApiClient(dio).getAll(),
@@ -178,25 +181,22 @@ class _DashboardState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _syncNow() async {
-    if (!ref.read(settingsProvider).cloudBackupEnabled) {
-      showAppMessage(
-        context,
-        'Backup disattivato: i dati restano su questo dispositivo. '
-        'Attivalo nelle Impostazioni per sincronizzarli online.',
-      );
-      return;
-    }
+    final automatic = ref.read(settingsProvider).cloudBackupEnabled;
     showAppMessage(context, 'Sincronizzazione in corso…');
     final before = ref.read(syncInfoProvider).pending;
-    final completed = await ref.read(syncServiceProvider).sync();
+    final completed = await ref
+        .read(syncServiceProvider)
+        .sync(force: !automatic);
     if (!mounted) return;
     final info = ref.read(syncInfoProvider);
     showAppMessage(
       context,
       completed
           ? before > 0
-                ? '$before modifiche sincronizzate.'
-                : 'Tutti i dati sono già sincronizzati.'
+                ? '$before modifiche salvate online.'
+                : automatic
+                ? 'Tutti i dati sono già sincronizzati.'
+                : 'Backup manuale completato. La modalità locale resta attiva.'
           : info.error ?? 'Sincronizzazione non riuscita.',
     );
   }

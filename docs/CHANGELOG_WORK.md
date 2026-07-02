@@ -5,6 +5,23 @@ attività ancora aperte. Le date sono espresse nel fuso orario Europe/Rome.
 
 ## 2 luglio 2026
 
+### Backup e ripristino espliciti
+
+- Rinominato il flag in `Sincronizzazione automatica`, distinguendolo dalle
+  operazioni manuali.
+- Aggiunto `Backup ora`: invia le modifiche locali al profilo mantenendo attiva
+  la modalita' solo dispositivo.
+- Aggiunto `Ripristina dal cloud`: scarica spese, abbonamenti, rate, veicoli,
+  rifornimenti, manutenzioni e accessori nella cache del dispositivo.
+- Il ripristino viene impedito quando sono presenti modifiche locali non
+  salvate, evitando sovrascritture accidentali.
+- Il pulsante della Panoramica esegue ora un backup manuale anche quando la
+  sincronizzazione automatica e' spenta.
+- In modalita' locale la Panoramica usa l'intera raccolta spese salvata nel
+  dispositivo e applica in memoria il periodo richiesto.
+- Pubblicato sul Worker `spendwise`, versione Cloudflare
+  `595eba73-8068-490f-968d-97eb1c784b16`.
+
 ### Backup locale e formattazione importi
 
 - Corretto il caricamento della Panoramica con backup disattivato: le letture

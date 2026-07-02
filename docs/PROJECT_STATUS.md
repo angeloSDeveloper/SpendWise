@@ -47,8 +47,10 @@ Per ogni intervento futuro:
   usa bordi piu' leggibili. I colori delle quattro sezioni sono configurabili
   e persistenti, per ora applicati ai grafici principali.
 - Disattivare il backup mantiene le operazioni e le letture sul dispositivo:
-  il pulsante di sincronizzazione non invia nulla e lo dichiara esplicitamente.
-  Riattivando il backup, la coda locale puo' essere inviata al profilo.
+  la sincronizzazione automatica si ferma, mentre `Backup ora` e il comando
+  manuale della Panoramica inviano la coda senza cambiare modalita'. Il comando
+  `Ripristina dal cloud` scarica sul dispositivo la copia del profilo e viene
+  bloccato se esistono modifiche locali ancora da salvare.
 - Gli input degli importi usano la virgola italiana e due decimali; il solo
   prezzo al litro dei rifornimenti usa tre decimali.
 - Temi premium centralizzati: `Oceano` e' il predefinito; `Gold` usa una

@@ -12,6 +12,7 @@ import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_pr
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_screen.dart';
 import 'package:spendwise/presentation/settings/avatar_builder/avatar_builder_storage.dart';
 import 'package:spendwise/presentation/auth/local_unlock_provider.dart';
+import 'package:spendwise/presentation/dashboard/dashboard_screen.dart';
 import 'package:spendwise/presentation/onboarding/onboarding_provider.dart';
 import 'package:spendwise/presentation/settings/settings_provider.dart';
 import 'package:spendwise/presentation/shared/providers/auth_provider.dart';
@@ -423,11 +424,11 @@ class SettingsScreen extends ConsumerWidget {
           Text('Dati e backup', style: Theme.of(context).textTheme.titleLarge),
           SwitchListTile(
             secondary: const Icon(Icons.cloud_sync_outlined),
-            title: const Text('Backup sul profilo'),
+            title: const Text('Sincronizzazione automatica'),
             subtitle: Text(
               settings.cloudBackupEnabled
-                  ? 'I dati restano sul dispositivo e vengono copiati online'
-                  : 'Solo dispositivo: le modifiche restano in attesa',
+                  ? 'Le modifiche locali vengono copiate anche sul profilo'
+                  : 'Modalità locale: nessun invio automatico',
             ),
             value: settings.cloudBackupEnabled,
             onChanged: (value) async {
@@ -440,9 +441,79 @@ class SettingsScreen extends ConsumerWidget {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'SpendWise salva sempre una copia locale. Attivando il backup '
-              'puoi ripristinare i dati con il tuo account e usarli su più dispositivi.',
+              'SpendWise conserva sempre i dati sul dispositivo. Puoi creare '
+              'un backup manuale o ripristinare la copia presente sul profilo.',
             ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: () async {
+                  showAppMessage(context, 'Backup in corso…');
+                  final completed = await ref
+                      .read(syncServiceProvider)
+                      .sync(force: true);
+                  if (!context.mounted) return;
+                  final info = ref.read(syncInfoProvider);
+                  showAppMessage(
+                    context,
+                    completed
+                        ? 'Backup online completato. I dati restano anche sul dispositivo.'
+                        : info.error ?? 'Backup non riuscito.',
+                  );
+                },
+                icon: const Icon(Icons.cloud_upload_outlined),
+                label: const Text('Backup ora'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final confirmed =
+                      await showDialog<bool>(
+                        context: context,
+                        builder: (dialogContext) => AlertDialog(
+                          title: const Text('Ripristina dal cloud'),
+                          content: const Text(
+                            'La copia online sostituirà i dati visualizzati '
+                            'su questo dispositivo. Le modifiche locali non '
+                            'salvate devono essere prima incluse in un backup.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.pop(dialogContext, false),
+                              child: const Text('ANNULLA'),
+                            ),
+                            FilledButton(
+                              onPressed: () =>
+                                  Navigator.pop(dialogContext, true),
+                              child: const Text('RIPRISTINA'),
+                            ),
+                          ],
+                        ),
+                      ) ??
+                      false;
+                  if (!confirmed || !context.mounted) return;
+                  showAppMessage(context, 'Ripristino in corso…');
+                  final restored = await ref
+                      .read(syncServiceProvider)
+                      .restoreFromCloud();
+                  ref.invalidate(dashboardDataProvider);
+                  if (!context.mounted) return;
+                  final info = ref.read(syncInfoProvider);
+                  showAppMessage(
+                    context,
+                    restored
+                        ? 'Dati ripristinati dal profilo.'
+                        : info.error ?? 'Ripristino non riuscito.',
+                  );
+                },
+                icon: const Icon(Icons.cloud_download_outlined),
+                label: const Text('Ripristina dal cloud'),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           Text('Notifiche', style: Theme.of(context).textTheme.titleLarge),
